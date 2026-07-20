@@ -1,0 +1,55 @@
+.Root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 25%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background-color: var(--grey-10);
+}
+
+.Image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.Fallback {
+  composes: weight-600 from global;
+  color: var(--grey-60);
+  line-height: 1;
+  user-select: none;
+}
+
+/* ── Size variants ── */
+.xs {
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: var(--radius-4);
+
+  & .Fallback { font-size: 0.7rem; }
+}
+
+.sm {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: var(--radius-4);
+
+  & .Fallback { font-size: 1rem; }
+}
+
+.md {
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: var(--radius-8);
+
+  & .Fallback { font-size: 1.2rem; }
+}
+
+.lg {
+  width: 4.8rem;
+  height: 4.8rem;
+  border-radius: var(--radius-8);
+
+  & .Fallback { font-size: 1.8rem; }
+}

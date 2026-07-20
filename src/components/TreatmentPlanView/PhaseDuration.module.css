@@ -1,0 +1,228 @@
+.Root {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  vertical-align: middle;
+  z-index: 0;
+}
+
+.RootOpen {
+  z-index: 20;
+}
+
+/* Holds the collapsed footprint in document flow so neighbors don't jump. */
+.Sizer {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  height: 2.4rem;
+  padding: 0 var(--spacing-4);
+  visibility: hidden;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Same surface morphs from compact chip → expanded editor. */
+.Chip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  /* Fixed 24px when collapsed — Expanded selects are still in-flow and would
+     otherwise push auto height to 26px (24px content + 1px border × 2). */
+  height: 2.4rem;
+  min-height: 2.4rem;
+  padding: 0 var(--spacing-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-default);
+  background: var(--grey-10);
+  box-shadow: none;
+  overflow: hidden;
+  transform-origin: left center;
+  transition:
+    background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.ChipOpen {
+  /* Allow focus rings to paint outside; width morph still clips via grid while closed. */
+  height: auto;
+  overflow: visible;
+  padding: var(--spacing-4) var(--spacing-8);
+  background: var(--white);
+  border-color: var(--grey-20);
+  box-shadow:
+    0 4px 4px 0 rgba(0, 0, 0, 0.08),
+    0 8px 12px -4px rgba(0, 0, 0, 0.08);
+}
+
+.Collapsed {
+  display: grid;
+  grid-template-columns: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-columns 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.ChipOpen .Collapsed {
+  grid-template-columns: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/*
+ * Grid item clip layer:
+ * - min-width: 0 while the track is 0fr (so it can fully collapse)
+ * - min-width: min-content while the track is 1fr (so 1fr grows to content)
+ */
+.PaneClip {
+  overflow: hidden;
+  min-width: 0;
+}
+
+.Collapsed > .PaneClip {
+  min-width: min-content;
+}
+
+.ChipOpen .Collapsed > .PaneClip {
+  min-width: 0;
+}
+
+.ChipOpen .Expanded > .PaneClip {
+  min-width: min-content;
+  overflow: visible;
+}
+
+.CollapsedInner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  width: max-content;
+  white-space: nowrap;
+}
+
+.Expanded {
+  display: grid;
+  grid-template-columns: 0fr;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    grid-template-columns 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 160ms cubic-bezier(0.23, 1, 0.32, 1) 40ms;
+}
+
+.ChipOpen .Expanded {
+  grid-template-columns: 1fr;
+  opacity: 1;
+  pointer-events: auto;
+  overflow: visible;
+}
+
+.ExpandedInner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+  width: max-content;
+  white-space: nowrap;
+}
+
+.Label {
+  composes: text-base weight-400 from global;
+  color: var(--grey-60);
+  white-space: nowrap;
+}
+
+.LabelSet {
+  color: var(--grey-100);
+  font-weight: var(--weight-500);
+}
+
+.EditButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: var(--grey-60);
+  cursor: pointer;
+  border-radius: var(--radius-default);
+  flex-shrink: 0;
+  transition:
+    color 100ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .EditButton:hover {
+    color: var(--grey-100);
+  }
+
+  .EditButton:active {
+    transform: scale(0.97);
+  }
+}
+
+.EditButton:focus-visible {
+  outline: 2px solid var(--interactive-60);
+  outline-offset: 2px;
+}
+
+.Field {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  min-width: 0;
+}
+
+.SelectTrigger {
+  width: 6.4rem;
+  height: 2.4rem;
+  flex-shrink: 0;
+}
+
+/* Programmatic focus (open editor) often won't match :focus-visible after a mouse click. */
+.SelectTrigger:focus-within :global(button) {
+  border-color: var(--blue-80);
+  box-shadow: 0 0 0 1px var(--blue-80);
+}
+
+.Unit {
+  composes: text-base weight-500 from global;
+  color: var(--grey-60);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.Actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .Chip {
+    transition-duration: 0.01ms !important;
+    transition-property: background-color, border-color;
+  }
+
+  .Collapsed,
+  .Expanded {
+    transition: opacity 120ms cubic-bezier(0.23, 1, 0.32, 1);
+    transition-property: opacity;
+  }
+
+  .PaneClip,
+  .CollapsedInner,
+  .ExpandedInner {
+    transition: none;
+  }
+}

@@ -1,0 +1,1 @@
+{"version":3,"file":"constants-B3roFcye.js","names":[],"sources":["../../node_modules/@base-ui/react/esm/internals/composite/constants.js"],"sourcesContent":["export const ACTIVE_COMPOSITE_ITEM = 'data-composite-item-active';"],"x_google_ignoreList":[0],"mappings":";AAAA,IAAa,wBAAwB"}

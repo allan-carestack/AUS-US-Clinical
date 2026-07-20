@@ -1,0 +1,270 @@
+/* ── Wrapper — rendered via the ScrollArea component, this class only adds
+   the table's own visual chrome on top of ScrollArea's base styles ── */
+.Wrapper {
+  border: 1px solid var(--grey-20);
+  border-radius: var(--radius-8);
+  background: var(--white);
+}
+
+/* ── Table ──
+   table-layout: fixed means column widths come only from <colgroup>, not
+   from cell content — so a sort icon or filter field appearing/disappearing
+   inside a header can never shift column widths.
+
+   border-collapse: separate (not collapse) — collapsed borders don't paint
+   reliably in Chrome when combined with a sticky <thead>, producing doubled
+   lines at cell edges. With `separate`, each cell only draws its own
+   right/bottom border; the row above (or cell before) supplies the shared
+   edge, so adjacent borders never overlap into a double line. */
+.Table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+/* ── Head ── */
+.Thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--grey-5);
+}
+
+/* ── Header cells ──
+   Only right/bottom — those are interior gridlines (between columns, and
+   between the header and the first body row). The outer perimeter (top,
+   left, right) is drawn exclusively by `.Wrapper`'s own border, so cells on
+   that edge must not also draw one — otherwise the two adjacent 1px lines
+   read as a doubled border. */
+.Th {
+  composes: text-base weight-500 from global;
+  position: relative;
+  padding: var(--spacing-8) var(--spacing-8);
+  color: var(--grey-60);
+  text-align: left;
+  vertical-align: top;
+  border-right: 1px solid var(--grey-20);
+  border-bottom: 1px solid var(--grey-20);
+  white-space: nowrap;
+}
+
+.Th:last-child {
+  border-right: none;
+}
+
+.ThLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.ThSortable {
+  composes: Th;
+}
+
+.ThSortable:hover {
+  background: var(--hover-default);
+}
+
+/* Sort trigger — a real button for keyboard operability. Reset to inherit the
+   header cell's typography/color; layout matches .ThContent. */
+.SortButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+}
+
+.SortButton:focus-visible {
+  outline: 2px solid var(--interactive-60);
+  outline-offset: 2px;
+  border-radius: var(--radius-4);
+}
+
+.ThCheckbox {
+  composes: Th;
+  width: 3.2rem;
+  max-width: 3.2rem;
+  text-align: center;
+  vertical-align: middle;
+  padding: var(--spacing-4);
+}
+
+/* ── Header cell content row ── */
+.ThContent {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: var(--spacing-4);
+}
+
+/* ── Column resize handle ──
+   Straddles the right border of a resizable <th>. Invisible until hover/
+   drag so it doesn't compete visually with the header content. */
+.ResizeHandle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 2;
+  touch-action: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 2px;
+    width: 2px;
+    background: transparent;
+    transition: background-color 100ms ease-out;
+  }
+
+  &:hover::after,
+  &[data-resizing]::after {
+    background: var(--interactive-60);
+  }
+}
+
+/* ── Sort icon ──
+   Hidden by default; shown on hover for the default (unsorted) state, and
+   always shown once the column is sorted. Both triangles share one fill
+   color; sort state is expressed purely through each triangle's opacity,
+   matching the sort-default / sorted-up / sorted-down source icons. */
+.SortIcon {
+  flex-shrink: 0;
+  visibility: hidden;
+  color: var(--grey-80);
+}
+
+.SortIcon [data-dir] {
+  opacity: 0.4;
+  transition: opacity 100ms ease-out;
+}
+
+.ThSortable:hover .SortIcon,
+.ThSortable[data-sorted] .SortIcon {
+  visibility: visible;
+}
+
+.ThSortable[data-sorted="asc"] .SortIcon [data-dir="up"] {
+  opacity: 1;
+}
+
+.ThSortable[data-sorted="asc"] .SortIcon [data-dir="down"] {
+  opacity: 0.2;
+}
+
+.ThSortable[data-sorted="desc"] .SortIcon [data-dir="down"] {
+  opacity: 1;
+}
+
+.ThSortable[data-sorted="desc"] .SortIcon [data-dir="up"] {
+  opacity: 0.2;
+}
+
+/* ── Filter select ── */
+.FilterSelect {
+  margin-top: var(--spacing-4);
+  white-space: normal;
+}
+
+/* ── Filter input ── */
+.FilterInput {
+  composes: text-base weight-400 from global;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: var(--spacing-4);
+  padding: var(--spacing-8) var(--spacing-8);
+  border: 1px solid var(--grey-20);
+  border-radius: var(--radius-4);
+  background: var(--white);
+  color: var(--grey-100);
+  outline: none;
+  transition: border-color 100ms ease-out;
+}
+
+.FilterInput:focus {
+  border-color: var(--interactive-80);
+}
+
+.FilterInput::placeholder {
+  color: var(--grey-40);
+}
+
+/* ── Body cells ── */
+/* Only right/bottom — interior gridlines only (see `.Th` above for why the
+   outer perimeter is left to `.Wrapper`). No border-top since the row above
+   (header or another body row) already supplies that shared edge. */
+.Td {
+  composes: text-base weight-400 from global;
+  padding: var(--spacing-4) var(--spacing-8);
+  color: var(--grey-100);
+  border-right: 1px solid var(--grey-10);
+  border-bottom: 1px solid var(--grey-10);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.Td:last-child {
+  border-right: none;
+}
+
+.TdCheckbox {
+  composes: Td;
+  width: 3.2rem;
+  min-width: 3.2rem;
+  max-width: 3.2rem;
+  text-align: center;
+  vertical-align: middle;
+  padding: var(--spacing-4);
+}
+
+.Tr:last-child .Td,
+.Tr:last-child .TdCheckbox {
+  border-bottom: none;
+}
+
+.Tr[data-selected] .Td,
+.Tr[data-selected] .TdCheckbox {
+  background: var(--interactive-5);
+}
+
+
+/* ── Empty state ── */
+.Empty {
+  composes: text-base weight-400 from global;
+  padding: var(--spacing-32);
+  text-align: center;
+  color: var(--grey-40);
+}
+
+/* ── Pagination ── */
+.Pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-8);
+  padding: var(--spacing-8) var(--spacing-12);
+  margin-top: var(--spacing-8);
+}
+
+.PaginationInfo {
+  composes: text-sm weight-400 from global;
+  color: var(--grey-60);
+}

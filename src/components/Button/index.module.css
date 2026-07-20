@@ -1,0 +1,241 @@
+.Button {
+  composes: text-base weight-400 from global;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.4rem;
+  min-width: 2.4rem;
+  padding: 0 var(--spacing-6);
+  gap: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-default);
+  font-family: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: background-color 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+
+  &:focus-visible {
+    outline: 2px solid var(--interactive-60);
+    outline-offset: 2px;
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+}
+
+.Label {
+  padding: 0 var(--spacing-4);
+}
+
+.iconOnly {
+  width: 2.4rem;
+  padding: 0;
+}
+
+/* variants */
+
+.primary {
+  background-color: var(--interactive-80);
+  color: var(--white);
+  border: 1px solid var(--hover-default);
+  box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.12), 0 2px 0 0 rgba(255, 255, 255, 0.10) inset, 0 4px 16px 0 rgba(255, 255, 255, 0.08) inset;
+
+  @media (hover: hover) {
+    &:hover:not([data-disabled]) {
+      background-color: var(--interactive-100);
+    }
+  }
+
+  &:active:not([data-disabled]) {
+    padding-top: 0.1rem;
+    color: var(--interactive-40);
+    background-color: var(--interactive-100);
+    border: 1px solid var(--hover-default);
+    box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.10) inset;
+  }
+}
+
+.secondary {
+  background-color: var(--grey-5);
+  color: var(--grey-100);
+  border-color: var(--outline-darker);
+  box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.08), 0 2px 0 0 rgba(255, 255, 255, 0.10) inset, 0 8px 16px 0 rgba(255, 255, 255, 0.06) inset;
+
+
+  @media (hover: hover) {
+    &:hover:not([data-disabled]) {
+      background: linear-gradient(0deg, var(--hover-default) 0%, var(--hover-default) 100%), var(--white);
+      border-color: var(--outline-darker);
+    }
+  }
+
+  &:active:not([data-disabled]) {
+    padding-top: 0.1rem;
+    background: linear-gradient(0deg, var(--hover-darker) 0%, var(--hover-darker) 100%), var(--white);
+    border-color: var(--outline-darker);
+    box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.08) inset;
+  }
+}
+
+.ghost {
+  background-color: transparent;
+  color: var(--grey-80);
+  border-color: transparent;
+
+  @media (hover: hover) {
+    &:hover:not([data-disabled]) {
+      background-color: var(--hover-default);
+      color: var(--grey-100);
+    }
+  }
+
+  &:active:not([data-disabled]) {
+    padding-top: 0.1rem;
+    background-color: var(--hover-darker);
+    box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.08) inset;
+  }
+}
+
+.destructive {
+  background-color: var(--red-80);
+  color: var(--white);
+  border: 1px solid var(--hover-default);
+  box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.12), 0 2px 0 0 rgba(255, 255, 255, 0.10) inset, 0 8px 16px 0 rgba(255, 255, 255, 0.16) inset;
+
+  @media (hover: hover) {
+    &:hover:not([data-disabled]) {
+      background-color: var(--red-100);
+    }
+  }
+
+  &:active:not([data-disabled]) {
+    padding-top: 0.1rem;
+    color: var(--red-40);
+    background: linear-gradient(0deg, rgb(from var(--grey-100) r g b / 8%) 0%, rgb(from var(--grey-100) r g b / 8%) 100%), var(--red-100);
+    border: 1px solid var(--hover-default);
+    box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.08) inset;
+  }
+
+  &:focus-visible {
+    outline-color: var(--red-60);
+  }
+}
+
+.outline {
+  background-color: var(--white);
+  color: var(--interactive-80);
+  border: 1px solid var(--interactive-80);
+
+  @media (hover: hover) {
+    &:hover:not([data-disabled]) {
+      background-color: var(--interactive-5);
+      color: var(--interactive-100);
+      border-color: var(--interactive-100);
+    }
+  }
+
+  &:active:not([data-disabled]) {
+    padding-top: 0.1rem;
+    background-color: var(--interactive-10);
+    border: 1px solid var(--interactive-100);
+  }
+}
+
+.secondary-destructive {
+  background-color: transparent;
+  color: var(--red-80);
+  border: 1px solid var(--red-80);
+  box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.12), 0 2px 0 0 rgba(255, 255, 255, 0.10) inset, 0 8px 16px 0 rgba(255, 255, 255, 0.06) inset;
+
+  @media (hover: hover) {
+    &:hover:not([data-disabled]) {
+      background-color: var(--red-10);
+      color: var(--red-100);
+      border-color: var(--red-80);
+    }
+  }
+
+  &:active:not([data-disabled]) {
+    padding-top: 0.1rem;
+    background-color: var(--red-20);
+    border: 1px solid var(--red-100);
+    box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.08) inset;
+  }
+
+  &:focus-visible {
+    outline-color: var(--red-60);
+  }
+}
+
+.secondary-destructive-ghost {
+  background-color: transparent;
+  color: var(--red-80);
+ 
+  @media (hover: hover) {
+    &:hover:not([data-disabled]) {
+      background-color: var(--red-10);
+      color: var(--red-100);
+    }
+  }
+
+  &:active:not([data-disabled]) {
+    padding-top: 0.1rem;
+    background-color: var(--red-20);
+    box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.08) inset;
+  }
+
+  &:focus-visible {
+    outline-color: var(--red-60);
+  }
+}
+
+/* Inverse modifier — for dark surfaces, pairs with .ghost. Defined after the
+   variants so its equal-specificity rules win the cascade. */
+.inverse {
+  color: var(--white);
+
+  @media (hover: hover) {
+    &:hover:not([data-disabled]) {
+      background-color: var(--hover-inverse);
+      color: var(--white);
+    }
+  }
+
+  &:active:not([data-disabled]) {
+    background-color: var(--hover-inverse-darker);
+  }
+
+  &:focus-visible {
+    outline-color: var(--white);
+  }
+}
+
+.link {
+  background-color: transparent;
+  color: var(--interactive-80);
+  border-color: transparent;
+  height: auto;
+  padding: 0;
+  gap: var(--spacing-4);
+
+  & .Label {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    padding: 0;
+  }
+
+  @media (hover: hover) {
+    &:hover:not([data-disabled]) {
+      color: var(--interactive-100);
+    }
+  }
+
+  &:active:not([data-disabled]) {
+    color: var(--grey-100);
+  }
+}

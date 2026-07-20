@@ -1,0 +1,2774 @@
+import { i as __toESM, r as __exportAll, t as require_react } from "./react-CZunmVaX.js";
+import { t as require_react_dom } from "./react-dom-DlAeUGhR.js";
+import { A as SafeReact, D as NOOP, E as EMPTY_OBJECT, M as useRefWithInit, O as useIsoLayoutEffect, T as EMPTY_ARRAY, a as useMergedRefs, g as isElement, k as useStableCallback, r as mergeProps, t as useRenderElement } from "./useRenderElement-CD8_51dU.js";
+import { J as useStore, S as useValueAsRef, T as DROPDOWN_COLLISION_AVOIDANCE, Z as createSelector, a as triggerOpenStateMapping, c as useFloatingRootContext, i as pressableTriggerOpenStateMapping, n as getDisabledMountTransitionStyles, o as useAnchorPositioning, q as Store, r as popupStateMapping, t as usePositioner, v as FloatingPortal, z as isInteractiveElement } from "./usePositioner-yPHaFqvV.js";
+import { t as inertValue } from "./inertValue-BKR4Cavj.js";
+import { a as transitionStatusMapping, c as ownerDocument, t as useOpenChangeComplete } from "./useOpenChangeComplete-DDdALft_.js";
+import { n as useTimeout } from "./useTimeout-DXHq38JF.js";
+import { t as require_jsx_runtime } from "./jsx-runtime-DdbNDrdp.js";
+import { a as isAndroid, i as getTarget, o as isFirefox, r as contains, s as isIOS, t as useDirection } from "./DirectionContext-DZ5-Bwxo.js";
+import { I as stopEvent } from "./composite-C0FJqbYK.js";
+import { _ as useClick, a as useOnFirstRender, g as useDismiss, n as InternalBackdrop, o as FOCUSABLE_POPUP_PROPS, r as useOpenInteractionType, t as useAnchoredPopupScrollLock, v as FloatingFocusManager } from "./useAnchoredPopupScrollLock-C2DX_DDX.js";
+import { n as visuallyHiddenInput, t as visuallyHidden } from "./visuallyHidden-B282sV0y.js";
+import { r as error } from "./CompositeRootContext-Bm4cWRAg.js";
+import { t as useButton } from "./useButton-BsRrElKS.js";
+import { a as clearPress, c as escapeKey, f as inputChange, g as listNavigation, h as itemPress, i as chipRemovePress, m as inputPress, n as createGenericEventDetails, o as closePress, p as inputClear, t as createChangeEventDetails, v as none } from "./createBaseUIEventDetails-DZH4eiwI.js";
+import { t as useTransitionStatus } from "./useTransitionStatus-Cmcf6noJ.js";
+import { i as useListNavigation, n as getPseudoElementBounds, r as useTypeahead, t as Separator } from "./Separator-DokoSb0R.js";
+import { t as useControlled } from "./useControlled-BOktVa93.js";
+import { t as CompositeList } from "./CompositeList-ThUyKr24.js";
+import { t as useBaseUiId } from "./useBaseUiId-BJnNLmSV.js";
+import { n as useCompositeListItem, t as IndexGuessBehavior } from "./useCompositeListItem-Cjx6EoPE.js";
+import { a as isGroupedItems, c as stringifyAsLabel, d as defaultItemEquality, f as findItemIndex, i as hasNullItemLabel, l as stringifyAsValue, m as selectedValueIncludes, n as resolveAriaLabelledBy, o as resolveMultipleLabels, p as removeItem, r as useLabel, s as resolveSelectedLabel, t as getDefaultLabelId, u as compareItemEquality } from "./resolveAriaLabelledBy-C6psiCTJ.js";
+import { t as useLabelableId } from "./useLabelableId-BguZh5OD.js";
+import { a as DEFAULT_FIELD_STATE_ATTRIBUTES, i as useFieldRootContext, n as DEFAULT_FIELD_ROOT_CONTEXT, o as fieldValidityMapping, r as FieldRootContext, t as useLabelableContext } from "./LabelableContext-D9NkuaDX.js";
+import { n as useRegisterFieldControl, t as useFormContext } from "./FormContext-9Xuyb5LE.js";
+import { t as useValueChanged } from "./useValueChanged-DcqYqCq8.js";
+//#region node_modules/@base-ui/react/esm/combobox/root/ComboboxRootContext.js
+var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
+var ComboboxRootContext = /*#__PURE__*/ import_react.createContext(void 0);
+ComboboxRootContext.displayName = "ComboboxRootContext";
+var ComboboxFloatingContext = /*#__PURE__*/ import_react.createContext(void 0);
+ComboboxFloatingContext.displayName = "ComboboxFloatingContext";
+var ComboboxDerivedItemsContext = /*#__PURE__*/ import_react.createContext(void 0);
+ComboboxDerivedItemsContext.displayName = "ComboboxDerivedItemsContext";
+var ComboboxInputValueContext = /*#__PURE__*/ import_react.createContext("");
+ComboboxInputValueContext.displayName = "ComboboxInputValueContext";
+function useComboboxRootContext() {
+	const context = import_react.useContext(ComboboxRootContext);
+	if (!context) throw new Error("Base UI: ComboboxRootContext is missing. Combobox parts must be placed within <Combobox.Root>.");
+	return context;
+}
+function useComboboxFloatingContext() {
+	const context = import_react.useContext(ComboboxFloatingContext);
+	if (!context) throw new Error("Base UI: ComboboxFloatingContext is missing. Combobox parts must be placed within <Combobox.Root>.");
+	return context;
+}
+function useComboboxDerivedItemsContext() {
+	const context = import_react.useContext(ComboboxDerivedItemsContext);
+	if (!context) throw new Error("Base UI: ComboboxItemsContext is missing. Combobox parts must be placed within <Combobox.Root>.");
+	return context;
+}
+function useComboboxInputValueContext() {
+	return import_react.useContext(ComboboxInputValueContext);
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/store.js
+var selectors = {
+	id: createSelector((state) => state.id),
+	labelId: createSelector((state) => state.labelId),
+	items: createSelector((state) => state.items),
+	selectedValue: createSelector((state) => state.selectedValue),
+	hasSelectionChips: createSelector((state) => {
+		const selectedValue = state.selectedValue;
+		return Array.isArray(selectedValue) && selectedValue.length > 0;
+	}),
+	hasSelectedValue: createSelector((state) => {
+		const { selectedValue, selectionMode } = state;
+		if (selectedValue == null) return false;
+		if (selectionMode === "multiple" && Array.isArray(selectedValue)) return selectedValue.length > 0;
+		return true;
+	}),
+	hasNullItemLabel: createSelector((state, enabled) => {
+		return enabled ? hasNullItemLabel(state.items) : false;
+	}),
+	open: createSelector((state) => state.open),
+	mounted: createSelector((state) => state.mounted),
+	forceMounted: createSelector((state) => state.forceMounted),
+	inline: createSelector((state) => state.inline),
+	activeIndex: createSelector((state) => state.activeIndex),
+	selectedIndex: createSelector((state) => state.selectedIndex),
+	isActive: createSelector((state, index) => state.activeIndex === index),
+	isSelected: createSelector((state, itemValue) => {
+		const comparer = state.isItemEqualToValue;
+		const selectedValue = state.selectedValue;
+		if (Array.isArray(selectedValue)) return selectedValue.some((selectedItem) => compareItemEquality(itemValue, selectedItem, comparer));
+		return compareItemEquality(itemValue, selectedValue, comparer);
+	}),
+	transitionStatus: createSelector((state) => state.transitionStatus),
+	popupProps: createSelector((state) => state.popupProps),
+	inputProps: createSelector((state) => state.inputProps),
+	triggerProps: createSelector((state) => state.triggerProps),
+	itemProps: createSelector((state) => state.itemProps),
+	positionerElement: createSelector((state) => state.positionerElement),
+	listElement: createSelector((state) => state.listElement),
+	triggerElement: createSelector((state) => state.triggerElement),
+	inputElement: createSelector((state) => state.inputElement),
+	inputGroupElement: createSelector((state) => state.inputGroupElement),
+	popupSide: createSelector((state) => state.popupSide),
+	openMethod: createSelector((state) => state.openMethod),
+	inputInsidePopup: createSelector((state) => state.inputInsidePopup),
+	inputOwnsFormValue: createSelector((state) => state.inputOwnsFormValue),
+	selectionMode: createSelector((state) => state.selectionMode),
+	name: createSelector((state) => state.name),
+	form: createSelector((state) => state.form),
+	disabled: createSelector((state) => state.disabled),
+	readOnly: createSelector((state) => state.readOnly),
+	required: createSelector((state) => state.required),
+	grid: createSelector((state) => state.grid),
+	virtualized: createSelector((state) => state.virtualized),
+	itemToStringLabel: createSelector((state) => state.itemToStringLabel),
+	isItemEqualToValue: createSelector((state) => state.isItemEqualToValue),
+	modal: createSelector((state) => state.modal),
+	autoHighlight: createSelector((state) => state.autoHighlight),
+	submitOnItemClick: createSelector((state) => state.submitOnItemClick)
+};
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/root/utils/index.js
+/**
+* Enhanced filter using Intl.Collator for more robust string matching.
+* Uses the provided `itemToStringLabel` function if available, otherwise falls back to:
+* • When `item` is an object with a `value` property, that property is used.
+* • When `item` is a primitive (e.g. `string`), it is used directly.
+*/
+function createCollatorItemFilter(collatorFilter, itemToStringLabel) {
+	return (item, query) => {
+		if (item == null) return false;
+		const itemString = stringifyAsLabel(item, itemToStringLabel);
+		return collatorFilter.contains(itemString, query);
+	};
+}
+/**
+* Enhanced filter for single selection mode using Intl.Collator that shows all items
+* when query is empty or matches the current selection, making it easier to browse options.
+*/
+function createSingleSelectionCollatorFilter(collatorFilter, itemToStringLabel, selectedValue) {
+	return (item, query) => {
+		if (item == null) return false;
+		if (!query) return true;
+		const itemString = stringifyAsLabel(item, itemToStringLabel);
+		const selectedString = selectedValue != null ? stringifyAsLabel(selectedValue, itemToStringLabel) : "";
+		if (selectedString && collatorFilter.contains(selectedString, query) && selectedString.length === query.length) return true;
+		return collatorFilter.contains(itemString, query);
+	};
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/internals/filter.js
+var filterCache = /* @__PURE__ */ new Map();
+function getFilter(options = {}) {
+	const mergedOptions = {
+		usage: "search",
+		sensitivity: "base",
+		ignorePunctuation: true,
+		...options
+	};
+	const cacheKey = `${stringifyLocale(options.locale)}|${JSON.stringify(mergedOptions)}`;
+	const cachedFilter = filterCache.get(cacheKey);
+	if (cachedFilter) return cachedFilter;
+	const collator = new Intl.Collator(options.locale, mergedOptions);
+	const filter = {
+		contains(item, query, itemToString) {
+			if (!query) return true;
+			const itemString = stringifyAsLabel(item, itemToString);
+			for (let i = 0; i <= itemString.length - query.length; i += 1) if (collator.compare(itemString.slice(i, i + query.length), query) === 0) return true;
+			return false;
+		},
+		startsWith(item, query, itemToString) {
+			if (!query) return true;
+			const itemString = stringifyAsLabel(item, itemToString);
+			return collator.compare(itemString.slice(0, query.length), query) === 0;
+		},
+		endsWith(item, query, itemToString) {
+			if (!query) return true;
+			const itemString = stringifyAsLabel(item, itemToString);
+			const queryLength = query.length;
+			return itemString.length >= queryLength && collator.compare(itemString.slice(itemString.length - queryLength), query) === 0;
+		}
+	};
+	filterCache.set(cacheKey, filter);
+	return filter;
+}
+function stringifyLocale(locale) {
+	if (Array.isArray(locale)) return locale.map((value) => stringifyLocale(value)).join(",");
+	if (locale == null) return "";
+	return String(locale);
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/root/utils/useFilter.js
+/**
+* Matches items against a query using `Intl.Collator` for robust string matching.
+*/
+var useCoreFilter = getFilter;
+/**
+* Matches items against a query using `Intl.Collator` for robust string matching.
+*/
+function useComboboxFilter(options = {}) {
+	const { multiple = false, value, ...collatorOptions } = options;
+	const coreFilter = getFilter(collatorOptions);
+	const contains = import_react.useCallback((item, query, itemToString) => {
+		if (multiple) return createCollatorItemFilter(coreFilter, itemToString)(item, query);
+		return createSingleSelectionCollatorFilter(coreFilter, itemToString, value)(item, query);
+	}, [
+		coreFilter,
+		value,
+		multiple
+	]);
+	return import_react.useMemo(() => ({
+		contains,
+		startsWith: coreFilter.startsWith,
+		endsWith: coreFilter.endsWith
+	}), [contains, coreFilter]);
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/root/utils/constants.js
+var NO_ACTIVE_VALUE = Symbol("none");
+var INITIAL_LAST_HIGHLIGHT = {
+	value: NO_ACTIVE_VALUE,
+	index: -1
+};
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/root/AriaCombobox.js
+var import_jsx_runtime = require_jsx_runtime();
+function AriaCombobox(props) {
+	const { id: idProp, onOpenChangeComplete: onOpenChangeCompleteProp, defaultSelectedValue = null, selectedValue: selectedValueProp, onSelectedValueChange, defaultInputValue: defaultInputValueProp, inputValue: inputValueProp, open: openProp, defaultOpen = false, selectionMode = "none", onItemHighlighted: onItemHighlightedProp, name: nameProp, form, disabled: disabledProp = false, readOnly = false, required = false, inputRef: inputRefProp, grid = false, items, filteredItems: filteredItemsProp, filter: filterProp, openOnInputClick = true, autoHighlight = false, keepHighlight = false, highlightItemOnHover = true, loopFocus = true, itemToStringLabel, itemToStringValue, isItemEqualToValue = defaultItemEquality, virtualized = false, inline: inlineProp = false, fillInputOnItemPress = true, modal = false, limit = -1, autoComplete = "list", formAutoComplete, locale, submitOnItemClick = false } = props;
+	const { clearErrors } = useFormContext();
+	const { setDirty, validityData, shouldValidateOnChange, setFilled, name: fieldName, disabled: fieldDisabled, setTouched, setFocused, validationMode, validation } = useFieldRootContext();
+	const direction = useDirection();
+	const id = useLabelableId({ id: idProp });
+	const collatorFilter = useCoreFilter({ locale });
+	const [queryChangedAfterOpen, setQueryChangedAfterOpen] = import_react.useState(false);
+	const [closeQuery, setCloseQuery] = import_react.useState(null);
+	const listRef = import_react.useRef([]);
+	const labelsRef = import_react.useRef([]);
+	const popupRef = import_react.useRef(null);
+	const inputRef = import_react.useRef(null);
+	const startDismissRef = import_react.useRef(null);
+	const endDismissRef = import_react.useRef(null);
+	const emptyRef = import_react.useRef(null);
+	const keyboardActiveRef = import_react.useRef(true);
+	const hadInputClearRef = import_react.useRef(false);
+	const chipsContainerRef = import_react.useRef(null);
+	const clearRef = import_react.useRef(null);
+	const selectionEventRef = import_react.useRef(null);
+	const lastHighlightRef = import_react.useRef(INITIAL_LAST_HIGHLIGHT);
+	const pendingQueryHighlightRef = import_react.useRef(null);
+	/**
+	* Contains the currently visible list of item values post-filtering.
+	*/
+	const valuesRef = import_react.useRef([]);
+	/**
+	* Contains all item values in a stable, unfiltered order.
+	* This is only used when `items` prop is not provided.
+	* It accumulates values on first mount and does not remove them on unmount due to
+	* filtering, providing a stable index for selected value tracking.
+	*/
+	const allValuesRef = import_react.useRef([]);
+	const disabled = fieldDisabled || disabledProp;
+	const name = fieldName ?? nameProp;
+	const multiple = selectionMode === "multiple";
+	const single = selectionMode === "single";
+	const hasInputValue = inputValueProp !== void 0 || defaultInputValueProp !== void 0;
+	const hasItems = items !== void 0;
+	const hasFilteredItemsProp = filteredItemsProp !== void 0;
+	let autoHighlightMode;
+	if (autoHighlight === "always") autoHighlightMode = "always";
+	else autoHighlightMode = autoHighlight ? "input-change" : false;
+	const [selectedValue, setSelectedValueUnwrapped] = useControlled({
+		controlled: selectedValueProp,
+		default: multiple ? defaultSelectedValue ?? EMPTY_ARRAY : defaultSelectedValue,
+		name: "Combobox",
+		state: "selectedValue"
+	});
+	const filter = import_react.useMemo(() => {
+		if (filterProp === null) return () => true;
+		if (filterProp !== void 0) return filterProp;
+		if (single && !queryChangedAfterOpen) return createSingleSelectionCollatorFilter(collatorFilter, itemToStringLabel, selectedValue);
+		return createCollatorItemFilter(collatorFilter, itemToStringLabel);
+	}, [
+		filterProp,
+		single,
+		selectedValue,
+		queryChangedAfterOpen,
+		collatorFilter,
+		itemToStringLabel
+	]);
+	const initialDefaultInputValue = useRefWithInit(() => {
+		if (hasInputValue) return defaultInputValueProp ?? "";
+		if (single) return stringifyAsLabel(selectedValue, itemToStringLabel);
+		return "";
+	}).current;
+	const [inputValue, setInputValueUnwrapped] = useControlled({
+		controlled: inputValueProp,
+		default: initialDefaultInputValue,
+		name: "Combobox",
+		state: "inputValue"
+	});
+	const [open, setOpenUnwrapped] = useControlled({
+		controlled: openProp,
+		default: defaultOpen,
+		name: "Combobox",
+		state: "open"
+	});
+	const isGrouped = isGroupedItems(items);
+	const query = closeQuery ?? (inputValue === "" ? "" : String(inputValue).trim());
+	const selectedLabelString = single ? stringifyAsLabel(selectedValue, itemToStringLabel) : "";
+	const shouldBypassFiltering = single && !queryChangedAfterOpen && query !== "" && selectedLabelString !== "" && selectedLabelString.length === query.length && collatorFilter.contains(selectedLabelString, query);
+	const filterQuery = shouldBypassFiltering ? "" : query;
+	const shouldIgnoreExternalFiltering = hasItems && hasFilteredItemsProp && shouldBypassFiltering;
+	const flatItems = import_react.useMemo(() => {
+		if (!items) return EMPTY_ARRAY;
+		if (isGrouped) return items.flatMap((group) => group.items);
+		return items;
+	}, [items, isGrouped]);
+	const filteredItems = import_react.useMemo(() => {
+		if (filteredItemsProp && !shouldIgnoreExternalFiltering) return filteredItemsProp;
+		if (!items) return EMPTY_ARRAY;
+		if (isGrouped) {
+			const groupedItems = items;
+			const resultingGroups = [];
+			let currentCount = 0;
+			for (const group of groupedItems) {
+				if (limit > -1 && currentCount >= limit) break;
+				const candidateItems = filterQuery === "" ? group.items : group.items.filter((item) => filter(item, filterQuery, itemToStringLabel));
+				if (candidateItems.length === 0) continue;
+				const remainingLimit = limit > -1 ? limit - currentCount : Infinity;
+				const itemsToTake = candidateItems.slice(0, remainingLimit);
+				if (itemsToTake.length > 0) {
+					const newGroup = {
+						...group,
+						items: itemsToTake
+					};
+					resultingGroups.push(newGroup);
+					currentCount += itemsToTake.length;
+				}
+			}
+			return resultingGroups;
+		}
+		if (filterQuery === "") return limit > -1 ? flatItems.slice(0, limit) : flatItems;
+		const limitedItems = [];
+		for (const item of flatItems) {
+			if (limit > -1 && limitedItems.length >= limit) break;
+			if (filter(item, filterQuery, itemToStringLabel)) limitedItems.push(item);
+		}
+		return limitedItems;
+	}, [
+		filteredItemsProp,
+		shouldIgnoreExternalFiltering,
+		items,
+		isGrouped,
+		filterQuery,
+		limit,
+		filter,
+		itemToStringLabel,
+		flatItems
+	]);
+	const flatFilteredItems = import_react.useMemo(() => {
+		if (isGrouped) return filteredItems.flatMap((g) => g.items);
+		return filteredItems;
+	}, [filteredItems, isGrouped]);
+	const store = useRefWithInit(() => new Store({
+		id,
+		labelId: void 0,
+		selectedValue,
+		open,
+		filter,
+		query,
+		items,
+		selectionMode,
+		listRef,
+		labelsRef,
+		popupRef,
+		emptyRef,
+		inputRef,
+		startDismissRef,
+		endDismissRef,
+		keyboardActiveRef,
+		chipsContainerRef,
+		clearRef,
+		valuesRef,
+		allValuesRef,
+		selectionEventRef,
+		name,
+		form,
+		disabled,
+		readOnly,
+		required,
+		grid,
+		isGrouped,
+		virtualized,
+		openOnInputClick,
+		itemToStringLabel,
+		isItemEqualToValue,
+		modal,
+		autoHighlight: autoHighlightMode,
+		submitOnItemClick,
+		hasInputValue,
+		mounted: false,
+		forceMounted: false,
+		transitionStatus: "idle",
+		inline: inlineProp,
+		activeIndex: null,
+		selectedIndex: null,
+		popupProps: {},
+		inputProps: {},
+		triggerProps: {},
+		itemProps: EMPTY_OBJECT,
+		positionerElement: null,
+		listElement: null,
+		triggerElement: null,
+		inputElement: null,
+		inputGroupElement: null,
+		popupSide: null,
+		openMethod: null,
+		inputInsidePopup: true,
+		inputOwnsFormValue: selectionMode === "none",
+		onOpenChangeComplete: onOpenChangeCompleteProp || NOOP,
+		setOpen: NOOP,
+		setInputValue: NOOP,
+		setSelectedValue: NOOP,
+		setIndices: NOOP,
+		onItemHighlighted: NOOP,
+		handleSelection: NOOP,
+		forceMount: NOOP,
+		requestSubmit: NOOP
+	})).current;
+	const fieldRawValue = selectionMode === "none" ? inputValue : selectedValue;
+	const fieldStringValue = import_react.useMemo(() => {
+		if (selectionMode === "none") return fieldRawValue;
+		if (Array.isArray(selectedValue)) return selectedValue.map((value) => stringifyAsValue(value, itemToStringValue));
+		return stringifyAsValue(selectedValue, itemToStringValue);
+	}, [
+		fieldRawValue,
+		itemToStringValue,
+		selectionMode,
+		selectedValue
+	]);
+	const onItemHighlighted = useStableCallback(onItemHighlightedProp);
+	const onOpenChangeComplete = useStableCallback(onOpenChangeCompleteProp);
+	const activeIndex = useStore(store, selectors.activeIndex);
+	const selectedIndex = useStore(store, selectors.selectedIndex);
+	const positionerElement = useStore(store, selectors.positionerElement);
+	const listElement = useStore(store, selectors.listElement);
+	const triggerElement = useStore(store, selectors.triggerElement);
+	const inputElement = useStore(store, selectors.inputElement);
+	const inputGroupElement = useStore(store, selectors.inputGroupElement);
+	const inline = useStore(store, selectors.inline);
+	const inputInsidePopup = useStore(store, selectors.inputInsidePopup);
+	const inputOwnsFormValue = useStore(store, selectors.inputOwnsFormValue);
+	const triggerRef = useValueAsRef(triggerElement);
+	const { mounted, setMounted, transitionStatus } = useTransitionStatus(open);
+	const { openMethod, triggerProps } = useOpenInteractionType(open);
+	const getStringifiedValueForForm = useStableCallback(() => fieldStringValue);
+	useRegisterFieldControl(inputInsidePopup ? triggerRef : inputRef, id, fieldRawValue, getStringifiedValueForForm);
+	const forceMount = useStableCallback(() => {
+		if (items) labelsRef.current = flatFilteredItems.map((item) => stringifyAsLabel(item, itemToStringLabel));
+		else store.set("forceMounted", true);
+	});
+	const initialSelectedValueRef = import_react.useRef(selectedValue);
+	useIsoLayoutEffect(() => {
+		if (selectedValue !== initialSelectedValueRef.current) forceMount();
+	}, [forceMount, selectedValue]);
+	const setIndices = useStableCallback((options) => {
+		store.update(options);
+		const type = options.type || "none";
+		if (options.activeIndex === void 0) return;
+		if (options.activeIndex === null) {
+			if (lastHighlightRef.current !== INITIAL_LAST_HIGHLIGHT) {
+				lastHighlightRef.current = INITIAL_LAST_HIGHLIGHT;
+				onItemHighlighted(void 0, createGenericEventDetails(type, void 0, { index: -1 }));
+			}
+		} else {
+			const activeValue = valuesRef.current[options.activeIndex];
+			lastHighlightRef.current = {
+				value: activeValue,
+				index: options.activeIndex
+			};
+			onItemHighlighted(activeValue, createGenericEventDetails(type, void 0, { index: options.activeIndex }));
+		}
+	});
+	const setInputValue = useStableCallback((next, eventDetails) => {
+		hadInputClearRef.current = eventDetails.reason === inputClear;
+		props.onInputValueChange?.(next, eventDetails);
+		if (eventDetails.isCanceled) return;
+		if (eventDetails.reason === "input-change") {
+			const event = eventDetails.event;
+			const inputType = event.inputType;
+			if (event.type === "compositionend" || inputType != null && inputType !== "" && inputType !== "insertReplacementText") {
+				const hasQuery = next.trim() !== "";
+				if (hasQuery) setQueryChangedAfterOpen(true);
+				pendingQueryHighlightRef.current = { hasQuery };
+				if (hasQuery && autoHighlightMode && store.state.activeIndex == null) store.set("activeIndex", 0);
+			}
+		}
+		setInputValueUnwrapped(next);
+	});
+	const setOpen = useStableCallback((nextOpen, eventDetails) => {
+		if (open === nextOpen) return;
+		if (eventDetails.reason === "escape-key" && hasItems && flatFilteredItems.length === 0 && !store.state.emptyRef.current) eventDetails.allowPropagation();
+		props.onOpenChange?.(nextOpen, eventDetails);
+		if (eventDetails.isCanceled) return;
+		if (nextOpen && multiple && inputInsidePopup && !inline && closeQuery !== null) {
+			setQueryChangedAfterOpen(false);
+			setCloseQuery(null);
+			if (inputValue !== "") setInputValue("", createChangeEventDetails(inputClear, eventDetails.event));
+		}
+		if (!nextOpen && queryChangedAfterOpen) {
+			if (single) {
+				if (!inline) setCloseQuery(query);
+				if (query === "") setQueryChangedAfterOpen(false);
+			} else if (multiple) {
+				if (!inline) setCloseQuery(query);
+				if (inputInsidePopup) setIndices({ activeIndex: null });
+				if (!inputInsidePopup || inline) setInputValue("", createChangeEventDetails(inputClear, eventDetails.event));
+			}
+		}
+		setOpenUnwrapped(nextOpen);
+		if (!nextOpen && inputInsidePopup && (eventDetails.reason === "focus-out" || eventDetails.reason === "outside-press")) {
+			setTouched(true);
+			setFocused(false);
+			if (validationMode === "onBlur") {
+				const valueToValidate = selectionMode === "none" ? inputValue : selectedValue;
+				validation.commit(valueToValidate);
+			}
+		}
+	});
+	const setSelectedValue = useStableCallback((nextValue, eventDetails) => {
+		onSelectedValueChange?.(nextValue, eventDetails);
+		if (eventDetails.isCanceled) return;
+		setSelectedValueUnwrapped(nextValue);
+		if (selectionMode === "none" && popupRef.current && fillInputOnItemPress || single && !store.state.inputInsidePopup) setInputValue(stringifyAsLabel(nextValue, itemToStringLabel), createChangeEventDetails(eventDetails.reason, eventDetails.event));
+		if (single && nextValue != null && eventDetails.reason !== "input-change" && queryChangedAfterOpen && !inline) setCloseQuery(query);
+	});
+	const handleSelection = useStableCallback((event, passedValue) => {
+		let itemValue = passedValue;
+		if (itemValue === void 0) {
+			if (activeIndex === null) return;
+			itemValue = valuesRef.current[activeIndex];
+		}
+		const targetEl = getTarget(event);
+		const overrideEvent = selectionEventRef.current ?? event;
+		selectionEventRef.current = null;
+		const eventDetails = createChangeEventDetails(itemPress, overrideEvent);
+		const href = targetEl?.closest("a")?.getAttribute("href");
+		if (href) {
+			if (href.startsWith("#")) setOpen(false, eventDetails);
+			return;
+		}
+		if (multiple) {
+			const currentSelectedValue = Array.isArray(selectedValue) ? selectedValue : [];
+			setSelectedValue(selectedValueIncludes(currentSelectedValue, itemValue, store.state.isItemEqualToValue) ? removeItem(currentSelectedValue, itemValue, store.state.isItemEqualToValue) : [...currentSelectedValue, itemValue], eventDetails);
+			if (!(inputRef.current ? inputRef.current.value.trim() !== "" : false)) return;
+			if (store.state.inputInsidePopup) setInputValue("", createChangeEventDetails(inputClear, eventDetails.event));
+			else setOpen(false, eventDetails);
+		} else {
+			setSelectedValue(itemValue, eventDetails);
+			setOpen(false, eventDetails);
+		}
+	});
+	const requestSubmit = useStableCallback(() => {
+		if (!store.state.submitOnItemClick) return;
+		const formElement = validation.inputRef.current?.form ?? store.state.inputElement?.form;
+		if (formElement && typeof formElement.requestSubmit === "function") formElement.requestSubmit();
+	});
+	const handleUnmount = useStableCallback(() => {
+		setMounted(false);
+		onOpenChangeComplete?.(false);
+		setQueryChangedAfterOpen(false);
+		setCloseQuery(null);
+		if (selectionMode === "none") setIndices({
+			activeIndex: null,
+			selectedIndex: null
+		});
+		else setIndices({ activeIndex: null });
+		if (multiple && inputRef.current && inputRef.current.value !== "" && !hadInputClearRef.current) setInputValue("", createChangeEventDetails(inputClear));
+		if (single) if (store.state.inputInsidePopup) {
+			if (inputRef.current && inputRef.current.value !== "") setInputValue("", createChangeEventDetails(inputClear));
+		} else {
+			const stringVal = stringifyAsLabel(selectedValue, itemToStringLabel);
+			if (inputRef.current && inputRef.current.value !== stringVal) setInputValue(stringVal, createChangeEventDetails(stringVal === "" ? inputClear : none));
+		}
+	});
+	const resolvedPopupRef = import_react.useMemo(() => {
+		if (inline && positionerElement) return { current: positionerElement.closest("[role=\"dialog\"]") };
+		return popupRef;
+	}, [inline, positionerElement]);
+	useOpenChangeComplete({
+		enabled: !props.actionsRef,
+		open,
+		ref: resolvedPopupRef,
+		onComplete() {
+			if (!open) handleUnmount();
+		}
+	});
+	import_react.useImperativeHandle(props.actionsRef, () => ({ unmount: handleUnmount }), [handleUnmount]);
+	useIsoLayoutEffect(function syncSelectedIndex() {
+		if (open || selectionMode === "none") return;
+		const registry = items ? flatItems : allValuesRef.current;
+		if (multiple) {
+			const currentValue = Array.isArray(selectedValue) ? selectedValue : [];
+			const lastValue = currentValue[currentValue.length - 1];
+			const lastIndex = findItemIndex(registry, lastValue, isItemEqualToValue);
+			setIndices({ selectedIndex: lastIndex === -1 ? null : lastIndex });
+		} else {
+			const index = findItemIndex(registry, selectedValue, isItemEqualToValue);
+			setIndices({ selectedIndex: index === -1 ? null : index });
+		}
+	}, [
+		open,
+		selectedValue,
+		items,
+		selectionMode,
+		flatItems,
+		multiple,
+		isItemEqualToValue,
+		setIndices
+	]);
+	useIsoLayoutEffect(() => {
+		if (items) {
+			valuesRef.current = flatFilteredItems;
+			listRef.current.length = flatFilteredItems.length;
+		}
+	}, [items, flatFilteredItems]);
+	useIsoLayoutEffect(() => {
+		const pendingHighlight = pendingQueryHighlightRef.current;
+		if (pendingHighlight) {
+			if (pendingHighlight.hasQuery) {
+				if (autoHighlightMode) store.set("activeIndex", 0);
+			} else if (autoHighlightMode === "always") store.set("activeIndex", 0);
+			pendingQueryHighlightRef.current = null;
+		}
+		if (!open && !inline) return;
+		const candidateItems = hasItems || hasFilteredItemsProp ? flatFilteredItems : valuesRef.current;
+		const storeActiveIndex = store.state.activeIndex;
+		if (storeActiveIndex == null) {
+			if (autoHighlightMode === "always" && candidateItems.length > 0) {
+				store.set("activeIndex", 0);
+				return;
+			}
+			if (lastHighlightRef.current !== INITIAL_LAST_HIGHLIGHT) {
+				lastHighlightRef.current = INITIAL_LAST_HIGHLIGHT;
+				store.state.onItemHighlighted(void 0, createGenericEventDetails(none, void 0, { index: -1 }));
+			}
+			return;
+		}
+		if (storeActiveIndex >= candidateItems.length) {
+			if (lastHighlightRef.current !== INITIAL_LAST_HIGHLIGHT) {
+				lastHighlightRef.current = INITIAL_LAST_HIGHLIGHT;
+				store.state.onItemHighlighted(void 0, createGenericEventDetails(none, void 0, { index: -1 }));
+			}
+			store.set("activeIndex", null);
+			return;
+		}
+		const itemValue = candidateItems[storeActiveIndex];
+		const previouslyHighlightedItemValue = lastHighlightRef.current.value;
+		const isSameItem = previouslyHighlightedItemValue !== NO_ACTIVE_VALUE && compareItemEquality(itemValue, previouslyHighlightedItemValue, store.state.isItemEqualToValue);
+		if (lastHighlightRef.current.index !== storeActiveIndex || !isSameItem) {
+			lastHighlightRef.current = {
+				value: itemValue,
+				index: storeActiveIndex
+			};
+			store.state.onItemHighlighted(itemValue, createGenericEventDetails(none, void 0, { index: storeActiveIndex }));
+		}
+	}, [
+		activeIndex,
+		autoHighlightMode,
+		hasFilteredItemsProp,
+		hasItems,
+		flatFilteredItems,
+		inline,
+		open,
+		store
+	]);
+	useIsoLayoutEffect(() => {
+		if (selectionMode === "none") {
+			setFilled(String(inputValue) !== "");
+			return;
+		}
+		setFilled(multiple ? Array.isArray(selectedValue) && selectedValue.length > 0 : selectedValue != null);
+	}, [
+		setFilled,
+		selectionMode,
+		inputValue,
+		selectedValue,
+		multiple
+	]);
+	import_react.useEffect(() => {
+		if (hasItems && autoHighlightMode && flatFilteredItems.length === 0) setIndices({ activeIndex: null });
+	}, [
+		hasItems,
+		autoHighlightMode,
+		flatFilteredItems.length,
+		setIndices
+	]);
+	useValueChanged(query, () => {
+		if (!open || query === "" || query === String(initialDefaultInputValue)) return;
+		setQueryChangedAfterOpen(true);
+	});
+	useValueChanged(selectedValue, () => {
+		if (selectionMode === "none") return;
+		clearErrors(name);
+		setDirty(selectedValue !== validityData.initialValue);
+		if (shouldValidateOnChange()) validation.commit(selectedValue);
+		else validation.commit(selectedValue, true);
+		if (single && !hasInputValue && !inputInsidePopup) {
+			const nextInputValue = stringifyAsLabel(selectedValue, itemToStringLabel);
+			if (inputValue !== nextInputValue) setInputValue(nextInputValue, createChangeEventDetails(none));
+		}
+	});
+	useValueChanged(inputValue, () => {
+		if (selectionMode !== "none") return;
+		clearErrors(name);
+		setDirty(inputValue !== validityData.initialValue);
+		if (shouldValidateOnChange()) validation.commit(inputValue);
+		else validation.commit(inputValue, true);
+	});
+	useValueChanged(items, () => {
+		if (!single || hasInputValue || inputInsidePopup || queryChangedAfterOpen) return;
+		const nextInputValue = stringifyAsLabel(selectedValue, itemToStringLabel);
+		if (inputValue !== nextInputValue) setInputValue(nextInputValue, createChangeEventDetails(none));
+	});
+	const floatingRootContext = useFloatingRootContext({
+		open: inline ? true : open,
+		onOpenChange: setOpen,
+		elements: {
+			reference: inputInsidePopup ? triggerElement : inputElement,
+			floating: positionerElement
+		}
+	});
+	let ariaHasPopup;
+	let ariaExpanded;
+	if (!inline) {
+		ariaHasPopup = grid ? "grid" : "listbox";
+		ariaExpanded = open ? "true" : "false";
+	}
+	const role = import_react.useMemo(() => {
+		const isPlainInput = inputElement?.tagName === "INPUT";
+		const shouldTreatAsInput = inputElement == null || isPlainInput;
+		const shouldApplyAria = shouldTreatAsInput || open;
+		const reference = shouldTreatAsInput ? {
+			autoComplete: "off",
+			spellCheck: "false",
+			autoCorrect: "off",
+			autoCapitalize: "none"
+		} : {};
+		if (shouldApplyAria) {
+			reference.role = "combobox";
+			reference["aria-expanded"] = ariaExpanded;
+			reference["aria-haspopup"] = ariaHasPopup;
+			reference["aria-controls"] = open ? listElement?.id : void 0;
+			reference["aria-autocomplete"] = autoComplete;
+		}
+		return {
+			reference,
+			floating: { role: "presentation" }
+		};
+	}, [
+		inputElement,
+		open,
+		ariaExpanded,
+		ariaHasPopup,
+		listElement?.id,
+		autoComplete
+	]);
+	const click = useClick(floatingRootContext, {
+		enabled: !readOnly && !disabled && openOnInputClick,
+		event: "mousedown-only",
+		toggle: false,
+		touchOpenDelay: inputInsidePopup ? 0 : 100,
+		reason: inputPress
+	});
+	const dismiss = useDismiss(floatingRootContext, {
+		enabled: !readOnly && !disabled && !inline,
+		outsidePressEvent: {
+			mouse: "sloppy",
+			touch: "intentional"
+		},
+		bubbles: inline ? true : void 0,
+		outsidePress(event) {
+			const target = getTarget(event);
+			return !contains(triggerElement, target) && !contains(clearRef.current, target) && !contains(chipsContainerRef.current, target) && !contains(inputGroupElement, target);
+		}
+	});
+	const listNavigation = useListNavigation(floatingRootContext, {
+		enabled: !readOnly && !disabled,
+		id,
+		listRef,
+		activeIndex,
+		selectedIndex,
+		virtual: true,
+		loopFocus,
+		allowEscape: loopFocus && !autoHighlightMode,
+		focusItemOnOpen: queryChangedAfterOpen || selectionMode === "none" && !autoHighlightMode ? false : "auto",
+		focusItemOnHover: highlightItemOnHover,
+		resetOnPointerLeave: !keepHighlight,
+		cols: grid ? 2 : 1,
+		orientation: grid ? "horizontal" : void 0,
+		rtl: direction === "rtl",
+		disabledIndices: EMPTY_ARRAY,
+		onNavigate(nextActiveIndex, event) {
+			if (!event && !open || transitionStatus === "ending") return;
+			if (!event) setIndices({ activeIndex: nextActiveIndex });
+			else setIndices({
+				activeIndex: nextActiveIndex,
+				type: keyboardActiveRef.current ? "keyboard" : "pointer"
+			});
+		}
+	});
+	const inputProps = import_react.useMemo(() => mergeProps(listNavigation.reference, dismiss.reference, click.reference, role.reference), [
+		listNavigation.reference,
+		dismiss.reference,
+		click.reference,
+		role.reference
+	]);
+	const popupProps = import_react.useMemo(() => mergeProps(FOCUSABLE_POPUP_PROPS, listNavigation.floating, dismiss.floating, role.floating), [
+		listNavigation.floating,
+		dismiss.floating,
+		role.floating
+	]);
+	const itemProps = import_react.useMemo(() => {
+		const listNavigationItemProps = listNavigation.item;
+		if (!listNavigationItemProps) return EMPTY_OBJECT;
+		return {
+			...listNavigationItemProps,
+			onFocus: void 0
+		};
+	}, [listNavigation.item]);
+	useOnFirstRender(() => {
+		store.update({
+			inline: inlineProp,
+			popupProps,
+			inputProps,
+			triggerProps,
+			itemProps,
+			setOpen,
+			setInputValue,
+			setSelectedValue,
+			setIndices,
+			onItemHighlighted,
+			handleSelection,
+			forceMount,
+			requestSubmit
+		});
+	});
+	useIsoLayoutEffect(() => {
+		store.update({
+			id,
+			selectedValue,
+			open,
+			mounted,
+			transitionStatus,
+			items,
+			inline: inlineProp,
+			popupProps,
+			inputProps,
+			triggerProps,
+			openMethod,
+			itemProps,
+			selectionMode,
+			name,
+			form,
+			disabled,
+			readOnly,
+			required,
+			grid,
+			isGrouped,
+			virtualized,
+			onOpenChangeComplete,
+			openOnInputClick,
+			itemToStringLabel,
+			modal,
+			autoHighlight: autoHighlightMode,
+			isItemEqualToValue,
+			submitOnItemClick,
+			hasInputValue,
+			requestSubmit,
+			inputOwnsFormValue: selectionMode === "none" && (inlineProp || !store.state.inputInsidePopup)
+		});
+	}, [
+		store,
+		id,
+		selectedValue,
+		open,
+		mounted,
+		transitionStatus,
+		items,
+		popupProps,
+		inputProps,
+		itemProps,
+		openMethod,
+		triggerProps,
+		selectionMode,
+		name,
+		disabled,
+		readOnly,
+		required,
+		validation,
+		grid,
+		isGrouped,
+		virtualized,
+		onOpenChangeComplete,
+		openOnInputClick,
+		itemToStringLabel,
+		modal,
+		isItemEqualToValue,
+		submitOnItemClick,
+		hasInputValue,
+		inlineProp,
+		requestSubmit,
+		autoHighlightMode,
+		form
+	]);
+	const hiddenInputRef = useMergedRefs(inputRefProp, validation.inputRef);
+	const itemsContextValue = import_react.useMemo(() => ({
+		query,
+		hasItems,
+		filteredItems,
+		flatFilteredItems
+	}), [
+		query,
+		hasItems,
+		filteredItems,
+		flatFilteredItems
+	]);
+	const serializedValue = import_react.useMemo(() => {
+		if (Array.isArray(fieldRawValue)) return "";
+		return stringifyAsValue(fieldRawValue, itemToStringValue);
+	}, [fieldRawValue, itemToStringValue]);
+	const hasMultipleSelection = multiple && Array.isArray(selectedValue) && selectedValue.length > 0;
+	const hiddenInputName = multiple || selectionMode === "none" && inputOwnsFormValue ? void 0 : name;
+	const hiddenInputs = import_react.useMemo(() => {
+		if (!multiple || !Array.isArray(selectedValue) || !name) return null;
+		return selectedValue.map((value) => {
+			const currentSerializedValue = stringifyAsValue(value, itemToStringValue);
+			return /*#__PURE__*/ (0, import_jsx_runtime.jsx)("input", {
+				type: "hidden",
+				form,
+				name,
+				value: currentSerializedValue
+			}, currentSerializedValue);
+		});
+	}, [
+		multiple,
+		selectedValue,
+		form,
+		name,
+		itemToStringValue
+	]);
+	const children = /*#__PURE__*/ (0, import_jsx_runtime.jsxs)(import_react.Fragment, { children: [
+		props.children,
+		/*#__PURE__*/ (0, import_jsx_runtime.jsx)("input", {
+			...validation.getInputValidationProps({
+				onFocus() {
+					if (inputInsidePopup) {
+						triggerElement?.focus();
+						return;
+					}
+					(inputRef.current || triggerElement)?.focus();
+				},
+				onChange(event) {
+					if (event.nativeEvent.defaultPrevented || disabled || readOnly) {
+						event.preventBaseUIHandler?.();
+						return;
+					}
+					const nextValue = event.currentTarget.value;
+					const details = createChangeEventDetails(none, event.nativeEvent);
+					function handleChange() {
+						if (multiple) return;
+						if (selectionMode === "none") {
+							setDirty(nextValue !== validityData.initialValue);
+							setInputValue(nextValue, details);
+							if (shouldValidateOnChange()) validation.commit(nextValue);
+							return;
+						}
+						const matchingValue = valuesRef.current.find((v) => {
+							if (stringifyAsValue(v, itemToStringValue).toLowerCase() === nextValue.toLowerCase()) return true;
+							if (stringifyAsLabel(v, itemToStringLabel).toLowerCase() === nextValue.toLowerCase()) return true;
+							return false;
+						});
+						if (matchingValue != null) {
+							setDirty(matchingValue !== validityData.initialValue);
+							setSelectedValue?.(matchingValue, details);
+							if (shouldValidateOnChange()) validation.commit(matchingValue);
+						}
+					}
+					if (items) handleChange();
+					else {
+						forceMount();
+						queueMicrotask(handleChange);
+					}
+				}
+			}),
+			id: id && hiddenInputName == null ? `${id}-hidden-input` : void 0,
+			form,
+			name: hiddenInputName,
+			autoComplete: formAutoComplete,
+			disabled,
+			required: required && !hasMultipleSelection,
+			readOnly,
+			value: serializedValue,
+			ref: hiddenInputRef,
+			style: hiddenInputName ? visuallyHiddenInput : visuallyHidden,
+			tabIndex: -1,
+			"aria-hidden": true,
+			suppressHydrationWarning: true
+		}),
+		hiddenInputs
+	] });
+	return /*#__PURE__*/ (0, import_jsx_runtime.jsx)(ComboboxRootContext.Provider, {
+		value: store,
+		children: /*#__PURE__*/ (0, import_jsx_runtime.jsx)(ComboboxFloatingContext.Provider, {
+			value: floatingRootContext,
+			children: /*#__PURE__*/ (0, import_jsx_runtime.jsx)(ComboboxDerivedItemsContext.Provider, {
+				value: itemsContextValue,
+				children: /*#__PURE__*/ (0, import_jsx_runtime.jsx)(ComboboxInputValueContext.Provider, {
+					value: inputValue,
+					children
+				})
+			})
+		})
+	});
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/root/ComboboxRoot.js
+/**
+* Groups all parts of the combobox.
+* Doesn't render its own HTML element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+function ComboboxRoot(props) {
+	const { multiple = false, defaultValue, value, onValueChange, autoComplete, ...other } = props;
+	return /*#__PURE__*/ (0, import_jsx_runtime.jsx)(AriaCombobox, {
+		...other,
+		selectionMode: multiple ? "multiple" : "single",
+		selectedValue: value,
+		defaultSelectedValue: defaultValue,
+		onSelectedValueChange: onValueChange,
+		formAutoComplete: autoComplete
+	});
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/label/ComboboxLabel.js
+/**
+* An accessible label that is automatically associated with the combobox trigger.
+* Renders a `<div>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxLabel = /*#__PURE__*/ import_react.forwardRef(function ComboboxLabel(componentProps, forwardedRef) {
+	const { render, className, style, ...elementProps } = componentProps;
+	const elementPropsWithoutId = elementProps;
+	delete elementPropsWithoutId.id;
+	const fieldRootContext = useFieldRootContext();
+	const store = useComboboxRootContext();
+	const inputInsidePopup = useStore(store, selectors.inputInsidePopup);
+	const triggerElement = useStore(store, selectors.triggerElement);
+	const inputElement = useStore(store, selectors.inputElement);
+	const rootId = useStore(store, selectors.id);
+	const defaultLabelId = getDefaultLabelId(rootId);
+	const localControlId = triggerElement?.id ?? (inputInsidePopup ? rootId : void 0);
+	import_react.useEffect(() => {
+		if (!inputElement || inputInsidePopup) return;
+		error(`<Combobox.Label> labels <Combobox.Trigger> only. When <Combobox.Input> is the form control, use a native <label> or <Field.Label> instead.${SafeReact.captureOwnerStack?.() || ""}`);
+	}, [inputElement, inputInsidePopup]);
+	const labelProps = useLabel({
+		id: defaultLabelId,
+		fallbackControlId: localControlId,
+		setLabelId(nextLabelId) {
+			store.set("labelId", nextLabelId);
+		}
+	});
+	return useRenderElement("div", componentProps, {
+		ref: forwardedRef,
+		state: fieldRootContext.state,
+		props: [labelProps, elementProps],
+		stateAttributesMapping: fieldValidityMapping
+	});
+});
+ComboboxLabel.displayName = "ComboboxLabel";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/value/ComboboxValue.js
+/**
+* The current value of the combobox.
+* Doesn't render its own HTML element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+function ComboboxValue(props) {
+	const { children: childrenProp, placeholder } = props;
+	const store = useComboboxRootContext();
+	const itemToStringLabel = useStore(store, selectors.itemToStringLabel);
+	const selectedValue = useStore(store, selectors.selectedValue);
+	const items = useStore(store, selectors.items);
+	const multiple = useStore(store, selectors.selectionMode) === "multiple";
+	const hasSelectedValue = useStore(store, selectors.hasSelectedValue);
+	const shouldCheckNullItemLabel = !hasSelectedValue && placeholder != null && childrenProp == null;
+	const hasNullLabel = useStore(store, selectors.hasNullItemLabel, shouldCheckNullItemLabel);
+	let children = null;
+	if (typeof childrenProp === "function") children = childrenProp(selectedValue);
+	else if (childrenProp != null) children = childrenProp;
+	else if (!hasSelectedValue && placeholder != null && !hasNullLabel) children = placeholder;
+	else if (multiple && Array.isArray(selectedValue)) children = resolveMultipleLabels(selectedValue, items, itemToStringLabel);
+	else children = resolveSelectedLabel(selectedValue, items, itemToStringLabel);
+	return /*#__PURE__*/ (0, import_jsx_runtime.jsx)(import_react.Fragment, { children });
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/utils/stateAttributesMapping.js
+var triggerStateAttributesMapping = {
+	...pressableTriggerOpenStateMapping,
+	...fieldValidityMapping,
+	popupSide: (side) => side ? { "data-popup-side": side } : null,
+	listEmpty: (empty) => empty ? { "data-list-empty": "" } : null
+};
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/chips/ComboboxChipsContext.js
+var ComboboxChipsContext = /*#__PURE__*/ import_react.createContext(void 0);
+ComboboxChipsContext.displayName = "ComboboxChipsContext";
+function useComboboxChipsContext() {
+	return import_react.useContext(ComboboxChipsContext);
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/positioner/ComboboxPositionerContext.js
+var ComboboxPositionerContext = /*#__PURE__*/ import_react.createContext(void 0);
+ComboboxPositionerContext.displayName = "ComboboxPositionerContext";
+function useComboboxPositionerContext(optional) {
+	const context = import_react.useContext(ComboboxPositionerContext);
+	if (context === void 0 && !optional) throw new Error("Base UI: <Combobox.Popup> and <Combobox.Arrow> must be used within the <Combobox.Positioner> component");
+	return context;
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/utils/ComboboxInternalDismissButton.js
+/**
+* @internal
+*/
+var ComboboxInternalDismissButton = /*#__PURE__*/ import_react.forwardRef(function ComboboxInternalDismissButton(_, forwardedRef) {
+	const store = useComboboxRootContext();
+	const { buttonRef, getButtonProps } = useButton({ native: false });
+	const mergedRef = useMergedRefs(forwardedRef, buttonRef);
+	function handleDismiss(event) {
+		store.state.setOpen(false, createChangeEventDetails(closePress, event.nativeEvent, event.currentTarget));
+	}
+	return /*#__PURE__*/ (0, import_jsx_runtime.jsx)("span", {
+		ref: mergedRef,
+		...getButtonProps({ onClick: handleDismiss }),
+		"aria-label": "Dismiss",
+		tabIndex: void 0,
+		style: visuallyHiddenInput
+	});
+});
+ComboboxInternalDismissButton.displayName = "ComboboxInternalDismissButton";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/input/ComboboxInput.js
+/**
+* A text input to search for items in the list.
+* Renders an `<input>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxInput = /*#__PURE__*/ import_react.forwardRef(function ComboboxInput(componentProps, forwardedRef) {
+	const { render, className, disabled: disabledProp = false, id: idProp, style, ...elementProps } = componentProps;
+	const { state: fieldState, disabled: fieldDisabled, setTouched, setFocused, validationMode, validation } = useFieldRootContext();
+	const { labelId: fieldLabelId } = useLabelableContext();
+	const comboboxChipsContext = useComboboxChipsContext();
+	const positioning = useComboboxPositionerContext(true);
+	const hasPositionerParent = Boolean(positioning);
+	const store = useComboboxRootContext();
+	const { filteredItems } = useComboboxDerivedItemsContext();
+	const inputValue = useComboboxInputValueContext();
+	const direction = useDirection();
+	const required = useStore(store, selectors.required);
+	const comboboxDisabled = useStore(store, selectors.disabled);
+	const readOnly = useStore(store, selectors.readOnly);
+	const name = useStore(store, selectors.name);
+	const form = useStore(store, selectors.form);
+	const selectionMode = useStore(store, selectors.selectionMode);
+	const autoHighlightMode = useStore(store, selectors.autoHighlight);
+	const inputProps = useStore(store, selectors.inputProps);
+	const triggerProps = useStore(store, selectors.triggerProps);
+	const open = useStore(store, selectors.open);
+	const mounted = useStore(store, selectors.mounted);
+	const selectedValue = useStore(store, selectors.selectedValue);
+	const popupSideValue = useStore(store, selectors.popupSide);
+	const positionerElement = useStore(store, selectors.positionerElement);
+	const rootId = useStore(store, selectors.id);
+	const inline = useStore(store, selectors.inline);
+	const modal = useStore(store, selectors.modal);
+	const autoHighlightEnabled = Boolean(autoHighlightMode);
+	const popupSide = mounted && positionerElement ? popupSideValue : null;
+	const disabled = fieldDisabled || comboboxDisabled || disabledProp;
+	const listEmpty = filteredItems.length === 0;
+	const isInsidePopup = hasPositionerParent || inline;
+	const focusManagerModal = !isInsidePopup || modal;
+	const id = useBaseUiId(idProp ?? (!isInsidePopup ? rootId : void 0));
+	const ariaLabelledBy = resolveAriaLabelledBy(fieldLabelId, void 0);
+	const fieldStateForInput = hasPositionerParent ? DEFAULT_FIELD_STATE_ATTRIBUTES : fieldState;
+	const [composingValue, setComposingValue] = import_react.useState(null);
+	const isComposingRef = import_react.useRef(false);
+	const lastActiveIndexRef = import_react.useRef(null);
+	const shouldRestoreActiveIndexRef = import_react.useRef(false);
+	const inputOwnsFormValue = selectionMode === "none" && !hasPositionerParent;
+	const setInputElement = useStableCallback((element) => {
+		const nextIsInsidePopup = hasPositionerParent || store.state.inline;
+		if (nextIsInsidePopup && !store.state.hasInputValue) store.state.setInputValue("", createChangeEventDetails(none));
+		store.update({
+			inputElement: element,
+			inputInsidePopup: nextIsInsidePopup,
+			inputOwnsFormValue
+		});
+	});
+	const validationProps = hasPositionerParent || !validation ? elementProps : validation.getValidationProps(elementProps);
+	const state = {
+		...fieldStateForInput,
+		open,
+		disabled,
+		readOnly,
+		popupSide,
+		listEmpty
+	};
+	function handleKeyDown(event) {
+		if (!comboboxChipsContext) return;
+		let nextIndex;
+		const { highlightedChipIndex } = comboboxChipsContext;
+		const renderedChipsCount = comboboxChipsContext.chipsRef.current.length;
+		const isRtl = direction === "rtl";
+		const previousChipKey = isRtl ? "ArrowRight" : "ArrowLeft";
+		const nextChipKey = isRtl ? "ArrowLeft" : "ArrowRight";
+		if (highlightedChipIndex !== void 0) {
+			if (event.key === previousChipKey) {
+				event.preventDefault();
+				if (highlightedChipIndex > 0) nextIndex = highlightedChipIndex - 1;
+				else nextIndex = void 0;
+			} else if (event.key === nextChipKey) {
+				event.preventDefault();
+				if (highlightedChipIndex < renderedChipsCount - 1) nextIndex = highlightedChipIndex + 1;
+				else nextIndex = void 0;
+			} else if (event.key === "Backspace" || event.key === "Delete") {
+				event.preventDefault();
+				const computedNextIndex = highlightedChipIndex >= selectedValue.length - 1 ? selectedValue.length - 2 : highlightedChipIndex;
+				nextIndex = computedNextIndex >= 0 ? computedNextIndex : void 0;
+				store.state.setIndices({
+					activeIndex: null,
+					selectedIndex: null,
+					type: "keyboard"
+				});
+			}
+			return nextIndex;
+		}
+		if (event.key === previousChipKey && (event.currentTarget.selectionStart ?? 0) === 0 && selectedValue.length > 0) {
+			event.preventDefault();
+			nextIndex = renderedChipsCount > 0 ? renderedChipsCount - 1 : void 0;
+		} else if (event.key === "Backspace" && event.currentTarget.value === "" && selectedValue.length > 0) {
+			store.state.setIndices({
+				activeIndex: null,
+				selectedIndex: null,
+				type: "keyboard"
+			});
+			event.preventDefault();
+		}
+		return nextIndex;
+	}
+	const element = useRenderElement("input", componentProps, {
+		state,
+		ref: [
+			forwardedRef,
+			store.state.inputRef,
+			setInputElement
+		],
+		props: [
+			inputProps,
+			triggerProps,
+			{
+				type: "text",
+				value: componentProps.value ?? composingValue ?? inputValue,
+				"aria-readonly": readOnly || void 0,
+				"aria-required": required || void 0,
+				"aria-labelledby": ariaLabelledBy,
+				disabled,
+				readOnly,
+				required: selectionMode === "none" ? required : void 0,
+				form,
+				...inputOwnsFormValue && name && { name },
+				id,
+				onFocus() {
+					setFocused(true);
+					if (!inline || !shouldRestoreActiveIndexRef.current) return;
+					shouldRestoreActiveIndexRef.current = false;
+					const nextActiveIndex = lastActiveIndexRef.current;
+					if (nextActiveIndex == null || !Object.hasOwn(store.state.valuesRef.current, nextActiveIndex)) return;
+					store.state.setIndices({ activeIndex: nextActiveIndex });
+				},
+				onBlur() {
+					setTouched(true);
+					setFocused(false);
+					const activeIndex = store.state.activeIndex;
+					if (inline && activeIndex !== null && autoHighlightMode !== "always") {
+						lastActiveIndexRef.current = activeIndex;
+						shouldRestoreActiveIndexRef.current = true;
+						store.state.setIndices({ activeIndex: null });
+					}
+					if (validationMode === "onBlur") {
+						const valueToValidate = selectionMode === "none" ? inputValue : selectedValue;
+						validation.commit(valueToValidate);
+					}
+				},
+				onCompositionStart(event) {
+					if (isAndroid) return;
+					isComposingRef.current = true;
+					setComposingValue(event.currentTarget.value);
+				},
+				onCompositionEnd(event) {
+					isComposingRef.current = false;
+					const next = event.currentTarget.value;
+					setComposingValue(null);
+					store.state.setInputValue(next, createChangeEventDetails(inputChange, event.nativeEvent));
+				},
+				onChange(event) {
+					const inputType = event.nativeEvent.inputType;
+					const autofillLikeInput = !inputType || inputType === "insertReplacementText";
+					const shouldOpenOnInput = isComposingRef.current || !autofillLikeInput;
+					if (isComposingRef.current) {
+						const nextVal = event.currentTarget.value;
+						setComposingValue(nextVal);
+						if (nextVal === "" && !store.state.openOnInputClick && !store.state.inputInsidePopup) store.state.setOpen(false, createChangeEventDetails(inputClear, event.nativeEvent));
+						const trimmed = nextVal.trim();
+						const shouldMaintainHighlight = autoHighlightEnabled && trimmed !== "";
+						if (!readOnly && !disabled && trimmed) {
+							if (shouldOpenOnInput) {
+								store.state.setOpen(true, createChangeEventDetails(inputChange, event.nativeEvent));
+								if (!autoHighlightEnabled) store.state.setIndices({
+									activeIndex: null,
+									selectedIndex: null,
+									type: store.state.keyboardActiveRef.current ? "keyboard" : "pointer"
+								});
+							}
+						}
+						if (open && store.state.activeIndex !== null && !shouldMaintainHighlight) store.state.setIndices({
+							activeIndex: null,
+							selectedIndex: null,
+							type: store.state.keyboardActiveRef.current ? "keyboard" : "pointer"
+						});
+						return;
+					}
+					store.state.setInputValue(event.currentTarget.value, createChangeEventDetails(inputChange, event.nativeEvent));
+					const empty = event.currentTarget.value === "";
+					const clearDetails = createChangeEventDetails(inputClear, event.nativeEvent);
+					if (empty && !store.state.inputInsidePopup) {
+						if (selectionMode === "single") store.state.setSelectedValue(null, clearDetails);
+						if (!store.state.openOnInputClick) store.state.setOpen(false, clearDetails);
+					}
+					const trimmed = event.currentTarget.value.trim();
+					if (!readOnly && !disabled && trimmed) {
+						if (shouldOpenOnInput) {
+							store.state.setOpen(true, createChangeEventDetails(inputChange, event.nativeEvent));
+							if (!autoHighlightEnabled) store.state.setIndices({
+								activeIndex: null,
+								selectedIndex: null,
+								type: store.state.keyboardActiveRef.current ? "keyboard" : "pointer"
+							});
+						}
+					}
+					if (open && store.state.activeIndex !== null && !autoHighlightEnabled) store.state.setIndices({
+						activeIndex: null,
+						selectedIndex: null,
+						type: store.state.keyboardActiveRef.current ? "keyboard" : "pointer"
+					});
+				},
+				onKeyDown(event) {
+					if (disabled || readOnly) return;
+					if (event.ctrlKey || event.shiftKey || event.altKey || event.metaKey) return;
+					store.state.keyboardActiveRef.current = true;
+					const input = event.currentTarget;
+					const scrollAmount = input.scrollWidth - input.clientWidth;
+					const isRTL = direction === "rtl";
+					if (event.key === "Home") {
+						stopEvent(event);
+						const cursor = isFirefox && isRTL ? input.value.length : 0;
+						input.setSelectionRange(cursor, cursor);
+						input.scrollLeft = 0;
+						return;
+					}
+					if (event.key === "End") {
+						stopEvent(event);
+						const cursor = isFirefox && isRTL ? 0 : input.value.length;
+						input.setSelectionRange(cursor, cursor);
+						input.scrollLeft = isRTL ? -scrollAmount : scrollAmount;
+						return;
+					}
+					if (!mounted && event.key === "Escape") {
+						const isClear = selectionMode === "multiple" && Array.isArray(selectedValue) ? selectedValue.length === 0 : selectedValue === null;
+						const details = createChangeEventDetails(escapeKey, event.nativeEvent);
+						const value = selectionMode === "multiple" ? [] : null;
+						store.state.setInputValue("", details);
+						store.state.setSelectedValue(value, details);
+						if (!isClear && !store.state.inline && !details.isPropagationAllowed) event.stopPropagation();
+						return;
+					}
+					if (comboboxChipsContext && event.key === "Backspace" && input.value === "" && comboboxChipsContext.highlightedChipIndex === void 0 && Array.isArray(selectedValue) && selectedValue.length > 0) {
+						const renderedChipsCount = comboboxChipsContext.chipsRef.current.length;
+						const removalIndex = renderedChipsCount > 0 ? renderedChipsCount - 1 : selectedValue.length - 1;
+						const newValue = selectedValue.filter((_, index) => index !== removalIndex);
+						store.state.setIndices({
+							activeIndex: null,
+							selectedIndex: null,
+							type: store.state.keyboardActiveRef.current ? "keyboard" : "pointer"
+						});
+						store.state.setSelectedValue(newValue, createChangeEventDetails(none, event.nativeEvent));
+						return;
+					}
+					const hadHighlightedChip = comboboxChipsContext?.highlightedChipIndex !== void 0;
+					const nextIndex = handleKeyDown(event);
+					comboboxChipsContext?.setHighlightedChipIndex(nextIndex);
+					if (nextIndex !== void 0) comboboxChipsContext?.chipsRef.current[nextIndex]?.focus();
+					else if (hadHighlightedChip) store.state.inputRef.current?.focus();
+					if (event.which === 229) return;
+					if (event.key === "Enter" && open) {
+						const activeIndex = store.state.activeIndex;
+						const nativeEvent = event.nativeEvent;
+						if (activeIndex === null) {
+							if (inline) return;
+							store.state.setOpen(false, createChangeEventDetails(none, nativeEvent));
+							return;
+						}
+						stopEvent(event);
+						const listItem = store.state.listRef.current[activeIndex];
+						if (listItem) {
+							store.state.selectionEventRef.current = nativeEvent;
+							listItem.click();
+							store.state.selectionEventRef.current = null;
+						}
+					}
+				},
+				onPointerMove() {
+					store.state.keyboardActiveRef.current = false;
+				},
+				onPointerDown() {
+					store.state.keyboardActiveRef.current = false;
+				}
+			},
+			validationProps
+		],
+		stateAttributesMapping: triggerStateAttributesMapping
+	});
+	const renderedInput = hasPositionerParent ? /*#__PURE__*/ (0, import_jsx_runtime.jsx)(FieldRootContext.Provider, {
+		value: DEFAULT_FIELD_ROOT_CONTEXT,
+		children: element
+	}) : element;
+	return /*#__PURE__*/ (0, import_jsx_runtime.jsxs)(import_react.Fragment, { children: [open && focusManagerModal && /*#__PURE__*/ (0, import_jsx_runtime.jsx)(ComboboxInternalDismissButton, { ref: store.state.startDismissRef }), renderedInput] });
+});
+ComboboxInput.displayName = "ComboboxInput";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/utils/handleInputPress.js
+function handleInputPress(event, store, disabled, readOnly, shouldIgnoreTarget) {
+	if (event.baseUIHandlerPrevented || readOnly) return;
+	const target = getTarget(event.nativeEvent);
+	const targetElement = isElement(target) ? target : null;
+	if (targetElement !== event.currentTarget && (shouldIgnoreTarget?.(targetElement) || isInteractiveElement(targetElement))) return;
+	event.preventDefault();
+	if (disabled) return;
+	store.state.inputRef.current?.focus();
+	if (store.state.openOnInputClick) store.state.setOpen(true, createChangeEventDetails(inputPress, event.nativeEvent));
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/input-group/ComboboxInputGroup.js
+/**
+* A wrapper for the input and its associated controls.
+* Renders a `<div>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxInputGroup = /*#__PURE__*/ import_react.forwardRef(function ComboboxInputGroup(componentProps, forwardedRef) {
+	const { render, className, style, ...elementProps } = componentProps;
+	const { state: fieldState } = useFieldRootContext();
+	const store = useComboboxRootContext();
+	const { filteredItems } = useComboboxDerivedItemsContext();
+	const open = useStore(store, selectors.open);
+	const mounted = useStore(store, selectors.mounted);
+	const popupSideValue = useStore(store, selectors.popupSide);
+	const positionerElement = useStore(store, selectors.positionerElement);
+	const comboboxDisabled = useStore(store, selectors.disabled);
+	const readOnly = useStore(store, selectors.readOnly);
+	const hasSelectedValue = useStore(store, selectors.hasSelectedValue);
+	const selectionMode = useStore(store, selectors.selectionMode);
+	const popupSide = mounted && positionerElement ? popupSideValue : null;
+	const disabled = comboboxDisabled;
+	const listEmpty = filteredItems.length === 0;
+	const placeholder = selectionMode === "none" ? false : !hasSelectedValue;
+	const state = {
+		...fieldState,
+		open,
+		disabled,
+		readOnly,
+		popupSide,
+		listEmpty,
+		placeholder
+	};
+	return useRenderElement("div", componentProps, {
+		ref: [forwardedRef, useStableCallback((element) => {
+			store.set("inputGroupElement", element);
+		})],
+		props: [{
+			role: "group",
+			onMouseDown(event) {
+				handleInputPress(event, store, disabled, readOnly, (target) => {
+					return contains(store.state.chipsContainerRef.current, target);
+				});
+			}
+		}, elementProps],
+		state,
+		stateAttributesMapping: triggerStateAttributesMapping
+	});
+});
+ComboboxInputGroup.displayName = "ComboboxInputGroup";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/trigger/ComboboxTrigger.js
+var BOUNDARY_OFFSET = 2;
+/**
+* A button that opens the popup.
+* Renders a `<button>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxTrigger = /*#__PURE__*/ import_react.forwardRef(function ComboboxTrigger(componentProps, forwardedRef) {
+	const { render, className, nativeButton = true, disabled: disabledProp = false, id: idProp, style, ...elementProps } = componentProps;
+	const { state: fieldState, disabled: fieldDisabled, setTouched, setFocused, validationMode, validation } = useFieldRootContext();
+	const { labelId: fieldLabelId } = useLabelableContext();
+	const store = useComboboxRootContext();
+	const { filteredItems } = useComboboxDerivedItemsContext();
+	const selectionMode = useStore(store, selectors.selectionMode);
+	const comboboxDisabled = useStore(store, selectors.disabled);
+	const readOnly = useStore(store, selectors.readOnly);
+	const required = useStore(store, selectors.required);
+	const mounted = useStore(store, selectors.mounted);
+	const popupSideValue = useStore(store, selectors.popupSide);
+	const positionerElement = useStore(store, selectors.positionerElement);
+	const listElement = useStore(store, selectors.listElement);
+	const triggerProps = useStore(store, selectors.triggerProps);
+	const triggerElement = useStore(store, selectors.triggerElement);
+	const inputInsidePopup = useStore(store, selectors.inputInsidePopup);
+	const rootId = useStore(store, selectors.id);
+	const comboboxLabelId = useStore(store, selectors.labelId);
+	const open = useStore(store, selectors.open);
+	const selectedValue = useStore(store, selectors.selectedValue);
+	const activeIndex = useStore(store, selectors.activeIndex);
+	const selectedIndex = useStore(store, selectors.selectedIndex);
+	const hasSelectedValue = useStore(store, selectors.hasSelectedValue);
+	const floatingRootContext = useComboboxFloatingContext();
+	const inputValue = useComboboxInputValueContext();
+	const focusTimeout = useTimeout();
+	const disabled = fieldDisabled || comboboxDisabled || disabledProp;
+	const listEmpty = filteredItems.length === 0;
+	const popupSide = mounted && positionerElement ? popupSideValue : null;
+	useLabelableId({ id: inputInsidePopup ? idProp : void 0 });
+	const id = inputInsidePopup ? idProp ?? rootId : idProp;
+	const ariaLabelledBy = resolveAriaLabelledBy(fieldLabelId, comboboxLabelId);
+	const currentPointerTypeRef = import_react.useRef("");
+	function trackPointerType(event) {
+		currentPointerTypeRef.current = event.pointerType;
+	}
+	const domReference = floatingRootContext.useState("domReferenceElement");
+	import_react.useEffect(() => {
+		if (!inputInsidePopup) return;
+		if (triggerElement && triggerElement !== domReference) floatingRootContext.set("domReferenceElement", triggerElement);
+	}, [
+		triggerElement,
+		domReference,
+		floatingRootContext,
+		inputInsidePopup
+	]);
+	const { reference: triggerTypeaheadProps } = useTypeahead(floatingRootContext, {
+		enabled: !open && !readOnly && !comboboxDisabled && selectionMode === "single",
+		listRef: store.state.labelsRef,
+		activeIndex,
+		selectedIndex,
+		onMatch(index) {
+			const nextSelectedValue = store.state.valuesRef.current[index];
+			if (nextSelectedValue !== void 0) store.state.setSelectedValue(nextSelectedValue, createChangeEventDetails("none"));
+		}
+	});
+	const { reference: triggerClickProps } = useClick(floatingRootContext, {
+		enabled: !readOnly && !comboboxDisabled,
+		event: "mousedown"
+	});
+	const { buttonRef, getButtonProps } = useButton({
+		native: nativeButton,
+		disabled
+	});
+	const state = {
+		...fieldState,
+		open,
+		disabled,
+		popupSide,
+		listEmpty,
+		placeholder: selectionMode === "none" ? false : !hasSelectedValue
+	};
+	return useRenderElement("button", componentProps, {
+		ref: [
+			forwardedRef,
+			buttonRef,
+			useStableCallback((element) => {
+				store.set("triggerElement", element);
+			})
+		],
+		state,
+		props: [
+			triggerProps,
+			triggerClickProps,
+			triggerTypeaheadProps,
+			{
+				id,
+				tabIndex: inputInsidePopup ? 0 : -1,
+				role: inputInsidePopup ? "combobox" : void 0,
+				"aria-expanded": open ? "true" : "false",
+				"aria-haspopup": inputInsidePopup ? "dialog" : "listbox",
+				"aria-controls": open ? listElement?.id : void 0,
+				"aria-required": inputInsidePopup ? required || void 0 : void 0,
+				"aria-labelledby": ariaLabelledBy,
+				onPointerDown: trackPointerType,
+				onPointerEnter: trackPointerType,
+				onFocus() {
+					setFocused(true);
+					if (disabled || readOnly) return;
+					focusTimeout.start(0, store.state.forceMount);
+				},
+				onBlur(event) {
+					if (contains(positionerElement, event.relatedTarget)) return;
+					setTouched(true);
+					setFocused(false);
+					if (validationMode === "onBlur") {
+						const valueToValidate = selectionMode === "none" ? inputValue : selectedValue;
+						validation.commit(valueToValidate);
+					}
+				},
+				onMouseDown(event) {
+					if (disabled || readOnly) return;
+					if (!inputInsidePopup) floatingRootContext.set("domReferenceElement", event.currentTarget);
+					store.state.forceMount();
+					if (currentPointerTypeRef.current !== "touch") {
+						store.state.inputRef.current?.focus();
+						if (!inputInsidePopup) event.preventDefault();
+					}
+					if (open) return;
+					const doc = ownerDocument(event.currentTarget);
+					function handleMouseUp(mouseEvent) {
+						if (!triggerElement) return;
+						const mouseUpTarget = getTarget(mouseEvent);
+						const positioner = store.state.positionerElement;
+						const list = store.state.listElement;
+						if (contains(triggerElement, mouseUpTarget) || contains(positioner, mouseUpTarget) || contains(list, mouseUpTarget) || mouseUpTarget === triggerElement) return;
+						const bounds = getPseudoElementBounds(triggerElement);
+						const withinHorizontal = mouseEvent.clientX >= bounds.left - BOUNDARY_OFFSET && mouseEvent.clientX <= bounds.right + BOUNDARY_OFFSET;
+						const withinVertical = mouseEvent.clientY >= bounds.top - BOUNDARY_OFFSET && mouseEvent.clientY <= bounds.bottom + BOUNDARY_OFFSET;
+						if (withinHorizontal && withinVertical) return;
+						store.state.setOpen(false, createChangeEventDetails("cancel-open", mouseEvent));
+					}
+					if (inputInsidePopup) doc.addEventListener("mouseup", handleMouseUp, { once: true });
+				},
+				onKeyDown(event) {
+					if (disabled || readOnly) return;
+					if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+						stopEvent(event);
+						store.state.setOpen(true, createChangeEventDetails(listNavigation, event.nativeEvent));
+						store.state.inputRef.current?.focus();
+					}
+				}
+			},
+			validation ? validation.getValidationProps(elementProps) : elementProps,
+			getButtonProps
+		],
+		stateAttributesMapping: triggerStateAttributesMapping
+	});
+});
+ComboboxTrigger.displayName = "ComboboxTrigger";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/collection/GroupCollectionContext.js
+var GroupCollectionContext = /*#__PURE__*/ import_react.createContext(null);
+GroupCollectionContext.displayName = "GroupCollectionContext";
+function useGroupCollectionContext() {
+	return import_react.useContext(GroupCollectionContext);
+}
+function GroupCollectionProvider(props) {
+	const { children, items } = props;
+	const contextValue = import_react.useMemo(() => ({ items }), [items]);
+	return /*#__PURE__*/ (0, import_jsx_runtime.jsx)(GroupCollectionContext.Provider, {
+		value: contextValue,
+		children
+	});
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/collection/ComboboxCollection.js
+/**
+* Renders filtered list items.
+* Doesn't render its own HTML element.
+*
+* If rendering a flat list, pass a function child to the `List` component instead, which implicitly wraps it.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+function ComboboxCollection(props) {
+	const { children } = props;
+	const { filteredItems } = useComboboxDerivedItemsContext();
+	const groupContext = useGroupCollectionContext();
+	const itemsToRender = groupContext ? groupContext.items : filteredItems;
+	if (!itemsToRender) return null;
+	return /*#__PURE__*/ (0, import_jsx_runtime.jsx)(import_react.Fragment, { children: itemsToRender.map(children) });
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/list/ComboboxList.js
+/**
+* A list container for the items.
+* Renders a `<div>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxList = /*#__PURE__*/ import_react.forwardRef(function ComboboxList(componentProps, forwardedRef) {
+	var _ComboboxCollection;
+	const { render, className, style, children, ...elementProps } = componentProps;
+	const store = useComboboxRootContext();
+	const floatingRootContext = useComboboxFloatingContext();
+	const hasPositionerContext = Boolean(useComboboxPositionerContext(true));
+	const { filteredItems, hasItems } = useComboboxDerivedItemsContext();
+	const selectionMode = useStore(store, selectors.selectionMode);
+	const grid = useStore(store, selectors.grid);
+	const popupProps = useStore(store, selectors.popupProps);
+	const virtualized = useStore(store, selectors.virtualized);
+	const multiple = selectionMode === "multiple";
+	const empty = filteredItems.length === 0;
+	const setPositionerElement = useStableCallback((element) => {
+		store.set("positionerElement", element);
+	});
+	const setListElement = useStableCallback((element) => {
+		store.set("listElement", element);
+	});
+	const resolvedChildren = import_react.useMemo(() => {
+		if (typeof children === "function") return _ComboboxCollection || (_ComboboxCollection = /*#__PURE__*/ (0, import_jsx_runtime.jsx)(ComboboxCollection, { children }));
+		return children;
+	}, [children]);
+	const state = { empty };
+	const floatingId = floatingRootContext.useState("floatingId");
+	const element = useRenderElement("div", componentProps, {
+		state,
+		ref: [
+			forwardedRef,
+			setListElement,
+			hasPositionerContext ? null : setPositionerElement
+		],
+		props: [
+			popupProps,
+			{
+				children: resolvedChildren,
+				tabIndex: -1,
+				id: floatingId,
+				role: grid ? "grid" : "listbox",
+				"aria-multiselectable": multiple ? "true" : void 0,
+				onKeyDown(event) {
+					if (store.state.disabled || store.state.readOnly) return;
+					if (event.key === "Enter") {
+						const activeIndex = store.state.activeIndex;
+						if (activeIndex == null) return;
+						stopEvent(event);
+						const nativeEvent = event.nativeEvent;
+						const listItem = store.state.listRef.current[activeIndex];
+						if (listItem) {
+							store.state.selectionEventRef.current = nativeEvent;
+							listItem.click();
+							store.state.selectionEventRef.current = null;
+						}
+					}
+				},
+				onKeyDownCapture() {
+					store.state.keyboardActiveRef.current = true;
+				},
+				onPointerMoveCapture() {
+					store.state.keyboardActiveRef.current = false;
+				}
+			},
+			elementProps
+		]
+	});
+	if (virtualized) return element;
+	return /*#__PURE__*/ (0, import_jsx_runtime.jsx)(CompositeList, {
+		elementsRef: store.state.listRef,
+		labelsRef: hasItems ? void 0 : store.state.labelsRef,
+		children: element
+	});
+});
+ComboboxList.displayName = "ComboboxList";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/utils/useInitialLiveRegionTextMutation.js
+var LIVE_REGION_MARKER = "⁠";
+function findLastTextNode(root) {
+	const walker = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+	let lastTextNode = null;
+	while (walker.nextNode()) {
+		const textNode = walker.currentNode;
+		if (textNode.nodeValue !== "") lastTextNode = textNode;
+	}
+	return lastTextNode;
+}
+function useInitialLiveRegionTextMutation() {
+	const timeout = useTimeout();
+	const rootRef = import_react.useRef(null);
+	import_react.useEffect(() => {
+		if (isIOS) return;
+		const root = rootRef.current;
+		if (root == null) return;
+		const textNode = findLastTextNode(root);
+		if (textNode == null) return;
+		const originalValue = textNode.nodeValue ?? "";
+		const markedValue = `${originalValue}${LIVE_REGION_MARKER}`;
+		textNode.nodeValue = markedValue;
+		timeout.start(200, () => {
+			if (textNode.nodeValue === markedValue) textNode.nodeValue = originalValue;
+		});
+		return () => {
+			timeout.clear();
+			if (textNode.nodeValue === markedValue) textNode.nodeValue = originalValue;
+		};
+	}, [rootRef, timeout]);
+	return rootRef;
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/status/ComboboxStatus.js
+/**
+* Displays a status message whose content changes are announced politely to screen readers.
+* Useful for conveying the status of an asynchronously loaded list.
+* This component's root element must remain mounted in the DOM to announce
+* changes consistently across screen readers. Avoid hiding or removing the
+* component itself with `display: none`, `hidden`, `aria-hidden`, or conditional
+* rendering. Prefer updating or conditionally rendering its children instead.
+* Renders a `<div>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxStatus = /*#__PURE__*/ import_react.forwardRef(function ComboboxStatus(componentProps, forwardedRef) {
+	const { render, className, style, children: childrenProp, ...elementProps } = componentProps;
+	return useRenderElement("div", componentProps, {
+		ref: [forwardedRef, useInitialLiveRegionTextMutation()],
+		props: [{
+			children: childrenProp,
+			role: "status",
+			"aria-live": "polite",
+			"aria-atomic": true
+		}, elementProps]
+	});
+});
+ComboboxStatus.displayName = "ComboboxStatus";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/portal/ComboboxPortalContext.js
+var ComboboxPortalContext = /*#__PURE__*/ import_react.createContext(void 0);
+ComboboxPortalContext.displayName = "ComboboxPortalContext";
+function useComboboxPortalContext() {
+	const context = import_react.useContext(ComboboxPortalContext);
+	if (context === void 0) throw new Error("Base UI: <Combobox.Portal> is missing.");
+	return context;
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/portal/ComboboxPortal.js
+/**
+* A portal element that moves the popup to a different part of the DOM.
+* By default, the portal element is appended to `<body>`.
+* Renders a `<div>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxPortal = /*#__PURE__*/ import_react.forwardRef(function ComboboxPortal(props, forwardedRef) {
+	const { keepMounted = false, ...portalProps } = props;
+	const store = useComboboxRootContext();
+	const mounted = useStore(store, selectors.mounted);
+	const forceMounted = useStore(store, selectors.forceMounted);
+	if (!(mounted || keepMounted || forceMounted)) return null;
+	return /*#__PURE__*/ (0, import_jsx_runtime.jsx)(ComboboxPortalContext.Provider, {
+		value: keepMounted,
+		children: /*#__PURE__*/ (0, import_jsx_runtime.jsx)(FloatingPortal, {
+			ref: forwardedRef,
+			...portalProps
+		})
+	});
+});
+ComboboxPortal.displayName = "ComboboxPortal";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/backdrop/ComboboxBackdrop.js
+var stateAttributesMapping$2 = {
+	...popupStateMapping,
+	...transitionStatusMapping
+};
+/**
+* An overlay displayed beneath the popup.
+* Renders a `<div>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxBackdrop = /*#__PURE__*/ import_react.forwardRef(function ComboboxBackdrop(componentProps, forwardedRef) {
+	const { render, className, style, ...elementProps } = componentProps;
+	const store = useComboboxRootContext();
+	const open = useStore(store, selectors.open);
+	const mounted = useStore(store, selectors.mounted);
+	return useRenderElement("div", componentProps, {
+		state: {
+			open,
+			transitionStatus: useStore(store, selectors.transitionStatus)
+		},
+		ref: forwardedRef,
+		stateAttributesMapping: stateAttributesMapping$2,
+		props: [{
+			role: "presentation",
+			hidden: !mounted,
+			style: {
+				userSelect: "none",
+				WebkitUserSelect: "none"
+			}
+		}, elementProps]
+	});
+});
+ComboboxBackdrop.displayName = "ComboboxBackdrop";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/positioner/ComboboxPositioner.js
+/**
+* Positions the popup against the trigger.
+* Renders a `<div>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxPositioner = /*#__PURE__*/ import_react.forwardRef(function ComboboxPositioner(componentProps, forwardedRef) {
+	const { render, className, anchor, positionMethod = "absolute", side = "bottom", align = "center", sideOffset = 0, alignOffset = 0, collisionBoundary = "clipping-ancestors", collisionPadding = 5, arrowPadding = 5, sticky = false, disableAnchorTracking = false, collisionAvoidance = DROPDOWN_COLLISION_AVOIDANCE, style: styleProp, ...elementProps } = componentProps;
+	const store = useComboboxRootContext();
+	const { filteredItems } = useComboboxDerivedItemsContext();
+	const floatingRootContext = useComboboxFloatingContext();
+	const keepMounted = useComboboxPortalContext();
+	const modal = useStore(store, selectors.modal);
+	const open = useStore(store, selectors.open);
+	const mounted = useStore(store, selectors.mounted);
+	const openMethod = useStore(store, selectors.openMethod);
+	const positionerElement = useStore(store, selectors.positionerElement);
+	const triggerElement = useStore(store, selectors.triggerElement);
+	const inputElement = useStore(store, selectors.inputElement);
+	const inputGroupElement = useStore(store, selectors.inputGroupElement);
+	const inputInsidePopup = useStore(store, selectors.inputInsidePopup);
+	const transitionStatus = useStore(store, selectors.transitionStatus);
+	const empty = filteredItems.length === 0;
+	const positioning = useAnchorPositioning({
+		anchor: anchor ?? (inputInsidePopup ? triggerElement : inputGroupElement ?? inputElement),
+		floatingRootContext,
+		positionMethod,
+		mounted,
+		side,
+		sideOffset,
+		align,
+		alignOffset,
+		arrowPadding,
+		collisionBoundary,
+		collisionPadding,
+		sticky,
+		disableAnchorTracking,
+		keepMounted,
+		collisionAvoidance,
+		lazyFlip: true
+	});
+	useAnchoredPopupScrollLock(open && modal, openMethod === "touch", positionerElement, triggerElement);
+	const state = {
+		open,
+		side: positioning.side,
+		align: positioning.align,
+		anchorHidden: positioning.anchorHidden,
+		empty
+	};
+	useIsoLayoutEffect(() => {
+		store.set("popupSide", positioning.side);
+	}, [store, positioning.side]);
+	const setPositionerElement = useStableCallback((element) => {
+		store.set("positionerElement", element);
+	});
+	const element = usePositioner(componentProps, state, {
+		styles: positioning.positionerStyles,
+		transitionStatus,
+		props: elementProps,
+		refs: [forwardedRef, setPositionerElement],
+		hidden: !mounted,
+		inert: !open
+	});
+	return /*#__PURE__*/ (0, import_jsx_runtime.jsxs)(ComboboxPositionerContext.Provider, {
+		value: positioning,
+		children: [mounted && modal && /*#__PURE__*/ (0, import_jsx_runtime.jsx)(InternalBackdrop, {
+			inert: inertValue(!open),
+			cutout: inputGroupElement ?? inputElement ?? triggerElement
+		}), element]
+	});
+});
+ComboboxPositioner.displayName = "ComboboxPositioner";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/popup/ComboboxPopup.js
+var stateAttributesMapping$1 = {
+	...popupStateMapping,
+	...transitionStatusMapping
+};
+/**
+* A container for the list.
+* Renders a `<div>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxPopup = /*#__PURE__*/ import_react.forwardRef(function ComboboxPopup(componentProps, forwardedRef) {
+	const { render, className, style, initialFocus, finalFocus, ...elementProps } = componentProps;
+	const store = useComboboxRootContext();
+	const positioning = useComboboxPositionerContext();
+	const floatingRootContext = useComboboxFloatingContext();
+	const { filteredItems } = useComboboxDerivedItemsContext();
+	const mounted = useStore(store, selectors.mounted);
+	const open = useStore(store, selectors.open);
+	const openMethod = useStore(store, selectors.openMethod);
+	const transitionStatus = useStore(store, selectors.transitionStatus);
+	const inputInsidePopup = useStore(store, selectors.inputInsidePopup);
+	const inputElement = useStore(store, selectors.inputElement);
+	const modal = useStore(store, selectors.modal);
+	const empty = filteredItems.length === 0;
+	useOpenChangeComplete({
+		open,
+		ref: store.state.popupRef,
+		onComplete() {
+			if (open) store.state.onOpenChangeComplete(true);
+		}
+	});
+	const element = useRenderElement("div", componentProps, {
+		state: {
+			open,
+			side: positioning.side,
+			align: positioning.align,
+			anchorHidden: positioning.anchorHidden,
+			transitionStatus,
+			empty
+		},
+		ref: [forwardedRef, store.state.popupRef],
+		props: [
+			{
+				role: inputInsidePopup ? "dialog" : "presentation",
+				tabIndex: -1,
+				onFocus(event) {
+					const target = getTarget(event.nativeEvent);
+					if (openMethod !== "touch" && (contains(store.state.listElement, target) || target === event.currentTarget)) store.state.inputRef.current?.focus();
+				}
+			},
+			getDisabledMountTransitionStyles(transitionStatus),
+			elementProps
+		],
+		stateAttributesMapping: stateAttributesMapping$1
+	});
+	const resolvedInitialFocus = initialFocus === void 0 ? inputInsidePopup ? (interactionType) => interactionType === "touch" ? store.state.popupRef.current : inputElement : false : initialFocus;
+	let resolvedFinalFocus;
+	if (finalFocus != null) resolvedFinalFocus = finalFocus;
+	else resolvedFinalFocus = inputInsidePopup ? void 0 : false;
+	const focusManagerModal = !inputInsidePopup || modal;
+	return /*#__PURE__*/ (0, import_jsx_runtime.jsx)(FloatingFocusManager, {
+		context: floatingRootContext,
+		disabled: !mounted,
+		modal: focusManagerModal,
+		openInteractionType: openMethod,
+		initialFocus: resolvedInitialFocus,
+		returnFocus: resolvedFinalFocus,
+		getInsideElements: () => [store.state.startDismissRef.current, store.state.endDismissRef.current],
+		children: /*#__PURE__*/ (0, import_jsx_runtime.jsxs)(import_react.Fragment, { children: [element, focusManagerModal && /*#__PURE__*/ (0, import_jsx_runtime.jsx)(ComboboxInternalDismissButton, { ref: store.state.endDismissRef })] })
+	});
+});
+ComboboxPopup.displayName = "ComboboxPopup";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/arrow/ComboboxArrow.js
+/**
+* Displays an element positioned against the anchor.
+* Renders a `<div>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxArrow = /*#__PURE__*/ import_react.forwardRef(function ComboboxArrow(componentProps, forwardedRef) {
+	const { render, className, style, ...elementProps } = componentProps;
+	const store = useComboboxRootContext();
+	const { arrowRef, side, align, arrowUncentered, arrowStyles } = useComboboxPositionerContext();
+	const state = {
+		open: useStore(store, selectors.open),
+		side,
+		align,
+		uncentered: arrowUncentered
+	};
+	return useRenderElement("div", componentProps, {
+		ref: [arrowRef, forwardedRef],
+		stateAttributesMapping: popupStateMapping,
+		state,
+		props: {
+			style: arrowStyles,
+			"aria-hidden": true,
+			...elementProps
+		}
+	});
+});
+ComboboxArrow.displayName = "ComboboxArrow";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/icon/ComboboxIcon.js
+/**
+* An icon that indicates that the trigger button opens the popup.
+* Renders a `<span>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxIcon = /*#__PURE__*/ import_react.forwardRef(function ComboboxIcon(componentProps, forwardedRef) {
+	const { render, className, style, ...elementProps } = componentProps;
+	return useRenderElement("span", componentProps, {
+		ref: forwardedRef,
+		props: [{
+			"aria-hidden": true,
+			children: "▼"
+		}, elementProps]
+	});
+});
+ComboboxIcon.displayName = "ComboboxIcon";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/group/ComboboxGroupContext.js
+var ComboboxGroupContext = /*#__PURE__*/ import_react.createContext(void 0);
+ComboboxGroupContext.displayName = "ComboboxGroupContext";
+function useComboboxGroupContext() {
+	const context = import_react.useContext(ComboboxGroupContext);
+	if (context === void 0) throw new Error("Base UI: ComboboxGroupContext is missing. ComboboxGroup parts must be placed within <Combobox.Group>.");
+	return context;
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/group/ComboboxGroup.js
+/**
+* Groups related items with the corresponding label.
+* Renders a `<div>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxGroup = /*#__PURE__*/ import_react.forwardRef(function ComboboxGroup(componentProps, forwardedRef) {
+	const { render, className, style, items, ...elementProps } = componentProps;
+	const [labelId, setLabelId] = import_react.useState();
+	const contextValue = import_react.useMemo(() => ({
+		labelId,
+		setLabelId,
+		items
+	}), [
+		labelId,
+		setLabelId,
+		items
+	]);
+	const element = useRenderElement("div", componentProps, {
+		ref: forwardedRef,
+		props: [{
+			role: "group",
+			"aria-labelledby": labelId
+		}, elementProps]
+	});
+	const wrappedElement = /*#__PURE__*/ (0, import_jsx_runtime.jsx)(ComboboxGroupContext.Provider, {
+		value: contextValue,
+		children: element
+	});
+	if (items) return /*#__PURE__*/ (0, import_jsx_runtime.jsx)(GroupCollectionProvider, {
+		items,
+		children: wrappedElement
+	});
+	return wrappedElement;
+});
+ComboboxGroup.displayName = "ComboboxGroup";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/group-label/ComboboxGroupLabel.js
+/**
+* An accessible label that is automatically associated with its parent group.
+* Renders a `<div>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxGroupLabel = /*#__PURE__*/ import_react.forwardRef(function ComboboxGroupLabel(componentProps, forwardedRef) {
+	const { render, className, style, id: idProp, ...elementProps } = componentProps;
+	const { setLabelId } = useComboboxGroupContext();
+	const id = useBaseUiId(idProp);
+	useIsoLayoutEffect(() => {
+		setLabelId(id);
+		return () => {
+			setLabelId(void 0);
+		};
+	}, [id, setLabelId]);
+	return useRenderElement("div", componentProps, {
+		ref: forwardedRef,
+		props: [{ id }, elementProps]
+	});
+});
+ComboboxGroupLabel.displayName = "ComboboxGroupLabel";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/item/ComboboxItemContext.js
+var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom(), 1);
+var ComboboxItemContext = /*#__PURE__*/ import_react.createContext(void 0);
+ComboboxItemContext.displayName = "ComboboxItemContext";
+function useComboboxItemContext() {
+	const context = import_react.useContext(ComboboxItemContext);
+	if (!context) throw new Error("Base UI: ComboboxItemContext is missing. ComboboxItem parts must be placed within <Combobox.Item>.");
+	return context;
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/row/ComboboxRowContext.js
+var ComboboxRowContext = /*#__PURE__*/ import_react.createContext(false);
+ComboboxRowContext.displayName = "ComboboxRowContext";
+function useComboboxRowContext() {
+	return import_react.useContext(ComboboxRowContext);
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/item/ComboboxItem.js
+/**
+* An individual item in the list.
+* Renders a `<div>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxItem = /*#__PURE__*/ import_react.memo(/*#__PURE__*/ import_react.forwardRef(function ComboboxItem(componentProps, forwardedRef) {
+	const { render, className, style, value: itemValue = null, index: indexProp, disabled = false, nativeButton = false, ...elementProps } = componentProps;
+	const didPointerDownRef = import_react.useRef(false);
+	const textRef = import_react.useRef(null);
+	const listItem = useCompositeListItem({
+		index: indexProp,
+		textRef,
+		indexGuessBehavior: IndexGuessBehavior.GuessFromOrder
+	});
+	const store = useComboboxRootContext();
+	const isRow = useComboboxRowContext();
+	const { flatFilteredItems, hasItems } = useComboboxDerivedItemsContext();
+	const open = useStore(store, selectors.open);
+	const selectionMode = useStore(store, selectors.selectionMode);
+	const readOnly = useStore(store, selectors.readOnly);
+	const virtualized = useStore(store, selectors.virtualized);
+	const isItemEqualToValue = useStore(store, selectors.isItemEqualToValue);
+	const selectable = selectionMode !== "none";
+	const index = indexProp ?? (virtualized ? findItemIndex(flatFilteredItems, itemValue, isItemEqualToValue) : listItem.index);
+	const hasRegistered = listItem.index !== -1;
+	const rootId = useStore(store, selectors.id);
+	const highlighted = useStore(store, selectors.isActive, index);
+	const matchesSelectedValue = useStore(store, selectors.isSelected, itemValue);
+	const itemProps = useStore(store, selectors.itemProps);
+	const itemRef = import_react.useRef(null);
+	const id = rootId != null && hasRegistered ? `${rootId}-${index}` : void 0;
+	const selected = matchesSelectedValue && selectable;
+	useIsoLayoutEffect(() => {
+		if (!(hasRegistered && (virtualized || indexProp != null))) return;
+		const list = store.state.listRef.current;
+		list[index] = itemRef.current;
+		return () => {
+			delete list[index];
+		};
+	}, [
+		hasRegistered,
+		virtualized,
+		index,
+		indexProp,
+		store
+	]);
+	useIsoLayoutEffect(() => {
+		if (!hasRegistered || hasItems) return;
+		const visibleMap = store.state.valuesRef.current;
+		visibleMap[index] = itemValue;
+		if (selectionMode !== "none") store.state.allValuesRef.current.push(itemValue);
+		return () => {
+			delete visibleMap[index];
+		};
+	}, [
+		hasRegistered,
+		hasItems,
+		index,
+		itemValue,
+		store,
+		selectionMode
+	]);
+	useIsoLayoutEffect(() => {
+		if (!open) {
+			didPointerDownRef.current = false;
+			return;
+		}
+		if (!hasRegistered || hasItems) return;
+		const selectedValue = store.state.selectedValue;
+		if (compareItemEquality(itemValue, Array.isArray(selectedValue) ? selectedValue[selectedValue.length - 1] : selectedValue, isItemEqualToValue)) store.set("selectedIndex", index);
+	}, [
+		hasRegistered,
+		hasItems,
+		open,
+		store,
+		index,
+		itemValue,
+		isItemEqualToValue
+	]);
+	const { getButtonProps, buttonRef } = useButton({
+		disabled,
+		focusableWhenDisabled: true,
+		native: nativeButton,
+		composite: true
+	});
+	const state = {
+		disabled,
+		selected,
+		highlighted
+	};
+	function commitSelection(nativeEvent) {
+		function selectItem() {
+			store.state.handleSelection(nativeEvent, itemValue);
+		}
+		if (store.state.submitOnItemClick) {
+			import_react_dom.flushSync(selectItem);
+			store.state.requestSubmit();
+		} else selectItem();
+	}
+	const defaultProps = {
+		id,
+		role: isRow ? "gridcell" : "option",
+		"aria-selected": selectable ? selected : void 0,
+		tabIndex: void 0,
+		onPointerDownCapture(event) {
+			didPointerDownRef.current = true;
+			event.preventDefault();
+		},
+		onMouseDown(event) {
+			event.preventDefault();
+		},
+		onClick(event) {
+			if (disabled || readOnly) return;
+			commitSelection(event.nativeEvent);
+		},
+		onMouseUp(event) {
+			const pointerStartedOnItem = didPointerDownRef.current;
+			didPointerDownRef.current = false;
+			if (disabled || readOnly || event.button !== 0 || pointerStartedOnItem || !highlighted) return;
+			commitSelection(event.nativeEvent);
+		}
+	};
+	const element = useRenderElement("div", componentProps, {
+		ref: [
+			buttonRef,
+			forwardedRef,
+			listItem.ref,
+			itemRef
+		],
+		state,
+		props: [
+			itemProps,
+			defaultProps,
+			elementProps,
+			getButtonProps
+		]
+	});
+	const contextValue = import_react.useMemo(() => ({
+		selected,
+		textRef
+	}), [selected, textRef]);
+	return /*#__PURE__*/ (0, import_jsx_runtime.jsx)(ComboboxItemContext.Provider, {
+		value: contextValue,
+		children: element
+	});
+}));
+ComboboxItem.displayName = "ComboboxItem";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/item-indicator/ComboboxItemIndicator.js
+/**
+* Indicates whether the item is selected.
+* Renders a `<span>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxItemIndicator = /*#__PURE__*/ import_react.forwardRef(function ComboboxItemIndicator(componentProps, forwardedRef) {
+	const keepMounted = componentProps.keepMounted ?? false;
+	const { selected } = useComboboxItemContext();
+	if (!(keepMounted || selected)) return null;
+	return /*#__PURE__*/ (0, import_jsx_runtime.jsx)(Inner, {
+		...componentProps,
+		ref: forwardedRef
+	});
+});
+ComboboxItemIndicator.displayName = "ComboboxItemIndicator";
+var Inner = /*#__PURE__*/ import_react.memo(/*#__PURE__*/ import_react.forwardRef((componentProps, forwardedRef) => {
+	const { render, className, style, keepMounted, ...elementProps } = componentProps;
+	const { selected } = useComboboxItemContext();
+	const indicatorRef = import_react.useRef(null);
+	const { transitionStatus, setMounted } = useTransitionStatus(selected);
+	const element = useRenderElement("span", componentProps, {
+		ref: [forwardedRef, indicatorRef],
+		state: {
+			selected,
+			transitionStatus
+		},
+		props: [{
+			"aria-hidden": true,
+			children: "✔️"
+		}, elementProps],
+		stateAttributesMapping: transitionStatusMapping
+	});
+	useOpenChangeComplete({
+		open: selected,
+		ref: indicatorRef,
+		onComplete() {
+			if (!selected) setMounted(false);
+		}
+	});
+	return element;
+}));
+Inner.displayName = "Inner";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/chips/ComboboxChips.js
+/**
+* A container for the chips in a multiselectable input.
+* Renders a `<div>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxChips = /*#__PURE__*/ import_react.forwardRef(function ComboboxChips(componentProps, forwardedRef) {
+	const { render, className, style, ...elementProps } = componentProps;
+	const store = useComboboxRootContext();
+	const open = useStore(store, selectors.open);
+	const hasSelectionChips = useStore(store, selectors.hasSelectionChips);
+	const [highlightedChipIndex, setHighlightedChipIndex] = import_react.useState(void 0);
+	if (open && highlightedChipIndex !== void 0) setHighlightedChipIndex(void 0);
+	const chipsRef = import_react.useRef([]);
+	const element = useRenderElement("div", componentProps, {
+		ref: [forwardedRef, store.state.chipsContainerRef],
+		props: [
+			hasSelectionChips ? { role: "toolbar" } : EMPTY_OBJECT,
+			{ onMouseDown(event) {
+				handleInputPress(event, store, store.state.disabled, store.state.readOnly);
+			} },
+			elementProps
+		]
+	});
+	const contextValue = import_react.useMemo(() => ({
+		highlightedChipIndex,
+		setHighlightedChipIndex,
+		chipsRef
+	}), [
+		highlightedChipIndex,
+		setHighlightedChipIndex,
+		chipsRef
+	]);
+	return /*#__PURE__*/ (0, import_jsx_runtime.jsx)(ComboboxChipsContext.Provider, {
+		value: contextValue,
+		children: /*#__PURE__*/ (0, import_jsx_runtime.jsx)(CompositeList, {
+			elementsRef: chipsRef,
+			children: element
+		})
+	});
+});
+ComboboxChips.displayName = "ComboboxChips";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/chip/ComboboxChipContext.js
+var ComboboxChipContext = /*#__PURE__*/ import_react.createContext(void 0);
+ComboboxChipContext.displayName = "ComboboxChipContext";
+function useComboboxChipContext() {
+	const context = import_react.useContext(ComboboxChipContext);
+	if (!context) throw new Error("useComboboxChipContext must be used within a ComboboxChip");
+	return context;
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/chip/ComboboxChip.js
+/**
+* An individual chip that represents a value in a multiselectable input.
+* Renders a `<div>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxChip = /*#__PURE__*/ import_react.forwardRef(function ComboboxChip(componentProps, forwardedRef) {
+	const { render, className, style, ...elementProps } = componentProps;
+	const store = useComboboxRootContext();
+	const { setHighlightedChipIndex, chipsRef } = useComboboxChipsContext();
+	const direction = useDirection();
+	const disabled = useStore(store, selectors.disabled);
+	const readOnly = useStore(store, selectors.readOnly);
+	const selectedValue = useStore(store, selectors.selectedValue);
+	const { ref, index } = useCompositeListItem();
+	function handleKeyDown(event) {
+		let nextIndex = index;
+		const isRtl = direction === "rtl";
+		const previousChipKey = isRtl ? "ArrowRight" : "ArrowLeft";
+		const nextChipKey = isRtl ? "ArrowLeft" : "ArrowRight";
+		if (event.key === previousChipKey) {
+			event.preventDefault();
+			if (index > 0) nextIndex = index - 1;
+			else nextIndex = void 0;
+		} else if (event.key === nextChipKey) {
+			event.preventDefault();
+			if (index < chipsRef.current.length - 1) nextIndex = index + 1;
+			else nextIndex = void 0;
+		} else if (event.key === "Backspace" || event.key === "Delete") {
+			const computedNextIndex = index >= selectedValue.length - 1 ? selectedValue.length - 2 : index;
+			nextIndex = computedNextIndex >= 0 ? computedNextIndex : void 0;
+			stopEvent(event);
+			store.state.setIndices({
+				activeIndex: null,
+				selectedIndex: null,
+				type: "keyboard"
+			});
+			store.state.setSelectedValue(selectedValue.filter((_, i) => i !== index), createChangeEventDetails(none, event.nativeEvent));
+		} else if (event.key === "Enter" || event.key === " ") {
+			stopEvent(event);
+			nextIndex = void 0;
+		} else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+			stopEvent(event);
+			store.state.setOpen(true, createChangeEventDetails(listNavigation, event.nativeEvent));
+			nextIndex = void 0;
+		} else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) nextIndex = void 0;
+		return nextIndex;
+	}
+	const element = useRenderElement("div", componentProps, {
+		ref: [forwardedRef, ref],
+		state: { disabled },
+		props: [{
+			tabIndex: -1,
+			"aria-disabled": disabled || void 0,
+			"aria-readonly": readOnly || void 0,
+			onKeyDown(event) {
+				if (disabled || readOnly) return;
+				const nextIndex = handleKeyDown(event);
+				import_react_dom.flushSync(() => {
+					setHighlightedChipIndex(nextIndex);
+				});
+				if (nextIndex === void 0) store.state.inputRef.current?.focus();
+				else chipsRef.current[nextIndex]?.focus();
+			}
+		}, elementProps]
+	});
+	const contextValue = import_react.useMemo(() => ({ index }), [index]);
+	return /*#__PURE__*/ (0, import_jsx_runtime.jsx)(ComboboxChipContext.Provider, {
+		value: contextValue,
+		children: element
+	});
+});
+ComboboxChip.displayName = "ComboboxChip";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/chip-remove/ComboboxChipRemove.js
+/**
+* A button to remove a chip.
+* Renders a `<button>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxChipRemove = /*#__PURE__*/ import_react.forwardRef(function ComboboxChipRemove(componentProps, forwardedRef) {
+	const { render, className, disabled: disabledProp = false, nativeButton = true, style, ...elementProps } = componentProps;
+	const store = useComboboxRootContext();
+	const { index } = useComboboxChipContext();
+	const comboboxDisabled = useStore(store, selectors.disabled);
+	const readOnly = useStore(store, selectors.readOnly);
+	const selectedValue = useStore(store, selectors.selectedValue);
+	const isItemEqualToValue = useStore(store, selectors.isItemEqualToValue);
+	const disabled = comboboxDisabled || disabledProp;
+	const { buttonRef, getButtonProps } = useButton({
+		native: nativeButton,
+		disabled: disabled || readOnly,
+		focusableWhenDisabled: true
+	});
+	const state = { disabled };
+	function clearActiveIndexForRemovedItem(removedItem) {
+		const activeIndex = store.state.activeIndex;
+		if (activeIndex == null) return;
+		const removedIndex = findItemIndex(store.state.valuesRef.current, removedItem, isItemEqualToValue);
+		if (removedIndex !== -1 && activeIndex === removedIndex) store.state.setIndices({
+			activeIndex: null,
+			type: store.state.keyboardActiveRef.current ? "keyboard" : "pointer"
+		});
+	}
+	function removeChip(event) {
+		const eventDetails = createChangeEventDetails(chipRemovePress, event.nativeEvent);
+		const removedItem = selectedValue[index];
+		clearActiveIndexForRemovedItem(removedItem);
+		store.state.setSelectedValue(selectedValue.filter((_, i) => i !== index), eventDetails);
+		store.state.inputRef.current?.focus();
+		return eventDetails;
+	}
+	return useRenderElement("button", componentProps, {
+		ref: [forwardedRef, buttonRef],
+		state,
+		props: [
+			{
+				tabIndex: -1,
+				onMouseDown(event) {
+					event.preventDefault();
+				},
+				onClick(event) {
+					if (disabled || readOnly) return;
+					if (!removeChip(event).isPropagationAllowed) event.stopPropagation();
+				},
+				onKeyDown(event) {
+					if (disabled || readOnly) return;
+					if (event.key === "Enter" || event.key === " ") {
+						if (!removeChip(event).isPropagationAllowed) stopEvent(event);
+					}
+				}
+			},
+			elementProps,
+			getButtonProps
+		]
+	});
+});
+ComboboxChipRemove.displayName = "ComboboxChipRemove";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/row/ComboboxRow.js
+/**
+* Displays a single row of items in a grid list.
+* Enable `grid` on the root component to turn the listbox into a grid.
+* Renders a `<div>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxRow = /*#__PURE__*/ import_react.forwardRef(function ComboboxRow(componentProps, forwardedRef) {
+	const { render, className, style, ...elementProps } = componentProps;
+	const element = useRenderElement("div", componentProps, {
+		ref: forwardedRef,
+		props: [{ role: "row" }, elementProps]
+	});
+	return /*#__PURE__*/ (0, import_jsx_runtime.jsx)(ComboboxRowContext.Provider, {
+		value: true,
+		children: element
+	});
+});
+ComboboxRow.displayName = "ComboboxRow";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/empty/ComboboxEmpty.js
+/**
+* Renders its children only when the list is empty.
+* Requires the `items` prop on the root component.
+* Announces changes politely to screen readers.
+* This component's root element must remain mounted in the DOM to announce
+* changes consistently across screen readers. Avoid hiding or removing the
+* component itself with `display: none`, `hidden`, `aria-hidden`, or conditional
+* rendering. Prefer updating or conditionally rendering its children instead.
+* Renders a `<div>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxEmpty = /*#__PURE__*/ import_react.forwardRef(function ComboboxEmpty(componentProps, forwardedRef) {
+	const { render, className, style, children: childrenProp, ...elementProps } = componentProps;
+	const { filteredItems } = useComboboxDerivedItemsContext();
+	const store = useComboboxRootContext();
+	const emptyRef = useInitialLiveRegionTextMutation();
+	const children = filteredItems.length === 0 ? childrenProp : null;
+	return useRenderElement("div", componentProps, {
+		ref: [
+			forwardedRef,
+			store.state.emptyRef,
+			emptyRef
+		],
+		props: [{
+			children,
+			role: "status",
+			"aria-live": "polite",
+			"aria-atomic": true
+		}, elementProps]
+	});
+});
+ComboboxEmpty.displayName = "ComboboxEmpty";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/clear/ComboboxClear.js
+var stateAttributesMapping = {
+	...transitionStatusMapping,
+	...triggerOpenStateMapping
+};
+/**
+* Clears the value when clicked.
+* Renders a `<button>` element.
+*
+* Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
+*/
+var ComboboxClear = /*#__PURE__*/ import_react.forwardRef(function ComboboxClear(componentProps, forwardedRef) {
+	const { render, className, disabled: disabledProp = false, nativeButton = true, keepMounted = false, style, ...elementProps } = componentProps;
+	const { disabled: fieldDisabled } = useFieldRootContext();
+	const store = useComboboxRootContext();
+	const selectionMode = useStore(store, selectors.selectionMode);
+	const comboboxDisabled = useStore(store, selectors.disabled);
+	const readOnly = useStore(store, selectors.readOnly);
+	const open = useStore(store, selectors.open);
+	const selectedValue = useStore(store, selectors.selectedValue);
+	const hasSelectionChips = useStore(store, selectors.hasSelectionChips);
+	const inputValue = useComboboxInputValueContext();
+	let visible = false;
+	if (selectionMode === "none") visible = inputValue !== "";
+	else if (selectionMode === "single") visible = selectedValue != null;
+	else visible = hasSelectionChips;
+	const disabled = fieldDisabled || comboboxDisabled || disabledProp;
+	const { buttonRef, getButtonProps } = useButton({
+		native: nativeButton,
+		disabled
+	});
+	const { mounted, transitionStatus, setMounted } = useTransitionStatus(visible);
+	const state = {
+		disabled,
+		visible,
+		open,
+		transitionStatus
+	};
+	useOpenChangeComplete({
+		open: visible,
+		ref: store.state.clearRef,
+		onComplete() {
+			if (!visible) setMounted(false);
+		}
+	});
+	const element = useRenderElement("button", componentProps, {
+		state,
+		ref: [
+			forwardedRef,
+			buttonRef,
+			store.state.clearRef
+		],
+		props: [
+			{
+				tabIndex: -1,
+				children: "x",
+				onMouseDown(event) {
+					event.preventDefault();
+				},
+				onClick(event) {
+					if (disabled || readOnly) return;
+					const keyboardActiveRef = store.state.keyboardActiveRef;
+					store.state.setInputValue("", createChangeEventDetails(clearPress, event.nativeEvent));
+					if (selectionMode !== "none") {
+						store.state.setSelectedValue(Array.isArray(selectedValue) ? [] : null, createChangeEventDetails(clearPress, event.nativeEvent));
+						store.state.setIndices({
+							activeIndex: null,
+							selectedIndex: null,
+							type: keyboardActiveRef.current ? "keyboard" : "pointer"
+						});
+					} else store.state.setIndices({
+						activeIndex: null,
+						type: keyboardActiveRef.current ? "keyboard" : "pointer"
+					});
+					store.state.inputRef.current?.focus();
+				}
+			},
+			elementProps,
+			getButtonProps
+		],
+		stateAttributesMapping
+	});
+	if (!(keepMounted || mounted)) return null;
+	return element;
+});
+ComboboxClear.displayName = "ComboboxClear";
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/root/utils/useFilteredItems.js
+/**
+* Returns the internally filtered items.
+*/
+function useFilteredItems() {
+	return useComboboxDerivedItemsContext().filteredItems;
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/combobox/index.parts.js
+var index_parts_exports = /* @__PURE__ */ __exportAll({
+	Arrow: () => ComboboxArrow,
+	Backdrop: () => ComboboxBackdrop,
+	Chip: () => ComboboxChip,
+	ChipRemove: () => ComboboxChipRemove,
+	Chips: () => ComboboxChips,
+	Clear: () => ComboboxClear,
+	Collection: () => ComboboxCollection,
+	Empty: () => ComboboxEmpty,
+	Group: () => ComboboxGroup,
+	GroupLabel: () => ComboboxGroupLabel,
+	Icon: () => ComboboxIcon,
+	Input: () => ComboboxInput,
+	InputGroup: () => ComboboxInputGroup,
+	Item: () => ComboboxItem,
+	ItemIndicator: () => ComboboxItemIndicator,
+	Label: () => ComboboxLabel,
+	List: () => ComboboxList,
+	Popup: () => ComboboxPopup,
+	Portal: () => ComboboxPortal,
+	Positioner: () => ComboboxPositioner,
+	Root: () => ComboboxRoot,
+	Row: () => ComboboxRow,
+	Separator: () => Separator,
+	Status: () => ComboboxStatus,
+	Trigger: () => ComboboxTrigger,
+	Value: () => ComboboxValue,
+	useFilter: () => useComboboxFilter,
+	useFilteredItems: () => useFilteredItems
+});
+//#endregion
+export { index_parts_exports as Combobox };
+
+//# sourceMappingURL=@base-ui_react_combobox.js.map

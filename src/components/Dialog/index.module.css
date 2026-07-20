@@ -1,0 +1,102 @@
+/* ── Backdrop ── */
+.Backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: var(--overlay-backdrop);
+  backdrop-filter: blur(var(--overlay-blur));
+  transition: opacity 200ms ease-out;
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    opacity: 0;
+  }
+}
+
+/* ── Viewport — centering container ── */
+.Viewport {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-16);
+  pointer-events: none;
+}
+
+/* ── Popup ── */
+.Popup {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--white);
+  border-radius: var(--radius-8);
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-height: calc(100dvh - var(--spacing-32));
+  overflow: hidden;
+  pointer-events: auto;
+  transform-origin: center;
+  transition: opacity 200ms ease-out, transform 200ms ease-out;
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    opacity: 0;
+    transform: scale(0.96) translateY(0.8rem);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    & {
+      transition-duration: 0.01ms !important;
+    }
+    &[data-starting-style],
+    &[data-ending-style] {
+      transform: none;
+    }
+  }
+}
+
+/* ── Size variants ── */
+.sm { max-width: 36rem; }
+.md { max-width: 52rem; }
+.lg { max-width: 72rem; }
+
+/* ── Header ── */
+.Header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-12);
+  padding: var(--spacing-8) var(--spacing-8) var(--spacing-8) var(--spacing-12);
+  border-bottom: 1px solid var(--grey-20);
+  background-color: var(--grey-10);
+}
+
+/* ── Body ── */
+.Body {
+  flex: 1;
+  min-height: 0;
+  padding: var(--spacing-12);
+}
+
+/* ── Footer ── */
+.Footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-8);
+  padding: var(--spacing-2) var(--spacing-12) var(--spacing-12) var(--spacing-12);
+}
+
+/* ── Title ── */
+.Title {
+  composes: text-lg weight-600 from global;
+  color: var(--grey-60);
+  margin: 0;
+}
+
+/* ── Description ── */
+.Description {
+  composes: text-base weight-400 from global;
+  color: var(--grey-100);
+  margin: 0;
+}

@@ -1,0 +1,11 @@
+.Field {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  padding: var(--spacing-4) 0;
+}
+
+.Control {
+  flex: 1;
+  min-width: 0;
+}

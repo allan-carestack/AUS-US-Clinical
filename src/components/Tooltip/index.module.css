@@ -1,0 +1,30 @@
+.Positioner {
+  z-index: 9999;
+}
+
+.Popup {
+  composes: text-base weight-400 from global;
+  background-color: var(--grey-80);
+  color: var(--white);
+  padding: var(--spacing-4) var(--spacing-8);
+  border-radius: var(--radius-default);
+  max-width: 20rem;
+  transform-origin: var(--transform-origin);
+  transition: opacity 150ms ease-out, transform 150ms ease-out;
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    opacity: 0;
+    transform: scale(0.90);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    & {
+      transition-duration: 0.01ms !important;
+    }
+    &[data-starting-style],
+    &[data-ending-style] {
+      transform: none;
+    }
+  }
+}

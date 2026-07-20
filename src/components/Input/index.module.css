@@ -1,0 +1,136 @@
+/* ── Root ── */
+.Root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  width: 100%;
+}
+
+/* ── Label ── */
+.Label {
+  composes: text-base weight-400 from global;
+  color: var(--grey-80);
+}
+
+/* ── Field container ── */
+.Field {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  padding: 0 var(--spacing-8);
+  height: 2.4rem;
+  border: 1px solid var(--outline-darker);
+  border-radius: var(--radius-default);
+  background-color: var(--white);
+  cursor: text;
+  transition: border-color 120ms ease-out, background-color 120ms ease-out;
+
+  @media (hover: hover) {
+    &:not(:has(.Control:disabled)):hover {
+      border-color: var(--grey-40);
+      background-color: var(--hover-default);
+    }
+  }
+
+  &:focus-within:not(:has(.Control:disabled)) {
+    border-color: var(--blue-80);
+    box-shadow: 0 0 0 1px var(--blue-80);
+  }
+
+  &.error {
+    border-color: var(--red-80);
+
+    &:focus-within {
+      border-color: var(--red-80);
+    }
+  }
+
+  &:has(.Control:disabled) {
+    background-color: var(--grey-10);
+    border-color: var(--grey-20);
+  }
+}
+
+/* ── Native input ── */
+.Control {
+  composes: text-base weight-400 from global;
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--grey-100);
+  padding: 0;
+
+  &[type='date']::-webkit-calendar-picker-indicator {
+    display: none;
+  }
+  &[type='date']::-webkit-inner-spin-button,
+  &[type='date']::-webkit-outer-spin-button {
+    display: none;
+  }
+
+  &::placeholder {
+    color: var(--grey-40);
+  }
+
+  &:disabled {
+    color: var(--grey-40);
+    cursor: not-allowed;
+  }
+}
+
+/* ── Right-side icons ── */
+.Icons {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  flex-shrink: 0;
+}
+
+/* ── Clear button ── */
+.ClearBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-default);
+  background: transparent;
+  color: var(--grey-60);
+  cursor: pointer;
+  transition: color 100ms ease-out;
+
+  @media (hover: hover) {
+    &:hover {
+      color: var(--grey-100);
+    }
+  }
+}
+
+/* ── Static icon slot ── */
+.IconSlot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--grey-40);
+
+  .Field:has(.Control:disabled) & {
+    color: var(--grey-20);
+  }
+}
+
+/* ── Description ── */
+.Description {
+  composes: text-sm weight-400 from global;
+  margin: 0;
+  color: var(--grey-60);
+}
+
+/* ── Error text ── */
+.ErrorText {
+  composes: text-sm weight-400 from global;
+  color: var(--red-80);
+}

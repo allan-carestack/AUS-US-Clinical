@@ -1,0 +1,131 @@
+/* ── ListItem ──
+   Shared styling for the interactive rows inside Select, Combobox and Menu
+   popups. The container class (.ListItem) is composed onto each library's own
+   Item primitive; the inner slots (.Checkbox, .Icon, .Text, .Label, .Subtext)
+   are rendered by the shared <ListItem> content component. */
+.ListItem {
+  composes: text-base weight-400 from global;
+  /* Highlight palette — variants (e.g. .Destructive) retint the row simply by
+     overriding these, so the single [data-highlighted] rule below stays the
+     source of truth for the highlighted look. */
+  --list-highlight-bg: var(--hover-default);
+  --list-highlight-color: var(--grey-100);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  padding: var(--spacing-4) var(--spacing-8);
+  min-height: 2.4rem;
+  color: var(--grey-80);
+  cursor: pointer;
+  outline: none;
+  flex-shrink: 0;
+  user-select: none;
+  border-radius: var(--radius-default);
+
+  &[data-highlighted], &[data-popup-open] { background-color: var(--list-highlight-bg); color: var(--list-highlight-color); }
+  &[data-selected], &[data-checked]       { background-color: var(--interactive-10); color: var(--interactive-100); font-weight: 500; }
+  &[data-disabled]                        { opacity: 0.4; cursor: not-allowed; }
+}
+
+/* Current-value highlight for pickers that pre-mark an existing selection
+   (e.g. the code-change combobox pinning the row's current code to the top).
+   Mirrors the [data-selected] look so "the selected one" reads identically
+   across every combobox. Lower specificity than [data-highlighted], so hover/
+   keyboard focus still take over on the current row. */
+.Current {
+  background-color: var(--interactive-10);
+  color: var(--interactive-100);
+  font-weight: 500;
+}
+
+/* Give rows breathing room only when a subtext line is present. Label-only
+   rows keep their exact 2.4rem height. */
+.ListItem:has(.Subtext) {
+  padding-top: var(--spacing-6);
+  padding-bottom: var(--spacing-6);
+}
+
+/* Destructive variant — apply alongside .ListItem for actions like Delete.
+   Retints the shared highlight (red-80 text on an 8% red-80 wash) by overriding
+   the highlight variables; the base [data-highlighted] rule does the rest. */
+.Destructive {
+  color: var(--red-80);
+  --list-highlight-bg: rgb(from var(--red-80) r g b / 8%);
+  --list-highlight-color: var(--red-80);
+}
+
+.Destructive .Icon {
+  color: var(--red-80);
+}
+
+/* Checkbox (multiselect) — checked state is driven purely by the item's
+   [data-selected]/[data-checked] attribute, no JS state. Select/Combobox use
+   data-selected; Menu.CheckboxItem/RadioItem use data-checked. */
+.Checkbox {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1.5px solid var(--grey-40);
+  border-radius: var(--radius-4);
+  background-color: var(--white);
+  color: transparent;
+  transition: background-color 100ms, border-color 100ms;
+}
+
+.ListItem[data-selected] .Checkbox,
+.ListItem[data-checked] .Checkbox {
+  background-color: var(--interactive-80);
+  border-color: var(--interactive-80);
+  color: var(--white);
+}
+
+/* Single-select checkmark — shown only on the selected/checked row. */
+.Indicator {
+  width: 1.4rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--interactive-80);
+  visibility: hidden;
+}
+
+.ListItem[data-selected] .Indicator,
+.ListItem[data-checked] .Indicator {
+  visibility: visible;
+}
+
+/* Leading/trailing icon slot. */
+.Icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: top;
+  color: var(--grey-60);
+}
+
+/* Label + subtext column. */
+.Text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.Label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.Subtext {
+  composes: text-sm from global;
+  color: var(--grey-40);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

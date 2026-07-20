@@ -1,0 +1,127 @@
+:root {
+  /* interactive palette */
+  --interactive-100: #0A5C71;
+  --interactive-80:  #007A8F;
+  --interactive-60:  #33A0B2;
+  --interactive-40:  #8ACDDA;
+  --interactive-20:  #B3E0E8;
+  --interactive-10:  #E0F4F7;
+  --interactive-5:   #EBF7F9;
+
+  /* greyscale palette */
+  --grey-100: #0D161D;
+  --grey-80:  #3C4958;
+  --grey-60:  #5D6F7E;
+  --grey-40:  #94A6B1;
+  --grey-20:  #D9DFE7;
+  --grey-10:  #ECEFF2;
+  --grey-5:   #F7F8FA;
+  --white:    #FFFFFF;
+
+  /* indicator — red */
+  --red-100: #A70A0A;
+  --red-80:  #D93636;
+  --red-60:  #FF7C7C;
+  --red-40:  #FFA4A4;
+  --red-20:  #FFC0C0;
+  --red-10:  #FFDDDD;
+  --red-5:   #FFEFEF;
+
+  /* indicator — orange */
+  --orange-100: #C06800;
+  --orange-80:  #DA7C0D;
+  --orange-60:  #EE962E;
+  --orange-40:  #FCB86A;
+  --orange-20:  #FFCC92;
+  --orange-10:  #FFE8CE;
+  --orange-5:   #FFF3E5;
+
+  /* indicator — green */
+  --green-100: #00772E;
+  --green-80:  #2A9F58;
+  --green-60:  #60BF85;
+  --green-40:  #9EDDB7;
+  --green-20:  #BEE9CE;
+  --green-10:  #D9F5E4;
+  --green-5:   #EDFCF3;
+
+  /* accents — blue */
+  --blue-100: #2A57A6;
+  --blue-80:  #3F71C8;
+  --blue-60:  #78A3EF;
+  --blue-40:  #A1C1FC;
+  --blue-20:  #BCD5FF;
+  --blue-10:  #D5E3FB;
+  --blue-5:   #F1F6FF;
+
+  /* accents — brown */
+  --brown-100: #8C3724;
+  --brown-80:  #AB523F;
+  --brown-60:  #C67867;
+  --brown-40:  #DEA89C;
+  --brown-20:  #EDBEB4;
+  --brown-10:  #F5DCD7;
+  --brown-5:   #FAF1EF;
+
+  /* accents — gold */
+  --gold-100: #77560B;
+  --gold-80:  #92741B;
+  --gold-60:  #A9904A;
+  --gold-40:  #CBB67C;
+  --gold-20:  #DECD9C;
+  --gold-10:  #F1E9CF;
+  --gold-5:   #F8F5EC;
+
+  /* accents — olive */
+  --olive-100: #586700;
+  --olive-80:  #748415;
+  --olive-60:  #93A331;
+  --olive-40:  #B8C665;
+  --olive-20:  #CAD875;
+  --olive-10:  #E6F0AB;
+  --olive-5:   #F4F8DF;
+
+  /* accents — turquoise */
+  --turquoise-100: #007B6C;
+  --turquoise-80:  #25998B;
+  --turquoise-60:  #38B9AA;
+  --turquoise-40:  #63D1C4;
+  --turquoise-20:  #86E0D5;
+  --turquoise-10:  #CAF3EE;
+  --turquoise-5:   #E1FAF7;
+
+  /* accents — purple */
+  --purple-100: #5E30CD;
+  --purple-80:  #7348D9;
+  --purple-60:  #9E79F4;
+  --purple-40:  #C3A9FF;
+  --purple-20:  #D4C1FF;
+  --purple-10:  #EAE1FF;
+  --purple-5:   #F5F0FF;
+
+  /* accents — pink */
+  --pink-100: #A12259;
+  --pink-80:  #C23572;
+  --pink-60:  #E96EA5;
+  --pink-40:  #F59AC6;
+  --pink-20:  #F8B3D5;
+  --pink-10:  #FED8EB;
+  --pink-5:   #FFEEF7;
+
+  /* hover palette */
+  --hover-default:        rgb(from var(--grey-60) r g b / 8%);
+  --hover-darker:         rgb(from var(--grey-60) r g b / 12%);
+  --hover-inverse:        rgb(from var(--white) r g b / 12%);
+  --hover-inverse-darker: rgb(from var(--white) r g b / 8%);
+
+  /* outline palette */
+  --outline-default:        rgb(from var(--grey-60) r g b / 12%);
+  --outline-lighter:        rgb(from var(--grey-60) r g b / 8%);
+  --outline-darker:         rgb(from var(--grey-60) r g b / 24%);
+  --outline-inverse:        rgb(from var(--white) r g b / 12%);
+  --outline-inverse-darker: rgb(from var(--white) r g b / 8%);
+
+  /* overlay — modal/drawer backdrop */
+  --overlay-backdrop: rgba(0, 0, 0, 0.4);
+  --overlay-blur:     4px;
+}

@@ -1,0 +1,53 @@
+/* ── Single toggle button ── */
+.Toggle {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-default);
+  color: var(--grey-60);
+  background-color: transparent;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+
+  &:focus-visible {
+    outline: 2px solid var(--grey-40);
+    outline-offset: 2px;
+  }
+
+  @media (hover: hover) {
+    &:not([data-disabled]):not([data-pressed]):hover {
+      background-color: var(--hover-default);
+    }
+
+    &[data-pressed]:not([data-disabled]):hover {
+      background-color: var(--grey-100);
+    }
+
+    &:active:not([data-disabled]) {
+      padding-top: 0.1rem;
+    }
+  }
+
+  &[data-pressed] {
+    background-color: var(--grey-80);
+    color: var(--white);
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+}
+
+/* ── Toggle group ── */
+.Group {
+  display: inline-flex;
+  gap: var(--spacing-4);
+}

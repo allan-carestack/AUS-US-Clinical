@@ -1,0 +1,147 @@
+/* ── InputGroup (outer field container) ── */
+.InputGroup {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 2.4rem;
+  padding: 0 var(--spacing-8);
+  gap: var(--spacing-4);
+  border: 1px solid var(--outline-darker);
+  border-radius: var(--radius-default);
+  background-color: var(--white);
+  transition: border-color 120ms ease-out, background-color 120ms ease-out;
+
+  @media (hover: hover) {
+    &:not(:has([disabled])):hover {
+      border-color: var(--grey-40);
+      background-color: var(--hover-default);
+    }
+  }
+
+  &:focus-within {
+    border-color: var(--blue-80);
+    box-shadow: 0 0 0 1px var(--blue-80);
+  }
+}
+
+/* ── Input (borderless, inside InputGroup) ── */
+.Input {
+  composes: text-base weight-400 from global;
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--grey-100);
+  padding: 0;
+
+  &::placeholder { color: var(--grey-40); }
+  &:disabled { color: var(--grey-40); cursor: not-allowed; }
+}
+
+/* ── Chevron trigger ── */
+.Trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--grey-60);
+}
+
+.Icon {
+  display: flex;
+  align-items: center;
+  transform: rotate(180deg);
+  transition: transform 120ms ease;
+  pointer-events: none;
+}
+
+.Trigger[data-popup-open] .Icon {
+  transform: rotate(0deg);
+}
+
+/* ── Positioner ── */
+.Positioner {
+  composes: Positioner from '../_shared/popupPanel.module.css';
+  width: var(--anchor-width);
+}
+
+/* ── Popup ── */
+.Popup {
+  composes: Popup from '../_shared/popupPanel.module.css';
+}
+
+/* display:flex + max-height — see Select/index.module.css for why a plain
+   block with max-height breaks ScrollAreaViewport's height:100%. */
+.ListScrollArea {
+  display: flex;
+  flex-direction: column;
+  max-height: 24rem;
+}
+
+.List {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+}
+
+/* ── Item ── */
+.Item {
+  composes: ListItem from '../_shared/listItem.module.css';
+}
+
+/* Current-value highlight (e.g. the code-change combobox's existing code). */
+.ItemCurrent {
+  composes: Current from '../_shared/listItem.module.css';
+}
+
+.ItemIndicator {
+  composes: Indicator from '../_shared/listItem.module.css';
+}
+
+/* ── Selected badge (multiselect) ── */
+.SelectedBadge {
+  composes: text-sm weight-500 from global;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--spacing-6);
+  height: 1.6rem;
+  background-color: var(--interactive-10);
+  color: var(--interactive-100);
+  border-radius: var(--radius-4);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.ClearButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: none;
+  padding: 0;
+  border-radius: var(--radius-4);
+  background: transparent;
+  color: var(--grey-60);
+  cursor: pointer;
+  &:hover { color: var(--grey-100); }
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--blue-80);
+  }
+}
+
+/* ── Empty state ── */
+.Empty {
+  composes: text-base weight-400 from global;
+  padding: var(--spacing-12) var(--spacing-8);
+  color: var(--grey-40);
+  text-align: center;
+}

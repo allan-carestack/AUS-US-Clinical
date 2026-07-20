@@ -1,0 +1,49 @@
+/* ── Scrollable tab list: hides native scrollbar + drops the bottom border ── */
+.ScrollList {
+  scrollbar-width: none;
+  padding: var(--spacing-0) var(--spacing-4) var(--spacing-0) var(--spacing-12);
+}
+
+.ScrollList::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Scrollable plan-tab strip (middle section) — scrolling itself is now
+   handled by the ScrollArea component wrapped around this element ── */
+.PlanScroll {
+  flex: 1;
+  min-width: 0;
+}
+
+/* This strip only ever scrolls horizontally — the tab list is a single row —
+   so the viewport's vertical axis is disabled to prevent a spurious
+   trackpad/wheel vertical scroll (with nothing visible to scroll to). */
+.PlanViewport {
+  /* Base UI sets `overflow: scroll` on both axes via inline style; !important
+     is required here to override it and disable the unused vertical axis. */
+  overflow-y: hidden !important;
+}
+
+/* ── Plan tabs — fixed max width with ellipsis on the inner label ── */
+.PlanTab {
+  max-width: 100px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.PlanTabLabel {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* ── Chevron that smoothly flips between pointing up/down ── */
+.Chevron {
+  transition: transform 200ms ease;
+}
+
+.ChevronDown {
+  transform: rotate(180deg);
+}

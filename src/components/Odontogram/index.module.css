@@ -1,0 +1,116 @@
+.Odontogram {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: var(--spacing-16);
+  height: 30rem;
+  padding: var(--spacing-12);
+  background: var(--white);
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.Toolbar {
+  align-self: flex-start;
+}
+
+.ArchRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-4);
+  width: max-content;
+  margin: 0 auto;
+}
+
+
+.ToothCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.ToothSvg {
+  overflow: visible;
+}
+
+.ToothOutline {
+  fill: var(--white);
+  stroke: var(--grey-40);
+}
+
+.ToothSurface {
+  fill: var(--white);
+  stroke: var(--grey-20);
+  stroke-width: 1;
+  cursor: pointer;
+  transition: fill 120ms ease;
+}
+
+.ToothSurface:hover {
+  fill: var(--interactive-5);
+}
+
+.ToothSurface:focus-visible {
+  outline: 2px solid var(--interactive-80);
+  outline-offset: 1px;
+}
+
+/* Tooth-first flow: this specific surface was just clicked and is waiting
+   for a CarePanel chip to complete the selection. */
+.ToothSurfaceArmed {
+  fill: var(--interactive-10);
+  stroke: var(--interactive-80);
+  stroke-width: 1.5;
+}
+
+.MissingOverlay rect {
+  fill: var(--grey-20);
+  opacity: 0.55;
+}
+
+.MissingOverlay line {
+  stroke: var(--grey-60);
+  stroke-width: 2;
+}
+
+.ToothWholeRing {
+  fill: none;
+  stroke-width: 3;
+}
+
+.ToothBadgeText {
+  composes: text-sm weight-500 from global;
+  fill: var(--white);
+  text-anchor: middle;
+}
+
+.ToothNumber {
+  composes: text-sm weight-500 from global;
+  border: none;
+  background: transparent;
+  color: var(--grey-60);
+  cursor: pointer;
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-default);
+}
+
+.ToothNumber:hover {
+  background: var(--hover-default);
+  color: var(--grey-100);
+}
+
+.ToothNumber:focus-visible {
+  outline: 2px solid var(--interactive-80);
+  outline-offset: 1px;
+}
+
+/* Tooth-first flow: this tooth (whole-tooth, no surface) is the pending
+   selection, waiting for a CarePanel chip to complete it. */
+.ToothNumberArmed {
+  background: var(--interactive-10);
+  color: var(--interactive-100);
+}

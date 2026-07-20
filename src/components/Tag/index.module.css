@@ -1,0 +1,59 @@
+/* ── Color tokens — two CSS vars per color ── */
+.colorGreen      { --tag-strong: var(--green-80); --tag-stronger: var(--green-100);       --tag-light: var(--green-10);       }
+.colorRed        { --tag-strong: var(--red-80);         --tag-stronger: var(--red-100);       --tag-light: var(--red-10);         }
+.colorOrange     { --tag-strong: var(--orange-80);      --tag-stronger: var(--orange-100);     --tag-light: var(--orange-10);      }
+.colorBlue       { --tag-strong: var(--blue-80);        --tag-stronger: var(--blue-100);       --tag-light: var(--blue-10);        }
+.colorTeal       { --tag-strong: var(--interactive-80); --tag-stronger: var(--interactive-100); --tag-light: var(--interactive-10); }
+.colorGrey       { --tag-strong: var(--grey-60);        --tag-stronger: var(--grey-100);       --tag-light: var(--grey-10);        }
+.colorBrown      { --tag-strong: var(--brown-80);       --tag-stronger: var(--brown-100);      --tag-light: var(--brown-10);       }
+.colorGold       { --tag-strong: var(--gold-80);        --tag-stronger: var(--gold-100);       --tag-light: var(--gold-10);        }
+.colorOlive      { --tag-strong: var(--olive-80);       --tag-stronger: var(--olive-100);      --tag-light: var(--olive-10);       }
+.colorTurquoise  { --tag-strong: var(--turquoise-80);   --tag-stronger: var(--turquoise-100);   --tag-light: var(--turquoise-10);   }
+.colorPurple     { --tag-strong: var(--purple-80);      --tag-stronger: var(--purple-100);     --tag-light: var(--purple-10);      }
+.colorPink       { --tag-strong: var(--pink-80);        --tag-stronger: var(--pink-100);       --tag-light: var(--pink-10);        }
+
+/* ── Base ── */
+.Tag {
+  composes: text-base weight-400 from global;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  padding: var(--spacing-0) var(--spacing-6);
+  border-radius: var(--radius-default);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+/* ── Dot indicator ── */
+.Dot {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background-color: var(--tag-strong);
+  flex-shrink: 0;
+}
+
+/* ── Variants ── */
+.variantDot {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--grey-100);
+}
+
+.variantFill {
+  background-color: var(--tag-strong);
+  border-color: var(--tag-strong);
+  color: var(--white);
+}
+
+.variantSemi {
+  background-color: var(--tag-light);
+  border-color: transparent;
+  color: var(--tag-strong);
+}
+
+.variantOutline {
+  background-color: transparent;
+  border-color: var(--tag-strong);
+  color: var(--tag-strong);
+}

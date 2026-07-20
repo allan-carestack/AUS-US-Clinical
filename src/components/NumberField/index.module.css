@@ -1,0 +1,117 @@
+/* ── Root ── */
+.Root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  width: 100%;
+}
+
+/* ── Group container ── */
+.Group {
+  display: flex;
+  align-items: center;
+  height: 2.4rem;
+  border: 1px solid var(--outline-darker);
+  border-radius: var(--radius-default);
+  background-color: var(--white);
+  overflow: hidden;
+  transition: border-color 120ms ease-out, background-color 120ms ease-out;
+
+  @media (hover: hover) {
+    &:not(:has(.Control:disabled)):hover {
+      border-color: var(--grey-40);
+      background-color: var(--hover-default);
+    }
+  }
+
+  &:focus-within:not(:has(.Control:disabled)) {
+    border-color: var(--blue-80);
+    box-shadow: 0 0 0 1px var(--blue-80);
+  }
+
+  &.error {
+    border-color: var(--red-80);
+
+    &:focus-within {
+      border-color: var(--red-80);
+    }
+  }
+
+  &:has(.Control:disabled) {
+    background-color: var(--grey-10);
+    border-color: var(--grey-20);
+  }
+}
+
+/* ── Native input ── */
+.Control {
+  composes: text-base weight-400 from global;
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--grey-100);
+  padding: 0;
+  text-align: center;
+
+  &::placeholder {
+    color: var(--grey-40);
+  }
+
+  &:disabled {
+    color: var(--grey-40);
+    cursor: not-allowed;
+  }
+}
+
+/* ── Stepper buttons ── */
+.Stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.4rem;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--grey-60);
+  cursor: pointer;
+  transition: background-color 100ms ease-out, color 100ms ease-out;
+
+  @media (hover: hover) {
+    &:hover:not([data-disabled]) {
+      background-color: var(--hover-default);
+      color: var(--grey-100);
+    }
+  }
+
+  &[data-disabled] {
+    color: var(--grey-20);
+    cursor: not-allowed;
+  }
+}
+
+.Decrement {
+  composes: Stepper;
+  border-right: 1px solid var(--outline-darker);
+}
+
+.Increment {
+  composes: Stepper;
+  border-left: 1px solid var(--outline-darker);
+}
+
+/* ── Description ── */
+.Description {
+  composes: text-sm weight-400 from global;
+  margin: 0;
+  color: var(--grey-60);
+}
+
+/* ── Error text ── */
+.ErrorText {
+  composes: text-sm weight-400 from global;
+  color: var(--red-80);
+}

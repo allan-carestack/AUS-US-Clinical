@@ -1,0 +1,102 @@
+.Accordion {
+  box-sizing: border-box;
+  display: flex;
+  max-width: 20rem;
+  width: 100%;
+  flex-direction: column;
+  border: 1px solid var(--grey-20);
+  border-radius: var(--radius-default);
+  color: var(--grey-100);
+  overflow: hidden;
+}
+
+.Item {
+  & + & {
+    border-top: 1px solid var(--grey-20);
+  }
+}
+
+.Header {
+  margin: var(--spacing-0);
+}
+
+.Trigger {
+  composes: text-base weight-400 from global;
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-16);
+  padding: var(--spacing-8) var(--spacing-12);
+  margin: var(--spacing-0);
+  border: none;
+  border-radius: var(--spacing-0);
+  background-color: transparent;
+  color: var(--grey-100);
+  font-family: inherit;
+  text-align: left;
+  -webkit-user-select: none;
+  user-select: none;
+
+  @media (hover: hover) {
+    &:hover:not([data-disabled]) {
+      background-color: var(--hover-default);
+      color: var(--grey-100);
+    }
+  }
+
+  &[data-panel-open] {
+    background-color: var(--interactive-10);
+    color: var(--interactive-100);
+  }
+
+  &:focus-visible {
+    position: relative;
+    outline: 2px solid var(--interactive-60);
+    outline-offset: -2px;
+    z-index: 1;
+  }
+}
+
+.Icon {
+  flex-shrink: 0;
+  transition: transform 100ms ease-out;
+  color: var(--grey-40);
+
+  [data-panel-open] > & {
+    transform: rotate(45deg);
+    color: var(--interactive-100);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    & {
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+.Panel {
+  composes: text-base from global;
+  box-sizing: border-box;
+  height: var(--accordion-panel-height);
+  overflow: hidden;
+  transition: height 150ms ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    & {
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    height: 0;
+  }
+}
+
+.Content {
+  padding: var(--spacing-8) var(--spacing-12);
+  color: var(--grey-80);
+  border-top: 1px solid var(--grey-20);
+}

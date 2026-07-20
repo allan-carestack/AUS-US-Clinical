@@ -1,0 +1,105 @@
+.Viewport {
+  position: fixed;
+  bottom: var(--spacing-24);
+  right: var(--spacing-24);
+  width: 36rem;
+  max-width: calc(100vw - var(--spacing-48));
+  height: var(--toast-frontmost-height);
+  z-index: 9999;
+  outline: none;
+  transition: height 400ms cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+/* ── Base toast — shared by all variants ── */
+.Root {
+  composes: text-base weight-400 from global;
+  font-family: inherit;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+  padding: var(--spacing-8) var(--spacing-12);
+  border-radius: var(--radius-8);
+  color: var(--white);
+  box-shadow: var(--shadow);
+
+  /* Stacking layout */
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  transform-origin: bottom center;
+  /* index 0 = newest: full size at bottom; older = scaled down, peeking above */
+  transform: translateY(calc(var(--toast-index) * -0.8rem)) scale(calc(1 - var(--toast-index) * 0.05));
+  /* newest rendered first in DOM — needs explicit z-index to stay on top */
+  z-index: calc(100 - var(--toast-index));
+  transition: transform 400ms cubic-bezier(0.215, 0.61, 0.355, 1), opacity 300ms ease-out;
+
+  /* Expanded — fan upward with 0.4rem gap between toasts */
+  &[data-expanded] {
+    transform: translateY(calc(var(--toast-offset-y) * -1 - var(--toast-index) * 0.4rem));
+  }
+
+  /* Enter from below */
+  &[data-starting-style] {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+
+  /* Exit downward */
+  &[data-ending-style] {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    & {
+      transition-duration: 0.01ms !important;
+    }
+    &[data-starting-style],
+    &[data-ending-style] {
+      transform: translateY(0) !important;
+    }
+  }
+}
+
+/* ── Variants — only background differs ── */
+.success  { composes: Root; background-color: var(--green-80);   }
+.failure  { composes: Root; background-color: var(--red-80);    }
+.info     { composes: Root; background-color: var(--blue-80);   }
+.warning  { composes: Root; background-color: var(--orange-80); }
+
+/* ── Base icon circle — shared ── */
+.IconCircle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  color: var(--white);
+}
+
+/* ── Icon variants — only background differs ── */
+.iconSuccess  { composes: IconCircle; background-color: var(--green-100); width: 3.2rem; height: 3.2rem;  }
+.iconFailure  { composes: IconCircle; background-color: var(--red-100);    width: 3.2rem; height: 3.2rem; }
+.iconInfo     { composes: IconCircle; background-color: var(--blue-100);   width: 3.2rem; height: 3.2rem; }
+.iconWarning  { composes: IconCircle; background-color: var(--orange-100); width: 3.2rem; height: 3.2rem; }
+
+/* ── Scale icons to 16px inside the circles ── */
+.iconSuccess svg,
+.iconFailure svg,
+.iconInfo svg,
+.iconWarning svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+/* ── Message text ── */
+.Message {
+  composes: text-base weight-400 from global;
+  font-family: inherit;
+  flex: 1;
+  min-width: 0;
+  color: var(--white);
+}

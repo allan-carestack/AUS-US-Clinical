@@ -1,0 +1,96 @@
+/* ── Positioner ── */
+.Positioner {
+  composes: Positioner from '../_shared/popupPanel.module.css';
+}
+
+/* ── Popup ── */
+.Popup {
+  composes: Popup from '../_shared/popupPanel.module.css';
+  min-width: 16rem;
+  padding: var(--spacing-4);
+}
+
+/* ── Item ── */
+.Item {
+  composes: ListItem from '../_shared/listItem.module.css';
+}
+
+.ItemIndicator {
+  composes: Indicator from '../_shared/listItem.module.css';
+}
+
+.Destructive {
+  composes: Destructive from '../_shared/listItem.module.css';
+}
+
+/* ── Separator ── */
+.Separator {
+  height: 1px;
+  background-color: var(--grey-20);
+  margin: var(--spacing-4) 0;
+}
+
+/* ── Group label ── */
+.GroupLabel {
+  composes: text-sm weight-500 from global;
+  padding: var(--spacing-8);
+  color: var(--grey-40);
+  text-transform: uppercase;
+}
+
+/* ── Submenu trigger chevron ── */
+.SubmenuIndicator {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: var(--grey-40);
+}
+
+/* ── Backdrop (rare for menus, included for anatomy completeness) ── */
+.Backdrop {
+  position: fixed;
+  inset: 0;
+}
+
+/* ── Arrow ── */
+.Arrow {
+  display: block;
+  position: relative;
+  width: 1.2rem;
+  height: 0.6rem;
+  overflow: clip;
+
+  &[data-side='top'] {
+    bottom: -0.6rem;
+    rotate: 180deg;
+  }
+
+  &[data-side='bottom'] {
+    top: -0.6rem;
+    rotate: 0deg;
+  }
+
+  &[data-side='left'] {
+    right: -0.9rem;
+    rotate: 90deg;
+  }
+
+  &[data-side='right'] {
+    left: -0.9rem;
+    rotate: -90deg;
+  }
+
+  &::before {
+    content: '';
+    display: block;
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    box-sizing: border-box;
+    width: 0.85rem;
+    height: 0.85rem;
+    background-color: var(--white);
+    border: 1px solid var(--outline-darker);
+    transform: translate(-50%, 50%) rotate(45deg);
+  }
+}

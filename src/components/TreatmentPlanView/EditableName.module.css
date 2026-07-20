@@ -1,0 +1,45 @@
+.Root {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.Text {
+  display: block;
+  box-sizing: border-box;
+  min-width: 0;
+  /* No width:100% — that + ellipsis collapses flex/grid intrinsic sizing. */
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+  font: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  outline: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+
+/* Keep edits inside the truncated box — no spill over siblings. */
+.TextEditing {
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-overflow: clip;
+  cursor: text;
+  user-select: text;
+  scrollbar-width: none;
+}
+
+.TextEditing::-webkit-scrollbar {
+  display: none;
+}
+
+.TextEditing:focus {
+  outline: none;
+}

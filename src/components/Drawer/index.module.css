@@ -1,0 +1,98 @@
+/* ── Backdrop ── */
+.Backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: var(--overlay-backdrop);
+  backdrop-filter: blur(var(--overlay-blur));
+  transition: opacity 250ms ease-out;
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    opacity: 0;
+  }
+}
+
+/* ── Viewport ── */
+.Viewport {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: flex-start;
+  pointer-events: none;
+}
+
+/* ── Popup ── */
+.Popup {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--white);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  pointer-events: auto;
+  transition: transform 400ms cubic-bezier(0.4, 0, 0.2, 1), width 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    & {
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ── Size variants ── */
+.sm { width: 32rem; }
+.md { width: 48rem; }
+.lg { width: 64rem; }
+
+/* ── Header ── */
+.Header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-12);
+  padding: var(--spacing-8) var(--spacing-8) var(--spacing-8) var(--spacing-12);
+  background: linear-gradient(to right, var(--grey-80), var(--grey-60));
+}
+
+/* ── Body ── */
+.Body {
+  flex: 1;
+  min-height: 0;
+}
+
+.BodyContent {
+  padding: var(--spacing-12);
+}
+
+/* ── Footer ── */
+.Footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-8);
+  padding: var(--spacing-8) var(--spacing-12);
+  border-top: 1px solid var(--grey-20);
+}
+
+/* ── Title ── */
+.Title {
+  composes: text-lg weight-600 from global;
+  color: var(--white);
+  margin: 0;
+}
+
+/* ── Description ── */
+.Description {
+  composes: text-base weight-400 from global;
+  color: var(--grey-100);
+  margin: 0;
+}

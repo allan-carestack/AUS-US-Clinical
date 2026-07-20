@@ -1,0 +1,54 @@
+.Alert {
+  --alert-color: var(--grey-100);
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  column-gap: var(--spacing-8);
+  align-items: start;
+  min-height: 3.2rem;
+  padding: var(--spacing-4) var(--spacing-12);
+  border-radius: var(--radius-default);
+}
+
+/* ── Variants ── */
+.info    { --alert-title: var(--blue-100); --alert-color: var(--blue-80);  background-color: var(--blue-5); box-shadow: 0 0 0 1px rgb(from var(--blue-80) r g b / 24%); }
+.warning { --alert-title: var(--orange-100); --alert-color: var(--orange-80);  background-color: var(--orange-5); box-shadow: 0 0 0 1px rgb(from var(--orange-80) r g b / 24%);}
+.error   { --alert-title: var(--red-100); --alert-color: var(--red-80);   background-color: var(--red-5); box-shadow: 0 0 0 1px rgb(from var(--red-80) r g b / 24%);}
+.success { --alert-title: var(--green-100); --alert-color: var(--green-80); background-color: var(--green-5); box-shadow: 0 0 0 1px rgb(from var(--green-80) r g b / 24%);}
+
+/* ── Icon ── */
+.Icon {
+  color: var(--alert-color);
+  display: flex;
+  padding-top: var(--spacing-8);
+  align-items: center;
+  justify-content: center;
+  height: var(--text-base-line-height);
+
+  & svg {
+    width: 1.6rem;
+    height: 1.6rem;
+    flex-shrink: 0;
+  }
+}
+
+/* ── Content (titled variant) ── */
+.Content {
+  display: flex;
+  flex-direction: column;
+}
+
+.Title {
+  composes: text-base weight-700 from global;
+  color: var(--alert-title);
+  padding-top: var(--spacing-4);
+
+}
+
+/* ── Body text ── */
+.Body {
+  composes: text-base weight-400 from global;
+  color: var(--grey-80);
+  padding: var(--spacing-4) 0;
+}
+
+

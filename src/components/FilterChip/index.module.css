@@ -1,0 +1,135 @@
+/* ── Color tokens — per color: strong (border/text), stronger (hover-while-
+   selected fill), selected (fill when pressed), light (hover tint when
+   unselected) ── */
+/* grey matches AU Chart filter chips (Figma 925:110622): grey-20 border,
+   grey-80 label, grey-60 selected fill. Other colors keep strong = border. */
+.colorGrey   { --chip-strong: var(--grey-80);    --chip-border: var(--grey-20);    --chip-selected: var(--grey-60);    --chip-selected-hover: var(--grey-80);    --chip-light: var(--grey-10); }
+.colorPink   { --chip-strong: var(--pink-80);    --chip-border: var(--pink-80);    --chip-selected: var(--pink-80);    --chip-selected-hover: var(--pink-100);    --chip-light: var(--pink-5); }
+.colorPurple { --chip-strong: var(--purple-80);  --chip-border: var(--purple-80);  --chip-selected: var(--purple-80);  --chip-selected-hover: var(--purple-100);  --chip-light: var(--purple-10); }
+.colorOlive  { --chip-strong: var(--olive-80);   --chip-border: var(--olive-80);   --chip-selected: var(--olive-80);   --chip-selected-hover: var(--olive-100);   --chip-light: var(--olive-10); }
+
+/* ── Base ── */
+.Chip {
+  composes: text-base weight-400 from global;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  box-sizing: border-box;
+  margin: 0;
+  height: 2.4rem;
+  padding: var(--spacing-2) var(--spacing-8);
+  border: 1px solid var(--chip-border, var(--chip-strong));
+  border-radius: var(--radius-8);
+  background-color: var(--white);
+  color: var(--chip-strong);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 100ms ease-out, border-color 100ms ease-out, color 100ms ease-out;
+
+  &:focus-visible {
+    outline: 2px solid var(--blue-80);
+    outline-offset: 2px;
+  }
+
+  @media (hover: hover) {
+    &:not([data-disabled]):not([data-pressed]):hover {
+      background-color: var(--chip-light);
+    }
+
+    &[data-pressed]:not([data-disabled]):hover {
+      background-color: var(--chip-selected-hover);
+      border-color: var(--chip-selected-hover);
+    }
+  }
+
+  &:not([data-disabled]):not([data-pressed]):active {
+    padding-top: 1px;
+    background-color: var(--chip-light);
+  }
+
+  &[data-pressed] {
+    background-color: var(--chip-selected);
+    border-color: var(--chip-selected);
+    color: var(--white);
+  }
+
+  &[data-pressed]:not([data-disabled]):active {
+    background-color: var(--chip-selected-hover);
+    border-color: var(--chip-selected-hover);
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+}
+
+/* ── Icon slot ── */
+.Icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/* ── Label ── */
+.Label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Badge ── */
+.Badge {
+  composes: text-base weight-400 from global;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 var(--spacing-4);
+  border-radius: var(--radius-32);
+  background-color: var(--chip-light);
+  color: var(--chip-strong);
+  flex-shrink: 0;
+}
+
+.Chip[data-pressed] .Badge {
+  background-color: var(--white);
+  color: var(--chip-selected);
+}
+
+/* ── Shape ── */
+.pill {
+  border-radius: var(--radius-32);
+}
+
+/* ── Badge variants (AU Chart filters row) ──
+   count: solid dark circle + white number; notification: red + white.
+   On a pressed (dark) chip, count inverts to stay legible; notification
+   keeps its red so the alert semantic survives selection. */
+.badgeCount {
+  composes: text-sm weight-500 from global;
+  box-sizing: border-box;
+  background-color: var(--grey-60);
+  color: var(--white);
+  border: 1px solid var(--white);
+}
+
+.Chip[data-pressed] .badgeCount {
+  background-color: var(--white);
+  color: var(--grey-60);
+  border-color: var(--white);
+}
+
+.badgeNotification {
+  composes: text-sm weight-500 from global;
+  box-sizing: border-box;
+  background-color: var(--red-80);
+  color: var(--white);
+  border: 1px solid var(--white);
+}
+
+.Chip[data-pressed] .badgeNotification {
+  background-color: var(--red-80);
+  color: var(--white);
+  border-color: var(--white);
+}

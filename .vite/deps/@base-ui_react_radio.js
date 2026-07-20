@@ -1,0 +1,295 @@
+import { i as __toESM, r as __exportAll, t as require_react } from "./react-CZunmVaX.js";
+import { D as NOOP, E as EMPTY_OBJECT, O as useIsoLayoutEffect, a as useMergedRefs, k as useStableCallback, m as getWindow, t as useRenderElement } from "./useRenderElement-CD8_51dU.js";
+import { a as transitionStatusMapping, t as useOpenChangeComplete } from "./useOpenChangeComplete-DDdALft_.js";
+import { t as require_jsx_runtime } from "./jsx-runtime-DdbNDrdp.js";
+import { n as visuallyHiddenInput, t as visuallyHidden } from "./visuallyHidden-B282sV0y.js";
+import { t as useButton } from "./useButton-BsRrElKS.js";
+import { t as createChangeEventDetails, v as none } from "./createBaseUIEventDetails-DZH4eiwI.js";
+import { t as useTransitionStatus } from "./useTransitionStatus-Cmcf6noJ.js";
+import { t as useBaseUiId } from "./useBaseUiId-BJnNLmSV.js";
+import { t as ACTIVE_COMPOSITE_ITEM } from "./constants-B3roFcye.js";
+import { n as serializeValue, t as useLabelableId } from "./useLabelableId-BguZh5OD.js";
+import { i as useFieldRootContext, o as fieldValidityMapping, t as useLabelableContext } from "./LabelableContext-D9NkuaDX.js";
+import { t as CompositeItem } from "./CompositeItem-B5DPlxWz.js";
+import { n as useFieldItemContext, t as useAriaLabelledBy } from "./useAriaLabelledBy-Wy82p0Zs.js";
+import { n as useRadioGroupContext } from "./RadioGroupContext-BK2EQbaL.js";
+//#region node_modules/@base-ui/react/esm/radio/root/RadioRootDataAttributes.js
+var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
+var RadioRootDataAttributes = /*#__PURE__*/ function(RadioRootDataAttributes) {
+	/**
+	* Present when the radio is checked.
+	*/
+	RadioRootDataAttributes["checked"] = "data-checked";
+	/**
+	* Present when the radio is not checked.
+	*/
+	RadioRootDataAttributes["unchecked"] = "data-unchecked";
+	/**
+	* Present when the radio is disabled.
+	*/
+	RadioRootDataAttributes["disabled"] = "data-disabled";
+	/**
+	* Present when the radio is readonly.
+	*/
+	RadioRootDataAttributes["readonly"] = "data-readonly";
+	/**
+	* Present when the radio is required.
+	*/
+	RadioRootDataAttributes["required"] = "data-required";
+	/**
+	* Present when the radio is in a valid state (when wrapped in Field.Root).
+	*/
+	RadioRootDataAttributes["valid"] = "data-valid";
+	/**
+	* Present when the radio is in an invalid state (when wrapped in Field.Root).
+	*/
+	RadioRootDataAttributes["invalid"] = "data-invalid";
+	/**
+	* Present when the radio has been touched (when wrapped in Field.Root).
+	*/
+	RadioRootDataAttributes["touched"] = "data-touched";
+	/**
+	* Present when the radio's value has changed (when wrapped in Field.Root).
+	*/
+	RadioRootDataAttributes["dirty"] = "data-dirty";
+	/**
+	* Present when the radio is checked (when wrapped in Field.Root).
+	*/
+	RadioRootDataAttributes["filled"] = "data-filled";
+	/**
+	* Present when the radio is focused (when wrapped in Field.Root).
+	*/
+	RadioRootDataAttributes["focused"] = "data-focused";
+	return RadioRootDataAttributes;
+}({});
+//#endregion
+//#region node_modules/@base-ui/react/esm/radio/utils/stateAttributesMapping.js
+var stateAttributesMapping = {
+	checked(value) {
+		if (value) return { [RadioRootDataAttributes.checked]: "" };
+		return { [RadioRootDataAttributes.unchecked]: "" };
+	},
+	...transitionStatusMapping,
+	...fieldValidityMapping
+};
+//#endregion
+//#region node_modules/@base-ui/react/esm/radio/root/RadioRootContext.js
+var RadioRootContext = /*#__PURE__*/ import_react.createContext(void 0);
+RadioRootContext.displayName = "RadioRootContext";
+function useRadioRootContext() {
+	const value = import_react.useContext(RadioRootContext);
+	if (value === void 0) throw new Error("Base UI: RadioRootContext is missing. Radio parts must be placed within <Radio.Root>.");
+	return value;
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/radio/root/RadioRoot.js
+var import_jsx_runtime = require_jsx_runtime();
+var RadioRoot = /*#__PURE__*/ import_react.forwardRef(function RadioRoot(componentProps, forwardedRef) {
+	const { render, className, disabled: disabledProp = false, readOnly: readOnlyProp = false, required: requiredProp = false, "aria-labelledby": ariaLabelledByProp, value, inputRef: inputRefProp, nativeButton = false, id: idProp, style, ...elementProps } = componentProps;
+	const groupContext = useRadioGroupContext();
+	const { disabled: disabledGroup, readOnly: readOnlyGroup, required: requiredGroup, form: formGroup, checkedValue, touched = false, validation, name } = groupContext ?? {};
+	const setCheckedValue = groupContext?.setCheckedValue ?? NOOP;
+	const setTouched = groupContext?.setTouched ?? NOOP;
+	const registerControlRef = groupContext?.registerControlRef ?? NOOP;
+	const registerInputRef = groupContext?.registerInputRef ?? NOOP;
+	const { setDirty, validityData, setTouched: setFieldTouched, setFilled, state: fieldState, disabled: fieldDisabled } = useFieldRootContext();
+	const fieldItemContext = useFieldItemContext();
+	const { labelId, getDescriptionProps } = useLabelableContext();
+	const disabled = fieldDisabled || fieldItemContext.disabled || disabledGroup || disabledProp;
+	const readOnly = readOnlyGroup || readOnlyProp;
+	const required = requiredGroup || requiredProp;
+	const form = formGroup;
+	const checked = groupContext ? checkedValue === value : value === "";
+	const radioRef = import_react.useRef(null);
+	const inputRef = import_react.useRef(null);
+	const handleControlRef = useStableCallback((element) => {
+		if (!element) return;
+		registerControlRef(element, disabled);
+	});
+	const mergedInputRef = useMergedRefs(inputRefProp, inputRef, registerInputRef);
+	useIsoLayoutEffect(() => {
+		if (inputRef.current?.checked) setFilled(true);
+	}, [setFilled]);
+	useIsoLayoutEffect(() => {
+		if (!inputRef.current) return;
+		if (disabled && checked) {
+			registerInputRef(null);
+			return;
+		}
+		if (radioRef.current) registerControlRef(radioRef.current, disabled);
+		registerInputRef(inputRef.current);
+	}, [
+		checked,
+		disabled,
+		registerControlRef,
+		registerInputRef
+	]);
+	const id = useBaseUiId();
+	const inputId = useLabelableId({
+		id: idProp,
+		implicit: false,
+		controlRef: radioRef
+	});
+	const hiddenInputId = nativeButton ? void 0 : inputId;
+	const ariaLabelledBy = useAriaLabelledBy(ariaLabelledByProp, labelId, inputRef, !nativeButton, hiddenInputId);
+	const rootProps = {
+		role: "radio",
+		"aria-checked": checked,
+		"aria-required": required || void 0,
+		"aria-readonly": readOnly || void 0,
+		"aria-labelledby": ariaLabelledBy,
+		[ACTIVE_COMPOSITE_ITEM]: checked ? "" : void 0,
+		id: nativeButton ? inputId : id,
+		onKeyDown(event) {
+			if (event.key === "Enter") event.preventDefault();
+		},
+		onClick(event) {
+			if (event.defaultPrevented || disabled || readOnly) return;
+			event.preventDefault();
+			const input = inputRef.current;
+			if (!input) return;
+			input.dispatchEvent(new (getWindow(input)).PointerEvent("click", {
+				bubbles: true,
+				shiftKey: event.shiftKey,
+				ctrlKey: event.ctrlKey,
+				altKey: event.altKey,
+				metaKey: event.metaKey
+			}));
+		},
+		onFocus(event) {
+			if (event.defaultPrevented || disabled || readOnly || !touched) return;
+			inputRef.current?.click();
+			setTouched(false);
+		}
+	};
+	const { getButtonProps, buttonRef } = useButton({
+		disabled,
+		native: nativeButton
+	});
+	const inputProps = {
+		type: "radio",
+		ref: mergedInputRef,
+		form,
+		id: hiddenInputId,
+		name,
+		tabIndex: -1,
+		style: name ? visuallyHiddenInput : visuallyHidden,
+		"aria-hidden": true,
+		...value !== void 0 ? { value: serializeValue(value) } : EMPTY_OBJECT,
+		disabled,
+		checked,
+		required,
+		readOnly,
+		onChange(event) {
+			if (event.nativeEvent.defaultPrevented) return;
+			if (disabled || readOnly || value === void 0) return;
+			const details = createChangeEventDetails(none, event.nativeEvent);
+			if (details.isCanceled) return;
+			setFieldTouched(true);
+			setDirty(value !== validityData.initialValue);
+			setFilled(true);
+			setCheckedValue(value, details);
+		},
+		onFocus() {
+			radioRef.current?.focus();
+		}
+	};
+	const state = import_react.useMemo(() => ({
+		...fieldState,
+		required,
+		disabled,
+		readOnly,
+		checked
+	}), [
+		fieldState,
+		disabled,
+		readOnly,
+		checked,
+		required
+	]);
+	const contextValue = state;
+	const isRadioGroup = groupContext !== void 0;
+	const refs = [
+		forwardedRef,
+		radioRef,
+		buttonRef,
+		handleControlRef
+	];
+	const props = [
+		rootProps,
+		getDescriptionProps,
+		validation?.getValidationProps ?? EMPTY_OBJECT,
+		elementProps,
+		getButtonProps
+	];
+	const element = useRenderElement("span", componentProps, {
+		enabled: !isRadioGroup,
+		state,
+		ref: refs,
+		props,
+		stateAttributesMapping
+	});
+	return /*#__PURE__*/ (0, import_jsx_runtime.jsxs)(RadioRootContext.Provider, {
+		value: contextValue,
+		children: [isRadioGroup ? /*#__PURE__*/ (0, import_jsx_runtime.jsx)(CompositeItem, {
+			tag: "span",
+			render,
+			className,
+			style,
+			state,
+			refs,
+			props,
+			stateAttributesMapping
+		}) : element, /*#__PURE__*/ (0, import_jsx_runtime.jsx)("input", {
+			...inputProps,
+			suppressHydrationWarning: true
+		})]
+	});
+});
+RadioRoot.displayName = "RadioRoot";
+//#endregion
+//#region node_modules/@base-ui/react/esm/radio/indicator/RadioIndicator.js
+/**
+* Indicates whether the radio button is selected.
+* Renders a `<span>` element.
+*
+* Documentation: [Base UI Radio](https://base-ui.com/react/components/radio)
+*/
+var RadioIndicator = /*#__PURE__*/ import_react.forwardRef(function RadioIndicator(componentProps, forwardedRef) {
+	const { render, className, style, keepMounted = false, ...elementProps } = componentProps;
+	const rootState = useRadioRootContext();
+	const rendered = rootState.checked;
+	const { mounted, transitionStatus, setMounted } = useTransitionStatus(rendered);
+	const state = {
+		...rootState,
+		transitionStatus
+	};
+	const indicatorRef = import_react.useRef(null);
+	const shouldRender = keepMounted || mounted;
+	const element = useRenderElement("span", componentProps, {
+		ref: [forwardedRef, indicatorRef],
+		state,
+		props: elementProps,
+		stateAttributesMapping
+	});
+	useOpenChangeComplete({
+		open: rendered,
+		ref: indicatorRef,
+		onComplete() {
+			if (!rendered) setMounted(false);
+		}
+	});
+	if (!shouldRender) return null;
+	return element;
+});
+RadioIndicator.displayName = "RadioIndicator";
+//#endregion
+//#region node_modules/@base-ui/react/esm/radio/index.parts.js
+var index_parts_exports = /* @__PURE__ */ __exportAll({
+	Indicator: () => RadioIndicator,
+	Root: () => RadioRoot
+});
+//#endregion
+export { index_parts_exports as Radio };
+
+//# sourceMappingURL=@base-ui_react_radio.js.map

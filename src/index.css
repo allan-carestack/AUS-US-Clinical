@@ -1,0 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+@import './styles/colors.css';
+@import './styles/typography.css';
+@import './styles/spacing.css';
+@import './styles/radius.css';
+@import './styles/shadows.css';
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+html {
+  background-color: #FFFFFF;
+  font-size: 62.5%; /* 1rem = 10px */
+}
+
+body {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  position: relative; /* iOS 26+ Safari backdrop fix */
+}
+
+.root {
+  isolation: isolate; /* keeps portaled popups above page content */
+}

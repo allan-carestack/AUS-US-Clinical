@@ -1,0 +1,30 @@
+.Label {
+  composes: text-base weight-400 from global;
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: 2.4rem;
+  gap: var(--spacing-12);
+  color: rgb(from var(--grey-100) r g b / 70%);
+}
+
+.Text {
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.Colon {
+  flex-shrink: 0;
+  color: rgb(from var(--grey-100) r g b / 70%);
+}
+
+.Required {
+  color: var(--red-80);
+}
+
+/* ── Size variants — width of the label text area ── */
+.xs .Text { width: 6.8rem; }
+.sm .Text { width: 9.6rem; }
+.md .Text { width: 12rem;  }
+.lg .Text { width: 18rem;  }
+.xl .Text { width: 24rem;  }

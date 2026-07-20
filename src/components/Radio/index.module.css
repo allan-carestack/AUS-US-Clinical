@@ -1,0 +1,86 @@
+/* ── Label wrapper ── */
+.Label {
+  composes: text-base weight-400 from global;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  cursor: pointer;
+  color: var(--grey-100);
+
+  &:has([data-disabled]) {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+
+  &:has([data-checked]) {
+    font-weight: var(--weight-600);
+  }
+}
+
+/* ── Control ── */
+.Root {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1.5px solid var(--grey-40);
+  border-radius: 50%;
+  background-color: var(--white);
+  cursor: pointer;
+  transition: border-color 100ms ease-out;
+
+  &:focus-visible {
+    outline: 2px solid var(--interactive-60);
+    outline-offset: 2px;
+  }
+
+  @media (hover: hover) {
+    &:not([data-disabled]):hover {
+      border-color: var(--interactive-80);
+    }
+  }
+
+  &[data-checked] {
+    border-color: var(--interactive-80);
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+}
+
+/* ── Indicator dot ── */
+.Indicator {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background-color: var(--interactive-80);
+  transition: transform 120ms ease-out, opacity 120ms ease-out;
+
+  &[data-starting-style] {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+
+  &[data-ending-style] {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    & {
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ── Group layout ── */
+.Group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+}

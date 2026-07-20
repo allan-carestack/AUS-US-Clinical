@@ -1,0 +1,147 @@
+.CodeChangeInput {
+  height: 2.4rem;
+}
+
+.CodeChangePositioner {
+  z-index: 50;
+  width: 36rem;
+}
+
+.CodeChangePopup {
+  composes: Popup from '../components/_shared/popupPanel.module.css';
+}
+
+.CodeChangeScroll {
+  display: flex;
+  flex-direction: column;
+  max-height: 24rem;
+}
+
+.CodeChangeList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+}
+
+.PendingRow td {
+  background-color: var(--orange-10) !important;
+}
+
+/* ── Inline cell editing for pending rows ── */
+.PendingCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-4);
+  cursor: pointer;
+  color: var(--orange-80);
+  min-height: 2.4rem;
+}
+
+.PendingCell svg {
+  flex-shrink: 0;
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.PendingCellDash {
+  composes: text-sm weight-400 from global;
+  color: var(--orange-60);
+}
+
+.InlineEditor {
+  display: flex;
+  width: 100%;
+}
+
+.InlineInput {
+  composes: text-sm weight-400 from global;
+  width: 100%;
+  /* 2.4rem keeps the editing cell the same height as a completed row (whose
+     height is driven by the 24px description link) — no row jump on edit. */
+  height: 2.4rem;
+  padding: 0 var(--spacing-6);
+  border: 1.5px solid var(--orange-40);
+  border-radius: var(--radius-4);
+  background: var(--white);
+  color: var(--grey-100);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.InlineInput:focus {
+  border-color: var(--interactive-60);
+  box-shadow: 0 0 0 2px var(--interactive-20);
+}
+
+.InlineInput.hasError {
+  border-color: var(--red-60);
+}
+
+.InlineInput.hasError:focus {
+  border-color: var(--red-60);
+  box-shadow: 0 0 0 2px var(--red-20);
+}
+
+/* Error feedback: a quick horizontal shake instead of a row-growing error line.
+   Transform-only (GPU), one-shot; the message goes to a tooltip. */
+.InlineInput.shake {
+  animation: errorShake 0.4s ease;
+}
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  15%      { transform: translateX(-4px); }
+  30%      { transform: translateX(4px); }
+  45%      { transform: translateX(-3px); }
+  60%      { transform: translateX(3px); }
+  75%      { transform: translateX(-2px); }
+  90%      { transform: translateX(2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .InlineInput.shake { animation: none; }
+}
+
+/* ── Delete button for pending rows ── */
+.DeleteCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.DeleteButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: var(--radius-4);
+  background: transparent;
+  color: var(--grey-60);
+  cursor: pointer;
+  transition: background 100ms ease, color 100ms ease;
+}
+
+.DeleteButton:hover {
+  background: var(--red-10);
+  color: var(--red-80);
+}
+
+/* ── Success flash animation ── */
+@keyframes successFlash {
+  0% { background-color: var(--green-20); }
+  100% { background-color: transparent; }
+}
+
+.SuccessRow td {
+  animation: successFlash 1.2s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .SuccessRow td {
+    animation-duration: 0.2s !important;
+  }
+}

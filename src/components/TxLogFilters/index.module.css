@@ -1,0 +1,48 @@
+/* ── Tx-log filters row (Figma 925:110622 — Fill × Hug, 36px) ── */
+.Row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-16);
+  min-height: 3.6rem;
+  padding: var(--spacing-6) var(--spacing-12);
+  background: var(--white);
+  border-bottom: 1px solid var(--grey-20);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.Pills {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Natural-width probe for overflow math — not painted, not interactive. */
+.Measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  visibility: hidden;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.Toggles {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.RejectedText {
+  color: var(--red-80);
+}

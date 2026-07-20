@@ -1,0 +1,172 @@
+/* ── Root ── */
+.Root {
+  box-sizing: border-box;
+  width: 100%;
+  color: var(--grey-100);
+}
+
+/* ── List — shared ── */
+.List {
+  display: flex;
+  position: relative;
+}
+
+/* ── List — variants ── */
+.listSecondary {
+  border-bottom: 1px solid var(--outline-default);
+}
+
+.listPrimary {
+  gap: var(--spacing-4);
+}
+
+/*
+.listTertiary {
+  border-bottom: 1px solid var(--outline-default);
+}
+*/
+
+/* ── Tab — shared ── */
+.Tab {
+  composes: text-base weight-500 from global;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  padding: var(--spacing-8) var(--spacing-12);
+  border: none;
+  background-color: transparent;
+  font-family: inherit;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: background-color 100ms ease-out, color 100ms ease-out;
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--interactive-60);
+    outline-offset: -2px;
+    border-radius: var(--radius-4);
+    z-index: 1;
+  }
+}
+
+/* ── Tab — Primary ── */
+.tabPrimary {
+  border-radius: var(--radius-default);
+  color: var(--grey-60);
+
+  &[data-active] {
+    background-color: var(--interactive-10);
+    color: var(--interactive-80);
+  }
+
+  @media (hover: hover) {
+    &:not([data-disabled]):not([data-active]):hover {
+      background-color: var(--hover-default);
+      color: var(--grey-100);
+    }
+  }
+}
+
+/* ── Tab — Secondary ── */
+.tabSecondary {
+  border-radius: 0;
+  color: var(--grey-60);
+
+  &[data-active] {
+    color: var(--interactive-80);
+    background-color: var(--white);
+  }
+
+  @media (hover: hover) {
+    &:not([data-disabled]):not([data-active]):hover {
+      background-color: var(--hover-default);
+      color: var(--grey-80);
+    }
+  }
+}
+
+/* ── Tab — Tertiary ── */
+.tabTertiary {
+  border-radius: 0;
+  color: var(--grey-60);
+
+  &[data-active] {
+    color: var(--interactive-80);
+    background-color: var(--white);
+  }
+
+  @media (hover: hover) {
+    &:not([data-disabled]):not([data-active]):hover {
+      background-color: var(--hover-default);
+      color: var(--grey-80);
+    }
+  }
+}
+
+/* ── Indicator — shared ── */
+.Indicator {
+  position: absolute;
+  left: 0;
+  background-color: var(--interactive-80);
+  transition: transform 150ms ease-out, width 150ms ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    & {
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ── Indicator — Secondary: horizontal bottom bar ── */
+.indicatorSecondary {
+  bottom: -1px;
+  transform: translateX(var(--active-tab-left));
+  width: var(--active-tab-width);
+  height: 3px;
+}
+
+/* ── Indicator — Tertiary: horizontal top bar ── */
+.indicatorTertiary {
+  top: 0px;
+  transform: translateX(var(--active-tab-left));
+  width: var(--active-tab-width);
+  height: 3px;
+}
+
+/* ── Panel ── */
+.Panel {
+  composes: text-base weight-400 from global;
+  padding: var(--spacing-12);
+  color: var(--grey-100);
+}
+
+/* ── Badge ── */
+.Badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 var(--spacing-4);
+  border-radius: var(--radius-32);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  transition: background-color 100ms ease-out, color 100ms ease-out;
+}
+
+.badgeCount {
+  background-color: var(--hover-darker);
+  color: var(--grey-60);
+}
+
+.badgeNotification {
+  background-color: var(--red-80);
+  color: var(--white);
+}

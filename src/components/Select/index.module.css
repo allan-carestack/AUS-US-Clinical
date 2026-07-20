@@ -1,0 +1,178 @@
+/* ── Label ── */
+.Label {
+  composes: text-base weight-500 from global;
+  color: var(--grey-80);
+  cursor: default;
+}
+
+/* ── Backdrop (rare for selects, included for anatomy completeness) ── */
+.Backdrop {
+  position: fixed;
+  inset: 0;
+}
+
+/* ── Trigger ──
+   .Trigger is a non-interactive layout box. The real interactive control is
+   .TriggerOverlay (a native <button>, absolutely positioned to cover the
+   whole box) so that the visible Value/Icon can sit on top without being
+   nested inside a <button> — which is what let the multiselect ClearButton
+   become a real, independently focusable sibling <button>. */
+.Trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 2.4rem;
+  padding: 0 var(--spacing-8);
+  gap: var(--spacing-8);
+
+  &:has(.TriggerOverlay[data-disabled]) {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.TriggerOverlay {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--outline-darker);
+  border-radius: var(--radius-default);
+  background-color: var(--white);
+  padding: 0;
+  cursor: pointer;
+  transition: border-color 120ms ease-out, background-color 120ms ease-out;
+
+  @media (hover: hover) {
+    &:not([data-disabled]):hover {
+      border-color: var(--grey-40);
+      background-color: var(--hover-default);
+    }
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--blue-80);
+    box-shadow: 0 0 0 1px var(--blue-80);
+  }
+}
+
+.Value {
+  composes: text-base weight-400 from global;
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  color: var(--grey-100);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+
+  &[data-placeholder] { color: var(--grey-40); }
+}
+
+.SelectedBadge {
+  composes: text-sm weight-500 from global;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--spacing-6);
+  height: 1.6rem;
+  background-color: var(--interactive-10);
+  color: var(--interactive-100);
+  border-radius: var(--radius-4);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.ClearButton {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: none;
+  padding: 0;
+  border-radius: var(--radius-4);
+  background: transparent;
+  color: var(--grey-60);
+  cursor: pointer;
+  &:hover { color: var(--grey-100); }
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--blue-80);
+  }
+}
+
+.Icon {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: var(--grey-60);
+  transform: rotate(180deg);
+  transition: transform 120ms ease;
+  pointer-events: none;
+}
+
+.Trigger:has(.TriggerOverlay[data-popup-open]) .Icon {
+  transform: rotate(0deg);
+}
+
+/* ── Positioner ── */
+.Positioner {
+  composes: Positioner from '../_shared/popupPanel.module.css';
+  width: var(--anchor-width);
+}
+
+/* ── Popup ── */
+.Popup {
+  composes: Popup from '../_shared/popupPanel.module.css';
+}
+
+/* display:flex + max-height (not a plain block with max-height) — a child's
+   height:100% doesn't resolve against an auto-height block ancestor even
+   when max-height visibly clips it. flex:1/min-height:0 on the Viewport
+   (see ScrollArea/index.module.css) sizes correctly against a flex parent
+   regardless of whether the parent's own height is capped or auto. */
+.ListScrollArea {
+  display: flex;
+  flex-direction: column;
+  max-height: 24rem;
+}
+
+.List {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+}
+
+/* ── Item ── */
+.Item {
+  composes: ListItem from '../_shared/listItem.module.css';
+}
+
+.ItemIndicator {
+  composes: Indicator from '../_shared/listItem.module.css';
+}
+
+/* ── Group ── */
+.GroupLabel {
+  composes: text-base weight-500 from global;
+  padding: var(--spacing-4) var(--spacing-8) ;
+  color: var(--grey-40);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.Separator {
+  height: 1px;
+  background-color: var(--grey-20);
+  margin: var(--spacing-4) 0;
+}

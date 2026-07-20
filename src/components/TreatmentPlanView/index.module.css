@@ -1,0 +1,477 @@
+/* Full-bleed page chrome: header + sticky footer; only the table is bordered. */
+.Root {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+  background: var(--white);
+  overflow: hidden;
+}
+
+/* ── Plan header — sits flush under the tab strip ── */
+.Header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-12);
+  flex-shrink: 0;
+  height: 3.6rem;
+  padding: var(--spacing-6) var(--spacing-12);
+  border-bottom: 1px solid var(--grey-20);
+  background: var(--white);
+}
+
+.HeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.TitleGroup {
+  /*
+   * Hug name + pencil + status up to 32rem; shrink when HeaderLeft is tight.
+   * Do not flex-grow — that left a dead gap before Planned / meta.
+   */
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 0 1 auto;
+  width: fit-content;
+  max-width: min(32rem, 100%);
+  overflow: hidden;
+}
+
+.TitleCluster {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.PlanTitle {
+  composes: text-lg weight-700 from global;
+  margin: 0;
+  color: var(--grey-100);
+  /* Shrink when capped; never grow (keeps Planned flush to the name). */
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.EditButton {
+  color: var(--grey-60);
+  flex-shrink: 0;
+}
+
+.MetaGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  flex-shrink: 0;
+}
+
+.CountBadge {
+  composes: text-base weight-400 from global;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 var(--spacing-4);
+  border-radius: 1.2rem;
+  background: var(--grey-60);
+  color: var(--white);
+  line-height: 1;
+}
+
+.Divider {
+  width: 1px;
+  height: 1.4rem;
+  background: var(--grey-20);
+  flex-shrink: 0;
+}
+
+.ProgressInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  flex-shrink: 0;
+}
+
+.ProgressRing {
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  border: 2px solid var(--grey-20);
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.ProgressText {
+  composes: text-base weight-400 from global;
+  color: var(--grey-100);
+  white-space: nowrap;
+}
+
+.ProgressText strong {
+  font-weight: var(--weight-700);
+}
+
+.HeaderRight {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+  flex-shrink: 0;
+}
+
+/* ── Body — padded region that holds only the table + New Phase ── */
+.Body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-12);
+  gap: var(--spacing-12);
+  overflow: hidden;
+}
+
+.TableShell {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--grey-20);
+  border-radius: var(--radius-8);
+  overflow: hidden;
+  background: var(--white);
+}
+
+.Scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.Grid {
+  --col-drag: 3.2rem;
+  --col-check: 3.2rem;
+  --col-date: 10rem;
+  --col-code: minmax(28rem, 1fr);
+  --col-th: 7.2rem;
+  --col-surface: 7.2rem;
+  --col-provider: 8rem;
+  --col-loc: 6.4rem;
+  --col-fee: 9.6rem;
+  --col-disc: 7.2rem;
+  --col-pat: 9.6rem;
+  --col-notes: 3.8rem;
+  --col-status: 9.6rem;
+  --grid-cols: var(--col-drag) var(--col-check) var(--col-date) var(--col-code)
+    var(--col-th) var(--col-surface) var(--col-provider) var(--col-loc)
+    var(--col-fee) var(--col-disc) var(--col-pat) var(--col-notes) var(--col-status);
+  min-width: 120rem;
+}
+
+.HeaderRow {
+  display: grid;
+  grid-template-columns: var(--grid-cols);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--grey-5);
+  border-bottom: 1px solid var(--grey-20);
+}
+
+.Th {
+  composes: text-base weight-500 from global;
+  display: flex;
+  align-items: center;
+  height: 3.2rem;
+  padding: 0 var(--spacing-8);
+  color: var(--grey-60);
+  border-right: 1px solid var(--grey-20);
+  white-space: nowrap;
+}
+
+.Th:last-child {
+  border-right: none;
+}
+
+.ThCenter {
+  composes: Th;
+  justify-content: center;
+  padding: 0;
+}
+
+.PhaseCard {
+  border-bottom: 1px solid var(--grey-20);
+}
+
+.PhaseCard:last-child {
+  border-bottom: none;
+}
+
+.PhaseCardActive {
+  box-shadow: inset 0 0 0 1px var(--interactive-40);
+  background: var(--white);
+}
+
+.PhaseHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+  height: 3.6rem;
+  padding: 0 var(--spacing-8) 0 var(--spacing-4);
+  background: var(--white);
+  border-bottom: 1px solid var(--grey-20);
+  cursor: pointer;
+}
+
+.PhaseCardActive .PhaseHeader {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 4px 2px rgba(0, 0, 0, 0.04);
+}
+
+.PhaseLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  min-width: 0;
+}
+
+.PhaseToggle {
+  flex-shrink: 0;
+}
+
+.PhaseToggleIcon {
+  transition: transform 120ms ease-out;
+}
+
+.PhaseToggleIconOpen {
+  transform: rotate(0deg);
+}
+
+.PhaseToggleIconClosed {
+  transform: rotate(-90deg);
+}
+
+.PhaseName {
+  composes: text-base weight-700 from global;
+  color: var(--grey-100);
+  /* Definite flex-basis avoids ellipsis collapse in the phase header row. */
+  flex: 0 1 20rem;
+  min-width: 0;
+  max-width: 20rem;
+  overflow: hidden;
+}
+
+.InfoChip {
+  composes: text-base weight-500 from global;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  height: 2.4rem;
+  padding: 0 var(--spacing-8);
+  border-radius: var(--radius-default);
+  background: var(--blue-10);
+  color: var(--blue-100);
+  white-space: nowrap;
+}
+
+.InfoChip svg {
+  flex-shrink: 0;
+  color: var(--blue-100);
+}
+
+.PhaseRight {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  flex-shrink: 0;
+}
+
+.ApptInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  padding: 0 var(--spacing-8);
+}
+
+.ApptLabel {
+  composes: text-base weight-400 from global;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  color: var(--grey-60);
+  white-space: nowrap;
+}
+
+.ApptLabel svg {
+  color: var(--grey-60);
+}
+
+.Row {
+  display: grid;
+  grid-template-columns: var(--grid-cols);
+  border-bottom: 1px solid var(--grey-20);
+  background: var(--white);
+}
+
+.Row:last-child {
+  border-bottom: none;
+}
+
+.PendingRow {
+  background: var(--orange-10);
+}
+
+.PendingRow > * {
+  background: var(--orange-10);
+}
+
+.PendingCode {
+  composes: text-base weight-500 from global;
+  color: var(--orange-100);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.Td {
+  composes: text-base weight-400 from global;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 3.2rem;
+  padding: 0 var(--spacing-8);
+  color: var(--grey-100);
+  border-right: 1px solid var(--grey-20);
+}
+
+.Td:last-child {
+  border-right: none;
+}
+
+.TdCenter {
+  composes: Td;
+  justify-content: center;
+  padding: 0;
+}
+
+.TdMuted {
+  composes: Td;
+  color: var(--grey-60);
+}
+
+.CodeCell {
+  composes: Td;
+  overflow: hidden;
+}
+
+.CodeCell :global(button) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.CodeCell :global(.Label),
+.CodeCell :global(span) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.EstimateRow {
+  display: grid;
+  grid-template-columns: var(--grid-cols);
+  background: var(--grey-5);
+  border-top: 1px solid var(--grey-20);
+}
+
+.EstimateSpacer {
+  grid-column: 1 / 9;
+  border-right: 1px solid var(--grey-20);
+}
+
+.EstimateLabel {
+  composes: text-base weight-500 from global;
+  display: flex;
+  align-items: center;
+  height: 3.2rem;
+  padding: 0 var(--spacing-8);
+  color: var(--grey-80);
+  border-right: 1px solid var(--grey-20);
+}
+
+.EstimateValue {
+  composes: text-base weight-700 from global;
+  display: flex;
+  align-items: center;
+  height: 3.2rem;
+  padding: 0 var(--spacing-8);
+  color: var(--grey-100);
+  border-right: 1px solid var(--grey-20);
+}
+
+.EstimateValue:last-child {
+  border-right: none;
+}
+
+.NewPhase {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-left: 3.2rem;
+}
+
+/* ── Sticky page footer — pinned to the bottom of the content area ── */
+.Footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-16);
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  height: 4rem;
+  padding: var(--spacing-8) var(--spacing-12);
+  border-top: 1px solid var(--grey-20);
+  background: var(--white);
+}
+
+.Totals {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-24);
+  min-width: 0;
+}
+
+.TotalItem {
+  composes: text-base weight-700 from global;
+  color: var(--grey-100);
+  white-space: nowrap;
+}
+
+.FooterActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  flex-shrink: 0;
+}
+
+.FooterDivider {
+  width: 1px;
+  height: 1.6rem;
+  background: var(--grey-20);
+  margin: 0 var(--spacing-0);
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .PhaseToggleIcon {
+    transition: none;
+  }
+}

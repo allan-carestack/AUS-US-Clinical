@@ -1,0 +1,157 @@
+import { i as __toESM, t as require_react } from "./react-CZunmVaX.js";
+import { O as useIsoLayoutEffect, _ as isHTMLElement, k as useStableCallback } from "./useRenderElement-CD8_51dU.js";
+import { c as ownerDocument } from "./useOpenChangeComplete-DDdALft_.js";
+import { t as require_jsx_runtime } from "./jsx-runtime-DdbNDrdp.js";
+import { i as getTarget } from "./DirectionContext-DZ5-Bwxo.js";
+import { t as useBaseUiId } from "./useBaseUiId-BJnNLmSV.js";
+import { n as serializeValue } from "./useLabelableId-BguZh5OD.js";
+import { t as useLabelableContext } from "./LabelableContext-D9NkuaDX.js";
+//#region node_modules/@base-ui/react/esm/internals/itemEquality.js
+var defaultItemEquality = (itemValue, selectedValue) => Object.is(itemValue, selectedValue);
+function compareItemEquality(itemValue, selectedValue, comparer) {
+	if (itemValue == null || selectedValue == null) return Object.is(itemValue, selectedValue);
+	return comparer(itemValue, selectedValue);
+}
+function selectedValueIncludes(selectedValues, itemValue, comparer) {
+	if (!selectedValues || selectedValues.length === 0) return false;
+	return selectedValues.some((selectedValue) => {
+		if (selectedValue === void 0) return false;
+		return compareItemEquality(itemValue, selectedValue, comparer);
+	});
+}
+function findItemIndex(itemValues, selectedValue, comparer) {
+	if (!itemValues || itemValues.length === 0) return -1;
+	return itemValues.findIndex((itemValue) => {
+		if (itemValue === void 0) return false;
+		return compareItemEquality(itemValue, selectedValue, comparer);
+	});
+}
+function removeItem(selectedValues, itemValue, comparer) {
+	return selectedValues.filter((selectedValue) => !compareItemEquality(itemValue, selectedValue, comparer));
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/internals/resolveValueLabel.js
+var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
+var import_jsx_runtime = require_jsx_runtime();
+function isGroupedItems(items) {
+	return items != null && items.length > 0 && typeof items[0] === "object" && items[0] != null && "items" in items[0];
+}
+/**
+* Checks if the items array contains an item with a null value that has a non-null label.
+*/
+function hasNullItemLabel(items) {
+	if (!Array.isArray(items)) return items != null && "null" in items;
+	const arrayItems = items;
+	if (isGroupedItems(arrayItems)) {
+		for (const group of arrayItems) for (const item of group.items) if (item && item.value == null && item.label != null) return true;
+		return false;
+	}
+	for (const item of arrayItems) if (item && item.value == null && item.label != null) return true;
+	return false;
+}
+function stringifyAsLabel(item, itemToStringLabel) {
+	if (itemToStringLabel && item != null) return itemToStringLabel(item) ?? "";
+	if (item && typeof item === "object") {
+		if ("label" in item && item.label != null) return String(item.label);
+		if ("value" in item) return String(item.value);
+	}
+	return serializeValue(item);
+}
+function stringifyAsValue(item, itemToStringValue) {
+	if (itemToStringValue && item != null) return itemToStringValue(item) ?? "";
+	if (item && typeof item === "object" && "value" in item && "label" in item) return serializeValue(item.value);
+	return serializeValue(item);
+}
+function resolveSelectedLabel(value, items, itemToStringLabel) {
+	function fallback() {
+		return stringifyAsLabel(value, itemToStringLabel);
+	}
+	if (itemToStringLabel && value != null) return itemToStringLabel(value);
+	if (value && typeof value === "object" && "label" in value && value.label != null) return value.label;
+	if (items && !Array.isArray(items)) return items[value] ?? fallback();
+	if (Array.isArray(items)) {
+		const arrayItems = items;
+		const flatItems = isGroupedItems(arrayItems) ? arrayItems.flatMap((group) => group.items) : arrayItems;
+		if (value == null || typeof value !== "object") {
+			const match = flatItems.find((item) => item.value === value);
+			if (match && match.label != null) return match.label;
+			return fallback();
+		}
+		if ("value" in value) {
+			const match = flatItems.find((item) => item && item.value === value.value);
+			if (match && match.label != null) return match.label;
+		}
+	}
+	return fallback();
+}
+function resolveMultipleLabels(values, items, itemToStringLabel) {
+	return values.reduce((acc, value, index) => {
+		if (index > 0) acc.push(", ");
+		acc.push(/*#__PURE__*/ (0, import_jsx_runtime.jsx)(import_react.Fragment, { children: resolveSelectedLabel(value, items, itemToStringLabel) }, index));
+		return acc;
+	}, []);
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/utils/useRegisteredLabelId.js
+function useRegisteredLabelId(idProp, setLabelId) {
+	const id = useBaseUiId(idProp);
+	useIsoLayoutEffect(() => {
+		setLabelId(id);
+		return () => {
+			setLabelId(void 0);
+		};
+	}, [id, setLabelId]);
+	return id;
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/internals/labelable-provider/useLabel.js
+function useLabel(params = {}) {
+	const { id: idProp, fallbackControlId, native = false, setLabelId: setLabelIdProp, focusControl: focusControlProp } = params;
+	const { controlId: contextControlId, setLabelId: setContextLabelId } = useLabelableContext();
+	const id = useRegisteredLabelId(idProp, useStableCallback((nextLabelId) => {
+		setContextLabelId(nextLabelId);
+		setLabelIdProp?.(nextLabelId);
+	}));
+	const resolvedControlId = contextControlId ?? fallbackControlId;
+	function focusControl(event) {
+		if (focusControlProp) {
+			focusControlProp(event, resolvedControlId);
+			return;
+		}
+		if (!resolvedControlId) return;
+		const controlElement = ownerDocument(event.currentTarget).getElementById(resolvedControlId);
+		if (isHTMLElement(controlElement)) focusElementWithVisible(controlElement);
+	}
+	function handleInteraction(event) {
+		if (getTarget(event.nativeEvent)?.closest("button,input,select,textarea")) return;
+		if (!event.defaultPrevented && event.detail > 1) event.preventDefault();
+		if (native) return;
+		focusControl(event);
+	}
+	return native ? {
+		id,
+		htmlFor: resolvedControlId ?? void 0,
+		onMouseDown: handleInteraction
+	} : {
+		id,
+		onClick: handleInteraction,
+		onPointerDown(event) {
+			event.preventDefault();
+		}
+	};
+}
+function focusElementWithVisible(element) {
+	element.focus({ focusVisible: true });
+}
+//#endregion
+//#region node_modules/@base-ui/react/esm/utils/resolveAriaLabelledBy.js
+function getDefaultLabelId(id) {
+	return id == null ? void 0 : `${id}-label`;
+}
+function resolveAriaLabelledBy(fieldLabelId, localLabelId) {
+	return fieldLabelId ?? localLabelId;
+}
+//#endregion
+export { isGroupedItems as a, stringifyAsLabel as c, defaultItemEquality as d, findItemIndex as f, hasNullItemLabel as i, stringifyAsValue as l, selectedValueIncludes as m, resolveAriaLabelledBy as n, resolveMultipleLabels as o, removeItem as p, useLabel as r, resolveSelectedLabel as s, getDefaultLabelId as t, compareItemEquality as u };
+
+//# sourceMappingURL=resolveAriaLabelledBy-C6psiCTJ.js.map
