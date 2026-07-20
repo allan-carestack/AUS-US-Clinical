@@ -4,17 +4,44 @@
   align-items: stretch;
   justify-content: center;
   gap: var(--spacing-16);
-  height: 30rem;
+  height: 33rem;
   padding: var(--spacing-12);
   background: var(--white);
   max-width: 100%;
+  min-width: 0;
   box-sizing: border-box;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
 }
 
 .Toolbar {
   align-self: flex-start;
+  flex-shrink: 0;
+}
+
+.ChartViewport {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ChartFit {
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.Chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-16);
+  width: max-content;
+  transform-origin: top left;
 }
 
 .ArchRow {
@@ -22,9 +49,7 @@
   align-items: flex-end;
   gap: var(--spacing-4);
   width: max-content;
-  margin: 0 auto;
 }
-
 
 .ToothCell {
   display: flex;
@@ -34,6 +59,7 @@
 }
 
 .ToothSvg {
+  display: block;
   overflow: visible;
 }
 

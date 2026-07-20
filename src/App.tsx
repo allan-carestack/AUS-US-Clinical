@@ -1319,7 +1319,7 @@ export default function App() {
       </div>
 
       {/* Odontogram (patient-level, not scoped to any Tx Plan tab) + care panel.
-          Fixed 300px height regardless of care panel content — switching
+          Fixed 330px height regardless of care panel content — switching
           New Treatment/Existing must not resize this row. Collapsible via
           the chevron at the right of the Tx Plan header below — the outer
           wrapper animates height/opacity while staying mounted, so
@@ -1335,7 +1335,7 @@ export default function App() {
         }}
       >
         <div style={{ overflow: 'hidden' }}>
-        <div style={{ display: 'flex', alignItems: 'stretch', gap: 'var(--spacing-24)', height: '30rem' }}>
+        <div style={{ display: 'flex', alignItems: 'stretch', gap: 'var(--spacing-24)', height: '33rem' }}>
           <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
             {/* Chip-first only: clicking a tooth/surface first is
                 self-explanatory from the highlight it leaves on the

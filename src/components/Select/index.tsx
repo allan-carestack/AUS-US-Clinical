@@ -14,6 +14,8 @@ interface SelectTriggerProps {
   className?: string;
   multiple?: boolean;
   value?: string[];
+  /** When set with `onClear`, shows the clear (X) button for single-select. */
+  hasValue?: boolean;
   onClear?: () => void;
   id?: string;
   'aria-label'?: string;
@@ -25,6 +27,7 @@ export function SelectTrigger({
   className,
   multiple,
   value = [],
+  hasValue,
   onClear,
   id,
   'aria-label': ariaLabel,
@@ -41,6 +44,7 @@ export function SelectTrigger({
     : ariaLabel
       ? `${internalLabelId} ${valueId}`
       : valueId;
+  const showClear = !!onClear && (multiple ? value.length > 0 : !!hasValue);
   return (
     <div className={[styles.Trigger, className].filter(Boolean).join(' ')}>
       {ariaLabel && !ariaLabelledby && (
@@ -59,7 +63,7 @@ export function SelectTrigger({
       ) : (
         <BaseSelect.Value id={valueId} placeholder={placeholder} className={styles.Value} />
       )}
-      {multiple && value.length > 0 && (
+      {showClear && (
         <button
           type="button"
           className={styles.ClearButton}
@@ -87,12 +91,30 @@ export function SelectBackdrop({ className, ...props }: React.ComponentPropsWith
 interface SelectContentProps {
   children: React.ReactNode;
   className?: string;
+  positionerClassName?: string;
+  positionerStyle?: React.CSSProperties;
+  align?: 'start' | 'center' | 'end';
+  alignOffset?: number;
 }
 
-export function SelectContent({ children, className }: SelectContentProps) {
+export function SelectContent({
+  children,
+  className,
+  positionerClassName,
+  positionerStyle,
+  align,
+  alignOffset,
+}: SelectContentProps) {
   return (
     <BaseSelect.Portal>
-      <BaseSelect.Positioner sideOffset={4} alignItemWithTrigger={false} className={styles.Positioner}>
+      <BaseSelect.Positioner
+        sideOffset={4}
+        align={align}
+        alignOffset={alignOffset}
+        alignItemWithTrigger={false}
+        className={[styles.Positioner, positionerClassName].filter(Boolean).join(' ')}
+        style={positionerStyle}
+      >
         <BaseSelect.Popup className={[styles.Popup, className].filter(Boolean).join(' ')}>
           <ScrollArea className={styles.ListScrollArea}>
             <ScrollAreaViewport>

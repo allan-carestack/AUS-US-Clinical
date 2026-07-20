@@ -26,9 +26,9 @@ interface ToothProps {
   onWholeToothClick: (meta: ToothMeta) => void;
 }
 
-// A tooth is drawn as a 44x44 square split into a center square (occlusal /
-// incisal) plus four trapezoids (mesial, distal, buccal/labial, lingual/
-// palatal) — the conventional 5-surface odontogram tooth glyph.
+// A tooth is drawn as a 44×44 viewBox square rendered at 48px — the
+// odontogram scales the whole chart to fit available width when needed.
+const TOOTH_SIZE = 48;
 const EDGES: { edge: SurfaceEdge; points: string }[] = [
   { edge: 'top',    points: '0,0 44,0 30,14 14,14' },
   { edge: 'bottom', points: '0,44 44,44 30,30 14,30' },
@@ -44,8 +44,8 @@ export default function Tooth({ meta, state, armedWhole, armedSurfaces = [], onS
     <svg
       className={styles.ToothSvg}
       viewBox="0 0 44 44"
-      width={44}
-      height={44}
+      width={TOOTH_SIZE}
+      height={TOOTH_SIZE}
       aria-label={`Tooth ${meta.id}`}
     >
       <rect x={0.5} y={0.5} width={43} height={43} className={styles.ToothOutline} />

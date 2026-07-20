@@ -1,10 +1,9 @@
-/* Fixed-height shell — the chip grid scrolls internally (see
-   .ChipGridScroll) so switching New Treatment/Existing, which changes how
-   many chips are shown, never resizes this panel or the row it sits in. */
+/* Fixed-height shell — chrome + chip grid. Padding lives on .Chrome only so
+   the chip grid can go edge-to-edge. */
 .CarePanel {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-8);
+  gap: 0;
   padding: 0;
   background: var(--white);
   border-left: 1px solid var(--grey-20);
@@ -16,46 +15,177 @@
   min-height: 0;
 }
 
-/* ── Tabs row — sits on its own grey band, like a folder-tab strip ── */
-.TopRow {
+.Chrome {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-8);
-  flex-wrap: nowrap;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  padding: var(--spacing-8) var(--spacing-12);
   flex-shrink: 0;
-  background: var(--grey-10);
-  padding: var(--spacing-8) var(--spacing-8) 0 var(--spacing-12);
 }
 
-.Tabs {
-  flex: 1;
+.Header {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Appointment + meta — collapses on Existing. Stays mounted so local
+   appointment/dentist state isn't reset when switching back. */
+.ContextSection {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 180ms ease-out,
+    margin-top 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.ContextSectionHidden {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  /* Cancel one of the two flex gaps around a zero-height sibling so
+     Header → Tx Type stays a single spacing-6 apart. */
+  margin-top: calc(-1 * var(--spacing-6));
+  pointer-events: none;
+}
+
+.ContextSectionInner {
+  overflow: hidden;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  /* Room for Input/Select focus rings (box-shadow) — overflow:hidden would
+     otherwise clip the 1px ring on the last row (meta fields). */
+  padding: 2px;
+  margin: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ContextSection {
+    transition: none;
+  }
+}
+
+.AppointmentRow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
   min-width: 0;
 }
 
-.TabLabel {
-  composes: text-base weight-500 from global;
-  text-transform: uppercase;
+.AppointmentSelect {
+  flex: 1 1 auto;
+  min-width: 0;
+  /* Width change is driven by the actions column expanding/collapsing;
+     flex reflow tracks that grid transition frame-by-frame. */
 }
 
-/* ── Controls row — Tx Type / info banner on the left, quick actions on the right.
-   Fixed height so switching New Treatment (radio row) vs Existing (info
-   banner) — different natural content heights — never shifts the panel. ── */
-.ControlsRow {
+/* Fixed list width in both cleared and selected states. */
+.AppointmentSelectPositioner {
+  width: 467px;
+  min-width: 467px;
+  max-width: 467px;
+  box-sizing: border-box;
+}
+
+.AppointmentActions {
+  display: grid;
+  grid-template-columns: 0fr;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    grid-template-columns 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 180ms ease-out;
+}
+
+.AppointmentActionsOpen {
+  grid-template-columns: 1fr;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.AppointmentActionsInner {
+  overflow: hidden;
+  min-width: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--spacing-8);
-  flex-wrap: nowrap;
+  padding-left: var(--spacing-8);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .AppointmentActions {
+    transition: none;
+  }
+}
+
+.MetaRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-8);
   flex-shrink: 0;
+  flex-wrap: nowrap;
+  width: 100%;
+  min-width: 0;
+}
+
+.MetaItem {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.MetaDos {
+  flex: 0 0 14rem;
+  width: 14rem;
+}
+
+.MetaLocation {
+  flex: 0 0 10rem;
+  width: 10rem;
+}
+
+.MetaFill {
+  flex: 1 1 0;
+}
+
+.MetaLabel {
+  composes: text-sm weight-400 from global;
+  color: var(--grey-60);
+  white-space: nowrap;
+}
+
+.MetaValue {
+  composes: text-base weight-500 from global;
+  color: var(--grey-100);
   height: 2.4rem;
-  padding: 0 var(--spacing-12);
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.MetaControl {
+  width: 100%;
+  min-width: 0;
+  /* Extra paint room for focus rings without shifting layout. */
+  padding: 1px;
+  margin: -1px;
 }
 
 .TxTypeRow {
   display: flex;
   align-items: center;
   gap: var(--spacing-8);
+  flex-shrink: 0;
+  height: 2.4rem;
   min-width: 0;
 }
 
@@ -74,6 +204,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .InfoBanner svg {
@@ -84,23 +215,66 @@
 .ActionsRow {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--spacing-4);
   flex-shrink: 0;
+  min-width: 0;
 }
 
-/* ── Care panel selector row — dropdown on the left, quick actions
-   (+Code / gear / info) pinned to the right of it ── */
 .SelectRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-8);
   flex-shrink: 0;
-  padding: 0 var(--spacing-12);
+  min-width: 0;
+}
+
+.SelectRowCodeSearch {
+  gap: 0;
+  /* Room for Combobox focus ring (border + 1px box-shadow) — same trick as
+     ContextSectionInner so the ring isn't flush-clipped at the row edge. */
+  padding: 2px;
+  margin: -2px;
+}
+
+.SelectRowCodeSearch .ActionsRow {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
 }
 
 .SelectRow :global(label) {
   white-space: nowrap;
+}
+
+.CarePanelCollapse {
+  display: grid;
+  grid-template-columns: 1fr;
+  opacity: 1;
+  min-width: 0;
+  transition:
+    grid-template-columns 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.SelectRowCodeSearch .CarePanelCollapse {
+  grid-template-columns: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.PaneClip {
+  overflow: hidden;
+  min-width: 0;
+}
+
+.CarePanelCollapse > .PaneClip {
+  min-width: min-content;
+}
+
+.SelectRowCodeSearch .CarePanelCollapse > .PaneClip {
+  min-width: 0;
 }
 
 .CarePanelPicker {
@@ -108,20 +282,148 @@
   align-items: center;
   gap: var(--spacing-8);
   min-width: 0;
+  width: max-content;
 }
 
 .SelectWrapper {
-  width: 20rem;
+  width: 18rem;
 }
 
-/* ── Chip grid area — no scrolling: the grid stretches to fill whatever
-   vertical space is left (grid-auto-rows: 1fr), so New Treatment's 5 rows
-   and Existing's 6 rows each fully occupy the same fixed panel height
-   instead of scrolling internally. ── */
+/* Note / Info — collapse with 0fr↔1fr so reverse morph interpolates. */
+.ActionCollapse {
+  display: grid;
+  grid-template-columns: 1fr;
+  opacity: 1;
+  min-width: 0;
+  transition:
+    grid-template-columns 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.SelectRowCodeSearch .ActionCollapse {
+  grid-template-columns: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ActionCollapse > .PaneClip {
+  min-width: min-content;
+}
+
+.SelectRowCodeSearch .ActionCollapse > .PaneClip {
+  min-width: 0;
+}
+
+/* +Code button ↔ search field morph (PhaseDuration-style grid). */
+.CodeMorph {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.SelectRowCodeSearch .CodeMorph {
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+.CodeMorphCollapsed {
+  display: grid;
+  grid-template-columns: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-columns 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.CodeMorphOpen .CodeMorphCollapsed {
+  grid-template-columns: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.CodeMorphCollapsed > .PaneClip {
+  min-width: min-content;
+}
+
+.CodeMorphOpen .CodeMorphCollapsed > .PaneClip {
+  min-width: 0;
+}
+
+.CodeMorphExpanded {
+  display: grid;
+  grid-template-columns: 0fr;
+  opacity: 0;
+  flex: 0 0 auto;
+  min-width: 0;
+  pointer-events: none;
+  transition:
+    grid-template-columns 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 160ms cubic-bezier(0.23, 1, 0.32, 1) 40ms;
+}
+
+.CodeMorphOpen .CodeMorphExpanded {
+  grid-template-columns: 1fr;
+  opacity: 1;
+  flex: 1 1 auto;
+  pointer-events: auto;
+}
+
+.CodeMorphExpanded > .PaneClip {
+  min-width: 0;
+}
+
+.CodeMorphOpen .CodeMorphExpanded > .PaneClip {
+  min-width: min-content;
+  width: 100%;
+  /* Allow Combobox focus ring to paint; width morph still clips via 0fr while closed. */
+  overflow: visible;
+}
+
+.CodeSearchRoot {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .CarePanelCollapse,
+  .ActionCollapse,
+  .CodeMorphCollapsed,
+  .CodeMorphExpanded {
+    transition: none;
+  }
+
+  .CodeMorphExpanded {
+    transition-delay: 0ms;
+  }
+}
+
 .ChipGridArea {
+  position: relative;
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
+}
+
+/* Staggered pulse uses each chip's hover background when Tx Type changes. */
+@keyframes chipStatusPulse {
+  0%, 100% {
+    background-color: var(--chip-rest);
+  }
+  40% {
+    background-color: var(--chip-hover);
+  }
+}
+
+.chipStatusPulse {
+  animation: chipStatusPulse 600ms cubic-bezier(0.12, 1, 0.32, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chipStatusPulse {
+    animation: chipStatusPulse 120ms ease-out both;
+    animation-delay: 0ms !important;
+  }
 }
 
 .ChipGrid {
@@ -182,49 +484,52 @@
 }
 
 .chipProcedure {
-  background: var(--green-10);
+  --chip-rest: var(--green-10);
+  --chip-hover: var(--green-20);
+  background: var(--chip-rest);
   border-color: var(--green-20);
   color: var(--green-100);
 
   @media (hover: hover) {
     &:not(:disabled):hover {
-      background: var(--green-20);
+      background: var(--chip-hover);
     }
   }
 }
 
 .chipCondition {
-  background: var(--orange-10);
+  --chip-rest: var(--orange-10);
+  --chip-hover: var(--orange-20);
+  background: var(--chip-rest);
   border-color: var(--orange-20);
   color: var(--orange-100);
 
   @media (hover: hover) {
     &:not(:disabled):hover {
-      background: var(--orange-20);
+      background: var(--chip-hover);
     }
   }
 }
 
 .chipTreatmentPlan {
-  background: var(--olive-10);
+  --chip-rest: var(--olive-10);
+  --chip-hover: var(--olive-20);
+  background: var(--chip-rest);
   border-color: var(--olive-20);
   color: var(--olive-100);
 }
 
 .chipExplosion {
-  background: var(--red-10);
+  --chip-rest: var(--red-10);
+  --chip-hover: var(--red-20);
+  background: var(--chip-rest);
   border-color: var(--red-20);
   color: var(--red-100);
 }
 
-/* ── +Code combobox search (full-width row) ── */
-.CodeSearchFullRow {
-  flex-shrink: 0;
-  padding: 0 var(--spacing-12);
-}
-
 .CodeSearchInput {
   height: 2.4rem;
+  width: 100%;
 }
 
 .CodeSearchPositioner {
@@ -249,8 +554,6 @@
   padding: var(--spacing-4);
 }
 
-
-/* ── Legend popover ── */
 .Legend {
   display: flex;
   flex-direction: column;

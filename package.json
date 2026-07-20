@@ -1,4 +1,5 @@
 {
+  "name": "aus-us-clinical",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

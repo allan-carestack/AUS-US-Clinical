@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 import styles from './index.module.css';
 import { SegmentedButton, SegmentedButtonItem } from '../SegmentedButton';
 import Tooth, { type ToothState } from './Tooth';
@@ -68,6 +68,40 @@ export function Odontogram({ toothStates = {}, armedTeeth = [], dentition: denti
   };
   const { upper, lower } = getArchRows(dentition);
 
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState({ scale: 1, width: 0, height: 0 });
+
+  // Scale the natural-width chart down to fit the viewport — never up —
+  // so narrow layouts shrink uniformly instead of growing a horizontal scrollbar.
+  // The outer box is sized to the *visual* scaled bounds so layout matches what
+  // the user sees (transform alone would leave the pre-scale layout box).
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    const chart = chartRef.current;
+    if (!viewport || !chart) return;
+
+    const update = () => {
+      const available = viewport.clientWidth;
+      const naturalW = chart.offsetWidth;
+      const naturalH = chart.offsetHeight;
+      const scale = available > 0 && naturalW > 0 ? Math.min(1, available / naturalW) : 1;
+      const width = naturalW * scale;
+      const height = naturalH * scale;
+      setFit(prev => (
+        prev.scale === scale && prev.width === width && prev.height === height
+          ? prev
+          : { scale, width, height }
+      ));
+    };
+
+    const ro = new ResizeObserver(update);
+    ro.observe(viewport);
+    ro.observe(chart);
+    update();
+    return () => ro.disconnect();
+  }, [dentition]);
+
   const handleSurfaceClick = (meta: ToothMeta, surface: SurfaceName) => onSurfaceClick?.(meta, surface);
   const handleWholeToothClick = (meta: ToothMeta) => onWholeToothClick?.(meta);
 
@@ -80,9 +114,22 @@ export function Odontogram({ toothStates = {}, armedTeeth = [], dentition: denti
         </SegmentedButton>
       </div>
 
-      <ArchRow teeth={upper} states={toothStates} armedTeeth={armedTeeth} onSurfaceClick={handleSurfaceClick} onWholeToothClick={handleWholeToothClick} />
-      <div className={styles.BiteLine} aria-hidden="true" />
-      <ArchRow teeth={lower} states={toothStates} armedTeeth={armedTeeth} onSurfaceClick={handleSurfaceClick} onWholeToothClick={handleWholeToothClick} />
+      <div className={styles.ChartViewport} ref={viewportRef}>
+        <div
+          className={styles.ChartFit}
+          style={fit.width > 0 ? { width: fit.width, height: fit.height } : undefined}
+        >
+          <div
+            className={styles.Chart}
+            ref={chartRef}
+            style={{ transform: `scale(${fit.scale})` }}
+          >
+            <ArchRow teeth={upper} states={toothStates} armedTeeth={armedTeeth} onSurfaceClick={handleSurfaceClick} onWholeToothClick={handleWholeToothClick} />
+            <div className={styles.BiteLine} aria-hidden="true" />
+            <ArchRow teeth={lower} states={toothStates} armedTeeth={armedTeeth} onSurfaceClick={handleSurfaceClick} onWholeToothClick={handleWholeToothClick} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

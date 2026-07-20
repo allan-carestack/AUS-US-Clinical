@@ -1,22 +1,18 @@
-# Tx plan phase code targeting
+# Code button → search morph
 
 Status legend: [ ] pending · [~] in progress · [x] done
 
-- [x] Lift plansById + targetPhaseByPlan into App; seed from mock clones
-- [x] Branch applyEntry / +code / tooth-first into target phase; pendingProcedureIds
-- [x] Odontogram finalize oldest pending plan procedure when on plan tab
-- [x] Controlled TreatmentPlanView: banner, phase click selects target, pending row UI
+- [x] Keep SelectRow always mounted; collapse Care Panel / Note / Info when code search open
+- [x] Add CodeMorph wrapper: button expands into CodeSearch input with reverse on close
+- [x] CSS grid/flex + opacity morph (~220ms) + reduced-motion instant swap
+- [x] Browser-check open morph, list enter, Escape/outside close reverse
 
 ## Review
 
 **Changed**
-- `TreatmentPlanView/mockData.ts` — `codeId`/`requires` on procedures; `cloneTreatmentPlanMock`, `seedPlansById`, `firstPhaseId`
-- `App.tsx` — `plansById` + `targetPhaseByPlan` + `pendingProcedureIds`; care-panel/+code route into selected phase when a plan tab is active; odontogram/keyboard finalize for pending plan rows
-- `TreatmentPlanView/index.tsx` — controlled `plan`/`targetPhaseId`; phase header selects drop target; “Codes will be added here” banner; pending orange rows with caution/edit/delete
-- `TreatmentPlanView/index.module.css` — pending row styles; phase header cursor
+- `CarePanel/index.tsx` — SelectRow always mounted; `codeSearchMode` (`closed`/`open`/`closing`); CodeMorph crossfades +Code ↔ CodeSearch; siblings collapse while open; reverse morph waits 220ms before unmount
+- `CarePanel/index.module.css` — 0fr↔1fr + opacity morph for Care Panel / Note / Info; CodeMorph expand; reduced-motion disables transitions
 
-**Verified (browser)**
-- All on 4 Tx: Phase 1 shows “Codes will be added here”
-- Exams chip → prepends into Phase 1; Chart Details unchanged
-- Click Phase 2 → banner moves; Denture lands in Phase 2 only
-- +Code 661 → orange pending in Phase 2; tooth 18 click fills Th/Area and clears pending
+**Verified**
+- Open: morph width 62→467px; Care/Note/Info collapse; search field + listbox appear
+- Close: reverse width morph; siblings restore; search unmounts after morph

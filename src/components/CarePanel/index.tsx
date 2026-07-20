@@ -1,15 +1,17 @@
-import { useState, useRef, useMemo, useEffect } from 'react';
+import { useState, useRef, useMemo, useEffect, useLayoutEffect } from 'react';
 import styles from './index.module.css';
-import { Tabs, TabsList, TabsTab } from '../Tabs';
 import Button from '../Button';
 import { Label } from '../Label';
 import { Radio, RadioGroup } from '../Radio';
 import { Select, SelectTrigger, SelectContent, SelectItem } from '../Select';
+import { SegmentedButton, SegmentedButtonItem } from '../SegmentedButton';
 import { Combobox, ComboboxInput, ComboboxItem, ComboboxEmpty } from '../Combobox';
 import { Combobox as BaseCombobox } from '@base-ui/react/combobox';
 import { ScrollArea, ScrollAreaViewport, ScrollAreaContent, ScrollAreaScrollbar, ScrollAreaThumb } from '../ScrollArea';
 import { Popover, PopoverTrigger, PopoverContent } from '../Popover';
-import { PlusIcon, GearIcon, InfoOutlineIcon, InfoSolidIcon } from '../Icon';
+import { Tag } from '../Tag';
+import Input from '../Input';
+import { PlusIcon, InfoOutlineIcon, InfoSolidIcon } from '../Icon';
 import { PROCEDURE_CHIPS, PLAN_AND_EXPLOSION_CHIPS, CONDITION_CHIPS, CARE_PANELS, CHIP_LEGEND, type ChipDef } from './data';
 import { DENTAL_CODES, type DentalCode } from './dentalCodes';
 
@@ -34,6 +36,98 @@ export interface CarePanelProps {
 
 export type { DentalCode } from './dentalCodes';
 
+interface Appointment {
+  id: string;
+  /** Date of service, e.g. 12/15/2025 — shown in meta DOS (no time). */
+  dos: string;
+  /** Time window paired with DOS in the dropdown headline. */
+  timeRange: string;
+  providerId: string;
+  providerName: string;
+  locationId: string;
+  locationName: string;
+  room: string;
+}
+
+const APPOINTMENTS: Appointment[] = [
+  {
+    id: 'appt-1',
+    dos: '12/15/2025',
+    timeRange: '11:30 AM-12:45 PM',
+    providerId: 'GMMG',
+    providerName: 'MEHTA, GIREESH',
+    locationId: 'MALL',
+    locationName: 'Celebration Mallory Clinic',
+    room: 'VISHNU 2',
+  },
+  {
+    id: 'appt-2',
+    dos: '09/29/2025',
+    timeRange: '03:00 PM-04:00 PM',
+    providerId: 'ALNABR',
+    providerName: 'Abraham, Allan',
+    locationId: 'MALL',
+    locationName: 'Celebration Mallory Clinic',
+    room: 'VISHNU 2',
+  },
+  {
+    id: 'appt-3',
+    dos: '08/18/2025',
+    timeRange: '06:00 AM-07:00 AM',
+    providerId: 'ABCD',
+    providerName: 'B., Aryamol',
+    locationId: 'MALL',
+    locationName: 'Celebration Mallory Clinic',
+    room: 'hamna Dentals',
+  },
+  {
+    id: 'appt-4',
+    dos: '04/20/2025',
+    timeRange: '06:00 AM-06:30 AM',
+    providerId: 'YOHA',
+    providerName: 'Trial, Yohanan',
+    locationId: 'GTHM',
+    locationName: 'Gotham City',
+    room: 'Batman',
+  },
+  {
+    id: 'appt-5',
+    dos: '04/20/2025',
+    timeRange: '06:30 AM-07:00 AM',
+    providerId: 'YOHA',
+    providerName: 'Trial, Yohanan',
+    locationId: 'GTHM',
+    locationName: 'Gotham City',
+    room: 'Batman',
+  },
+];
+
+function appointmentHeadline(a: Appointment) {
+  return `${a.dos} - ${a.timeRange}`;
+}
+
+function appointmentDetail(a: Appointment) {
+  return `${a.providerId}: ${a.providerName} - ${a.locationId} : ${a.locationName} - ${a.room}`;
+}
+
+const TREATING_DENTISTS = [
+  { id: 'dr-john', label: 'Dr. John' },
+  { id: 'dr-smith', label: 'Dr. Smith' },
+];
+
+const LOCATIONS = [
+  { id: 'CBO', label: 'CBO' },
+  { id: 'MALL', label: 'MALL' },
+  { id: 'GTHM', label: 'GTHM' },
+];
+
+const PROVIDERS = [
+  { id: 'dr-john', label: 'Dr. John' },
+  { id: 'dr-smith', label: 'Dr. Smith' },
+  { id: 'ALNABR', label: 'ALNABR' },
+  { id: 'GMMG', label: 'GMMG' },
+];
+
 const chipClass: Record<ChipDef['kind'], string> = {
   procedure: styles.chipProcedure,
   condition: styles.chipCondition,
@@ -41,14 +135,32 @@ const chipClass: Record<ChipDef['kind'], string> = {
   explosion: styles.chipExplosion,
 };
 
-function Chip({ chip, armed, onSelect }: { chip: ChipDef; armed: boolean; onSelect: (chip: ChipDef) => void }) {
+function Chip({
+  chip,
+  armed,
+  onSelect,
+  statusPulse,
+  pulseIndex = 0,
+}: {
+  chip: ChipDef;
+  armed: boolean;
+  onSelect: (chip: ChipDef) => void;
+  statusPulse?: boolean;
+  pulseIndex?: number;
+}) {
   // Treatment plans and explosion codes are visually part of the palette
   // but not wired up to any behavior yet — see chip-selection follow-up.
   const disabled = chip.kind === 'treatment-plan' || chip.kind === 'explosion';
   return (
     <button
       type="button"
-      className={[styles.Chip, chipClass[chip.kind], armed ? styles.chipArmed : ''].join(' ')}
+      className={[
+        styles.Chip,
+        chipClass[chip.kind],
+        armed ? styles.chipArmed : '',
+        statusPulse ? styles.chipStatusPulse : '',
+      ].join(' ')}
+      style={statusPulse ? { animationDelay: `${pulseIndex * 20}ms` } : undefined}
       disabled={disabled}
       aria-pressed={armed}
       onClick={() => onSelect(chip)}
@@ -91,13 +203,39 @@ function HighlightMatch({ text, query }: { text: string; query: string }) {
   );
 }
 
-function CodeSearch({ codes = DENTAL_CODES, onSelect, onClose }: { codes?: DentalCode[]; onSelect: (code: DentalCode) => void; onClose: () => void }) {
+const CODE_MORPH_MS = 220;
+
+function CodeSearch({
+  codes = DENTAL_CODES,
+  active,
+  onSelect,
+  onClose,
+}: {
+  codes?: DentalCode[];
+  /** When false, close the results popup immediately (reverse morph). */
+  active: boolean;
+  onSelect: (code: DentalCode) => void;
+  onClose: () => void;
+}) {
   const [inputValue, setInputValue] = useState('');
+  // Start closed so Base UI can apply data-starting-style; open after the
+  // button→field morph begins so the list feels anchored to the growing field.
+  const [popupOpen, setPopupOpen] = useState(false);
   const skipInputUpdateRef = useRef(false);
   const processingRef = useRef(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  useLayoutEffect(() => {
+    if (!active) {
+      setPopupOpen(false);
+      return;
+    }
+    const t = window.setTimeout(() => setPopupOpen(true), 60);
+    return () => window.clearTimeout(t);
+  }, [active]);
+
   useEffect(() => {
+    if (!active) return;
     const handleMouseDown = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (wrapperRef.current?.contains(target)) return;
@@ -106,7 +244,7 @@ function CodeSearch({ codes = DENTAL_CODES, onSelect, onClose }: { codes?: Denta
     };
     document.addEventListener('mousedown', handleMouseDown);
     return () => document.removeEventListener('mousedown', handleMouseDown);
-  }, [onClose]);
+  }, [active, onClose]);
 
   const filtered = useMemo(() => {
     if (!inputValue) return codes;
@@ -130,9 +268,9 @@ function CodeSearch({ codes = DENTAL_CODES, onSelect, onClose }: { codes?: Denta
   };
 
   return (
-    <div ref={wrapperRef}>
+    <div ref={wrapperRef} className={styles.CodeSearchRoot}>
       <Combobox
-        open
+        open={popupOpen}
         onOpenChange={() => {}}
         inputValue={inputValue}
         onInputValueChange={val => {
@@ -161,7 +299,7 @@ function CodeSearch({ codes = DENTAL_CODES, onSelect, onClose }: { codes?: Denta
           placeholder="Search by code, explosion code or treatment plan template"
           aria-label="Search dental codes"
           className={styles.CodeSearchInput}
-          autoFocus
+          autoFocus={active}
           onKeyDown={handleInputKeyDown}
         />
         <BaseCombobox.Portal>
@@ -199,7 +337,62 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
   const [tab, setTab] = useState<CarePanelTab>('new');
   const [txType, setTxType] = useState<TxType>('proposed');
   const [carePanelId, setCarePanelId] = useState(CARE_PANELS[0].id);
-  const [codeSearchOpen, setCodeSearchOpen] = useState(false);
+  const [appointmentId, setAppointmentId] = useState<string | null>(APPOINTMENTS[0].id);
+  const [manualDos, setManualDos] = useState('2026-12-09');
+  const [locationId, setLocationId] = useState(LOCATIONS[0].id);
+  const [providerId, setProviderId] = useState(PROVIDERS[0].id);
+  const [treatingDentistId, setTreatingDentistId] = useState(TREATING_DENTISTS[0].id);
+  const [codeSearchMode, setCodeSearchMode] = useState<'closed' | 'open' | 'closing'>('closed');
+  const [statusRipple, setStatusRipple] = useState(false);
+  const statusRippleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const codeMorphTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const codeSearchMorphOpen = codeSearchMode === 'open';
+  const codeSearchMounted = codeSearchMode !== 'closed';
+
+  const openCodeSearch = () => {
+    if (codeMorphTimeoutRef.current) clearTimeout(codeMorphTimeoutRef.current);
+    setCodeSearchMode('open');
+  };
+
+  const closeCodeSearch = () => {
+    if (codeSearchMode !== 'open') return;
+    setCodeSearchMode('closing');
+    if (codeMorphTimeoutRef.current) clearTimeout(codeMorphTimeoutRef.current);
+    codeMorphTimeoutRef.current = setTimeout(() => {
+      setCodeSearchMode('closed');
+      codeMorphTimeoutRef.current = null;
+    }, CODE_MORPH_MS);
+  };
+
+  useEffect(() => () => {
+    if (codeMorphTimeoutRef.current) clearTimeout(codeMorphTimeoutRef.current);
+  }, []);
+
+  const selectedAppointment = appointmentId
+    ? APPOINTMENTS.find(a => a.id === appointmentId) ?? null
+    : null;
+
+  const handleTxTypeChange = (value: string) => {
+    setTxType(value as TxType);
+    // Restart the staggered hover-pulse so rapid toggles always replay.
+    if (statusRippleTimeoutRef.current) clearTimeout(statusRippleTimeoutRef.current);
+    setStatusRipple(false);
+    requestAnimationFrame(() => {
+      setStatusRipple(true);
+      const chipCount =
+        (tab === 'existing' ? CONDITION_CHIPS.length : 0)
+        + PROCEDURE_CHIPS.length
+        + (tab === 'new' ? PLAN_AND_EXPLOSION_CHIPS.length : 0);
+      statusRippleTimeoutRef.current = setTimeout(() => setStatusRipple(false), 200 + chipCount * 20);
+    });
+  };
+
+  const gridChips = [
+    ...(tab === 'existing' ? CONDITION_CHIPS : []),
+    ...PROCEDURE_CHIPS,
+    ...(tab === 'new' ? PLAN_AND_EXPLOSION_CHIPS : []),
+  ];
 
   const handleSelect = (chip: ChipDef) => onChipSelect(chip, { tab, txType });
 
@@ -219,23 +412,143 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
 
   return (
     <div className={styles.CarePanel}>
-      <div className={styles.TopRow}>
-        <Tabs variant="tertiary" value={tab} onValueChange={v => setTab(v as CarePanelTab)} className={styles.Tabs}>
-          <TabsList>
-            <TabsTab value="new" className={styles.TabLabel}>New Treatment</TabsTab>
-            <TabsTab value="existing" className={styles.TabLabel}>Existing</TabsTab>
-          </TabsList>
-        </Tabs>
-        <Button variant="secondary" leftIcon={<PlusIcon />}>Note</Button>
-      </div>
+      <div className={styles.Chrome}>
+        <div className={styles.Header}>
+          <SegmentedButton value={tab} onValueChange={v => setTab(v as CarePanelTab)}>
+            <SegmentedButtonItem value="new">New Treatment</SegmentedButtonItem>
+            <SegmentedButtonItem value="existing">Existing</SegmentedButtonItem>
+          </SegmentedButton>
+        </div>
 
-      <div className={styles.ControlsRow}>
+        <div
+          className={[styles.ContextSection, tab === 'existing' ? styles.ContextSectionHidden : ''].join(' ')}
+          aria-hidden={tab === 'existing'}
+        >
+          <div className={styles.ContextSectionInner}>
+            <div className={styles.AppointmentRow}>
+              <div className={styles.AppointmentSelect}>
+                <Select
+                  items={APPOINTMENTS.map(a => ({ value: a.id, label: appointmentHeadline(a) }))}
+                  value={appointmentId}
+                  onValueChange={v => setAppointmentId((v as string | null) ?? null)}
+                >
+                  <SelectTrigger
+                    placeholder="Select appointment"
+                    aria-label="Appointment"
+                    hasValue={!!appointmentId}
+                    onClear={() => setAppointmentId(null)}
+                  />
+                  <SelectContent
+                    align="start"
+                    positionerClassName={styles.AppointmentSelectPositioner}
+                    positionerStyle={{ width: 467, minWidth: 467, maxWidth: 467 }}
+                  >
+                    {APPOINTMENTS.map(a => (
+                      <SelectItem key={a.id} value={a.id} subtext={appointmentDetail(a)}>
+                        {appointmentHeadline(a)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div
+                className={[
+                  styles.AppointmentActions,
+                  selectedAppointment ? styles.AppointmentActionsOpen : '',
+                ].join(' ')}
+                aria-hidden={!selectedAppointment}
+              >
+                <div className={styles.AppointmentActionsInner}>
+                  <Tag variant="semi" color="green">Scheduled</Tag>
+                  <Button variant="link">View Details</Button>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.MetaRow}>
+              <div className={[styles.MetaItem, styles.MetaDos].join(' ')}>
+                <span className={styles.MetaLabel}>DOS:</span>
+                {selectedAppointment ? (
+                  <span className={styles.MetaValue}>{selectedAppointment.dos}</span>
+                ) : (
+                  <div className={styles.MetaControl}>
+                    <Input
+                      type="date"
+                      value={manualDos}
+                      onChange={setManualDos}
+                    />
+                  </div>
+                )}
+              </div>
+              <div className={[styles.MetaItem, styles.MetaLocation].join(' ')}>
+                <span className={styles.MetaLabel}>Location:</span>
+                {selectedAppointment ? (
+                  <span className={styles.MetaValue}>{selectedAppointment.locationId}</span>
+                ) : (
+                  <div className={styles.MetaControl}>
+                    <Select
+                      items={LOCATIONS.map(l => ({ value: l.id, label: l.label }))}
+                      value={locationId}
+                      onValueChange={v => setLocationId(v as string)}
+                    >
+                      <SelectTrigger placeholder="Location" aria-label="Location" />
+                      <SelectContent>
+                        {LOCATIONS.map(l => (
+                          <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+              <div className={[styles.MetaItem, styles.MetaFill].join(' ')}>
+                <span className={styles.MetaLabel}>Provider:</span>
+                {selectedAppointment ? (
+                  <span className={styles.MetaValue}>{selectedAppointment.providerId}</span>
+                ) : (
+                  <div className={styles.MetaControl}>
+                    <Select
+                      items={PROVIDERS.map(p => ({ value: p.id, label: p.label }))}
+                      value={providerId}
+                      onValueChange={v => setProviderId(v as string)}
+                    >
+                      <SelectTrigger placeholder="Provider" aria-label="Provider" />
+                      <SelectContent>
+                        {PROVIDERS.map(p => (
+                          <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+              <div className={[styles.MetaItem, styles.MetaFill].join(' ')}>
+                <span className={styles.MetaLabel}>Treating Dentist:</span>
+                <div className={styles.MetaControl}>
+                  <Select
+                    items={TREATING_DENTISTS.map(d => ({ value: d.id, label: d.label }))}
+                    value={treatingDentistId}
+                    onValueChange={v => setTreatingDentistId(v as string)}
+                  >
+                    <SelectTrigger placeholder="Select dentist" aria-label="Treating dentist" />
+                    <SelectContent>
+                      {TREATING_DENTISTS.map(d => (
+                        <SelectItem key={d.id} value={d.id}>{d.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {tab === 'new' ? (
           <div className={styles.TxTypeRow}>
-            <Label size="xs">Tx Type</Label>
-            <RadioGroup value={txType} onValueChange={v => setTxType(v as TxType)} style={{ flexDirection: 'row', gap: 'var(--spacing-12)' }}>
-              <Radio value="proposed">Tx Proposed</Radio>
-              <Radio value="completed">Tx Completed</Radio>
+            <Label size="xs">Tx Type :</Label>
+            <RadioGroup value={txType} onValueChange={handleTxTypeChange} style={{ flexDirection: 'row', gap: 'var(--spacing-24)' }}>
+              <Radio value="proposed">Proposed</Radio>
+              <Radio value="completed">Completed</Radio>
             </RadioGroup>
           </div>
         ) : (
@@ -244,57 +557,116 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
             Add conditions or pre-existing treatments
           </div>
         )}
-      </div>
 
-      {codeSearchOpen ? (
-        <div className={styles.CodeSearchFullRow}>
-          <CodeSearch codes={codes} onSelect={handleCodeSelect} onClose={() => setCodeSearchOpen(false)} />
-        </div>
-      ) : (
-        <div className={styles.SelectRow}>
-          <div className={styles.CarePanelPicker}>
-            <Label size="xs">Care Panel</Label>
-            <div className={styles.SelectWrapper}>
-              <Select
-                items={CARE_PANELS.map(panel => ({ value: panel.id, label: panel.label }))}
-                value={carePanelId}
-                onValueChange={v => setCarePanelId(v as string)}
-              >
-                <SelectTrigger placeholder="Select care panel" aria-label="Care panel" />
-                <SelectContent>
-                  {CARE_PANELS.map(panel => (
-                    <SelectItem key={panel.id} value={panel.id}>{panel.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <div
+          className={[
+            styles.SelectRow,
+            codeSearchMorphOpen ? styles.SelectRowCodeSearch : '',
+          ].join(' ')}
+        >
+          <div
+            className={styles.CarePanelCollapse}
+            aria-hidden={codeSearchMorphOpen}
+          >
+            <div className={styles.PaneClip}>
+              <div className={styles.CarePanelPicker}>
+                <Label size="xs">Care Panel :</Label>
+                <div className={styles.SelectWrapper}>
+                  <Select
+                    items={CARE_PANELS.map(panel => ({ value: panel.id, label: panel.label }))}
+                    value={carePanelId}
+                    onValueChange={v => setCarePanelId(v as string)}
+                  >
+                    <SelectTrigger placeholder="Select care panel" aria-label="Care panel" />
+                    <SelectContent>
+                      {CARE_PANELS.map(panel => (
+                        <SelectItem key={panel.id} value={panel.id}>{panel.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className={styles.ActionsRow}>
-            <Button variant="secondary" leftIcon={<PlusIcon />} onClick={() => setCodeSearchOpen(true)}>Code</Button>
-            <Button variant="secondary" iconOnly leftIcon={<GearIcon />} aria-label="Customize care panel" />
-            <Popover>
-              <PopoverTrigger openOnHover>
-                <Button variant="ghost" iconOnly leftIcon={<InfoOutlineIcon />} aria-label="What do the care panel colors mean?" />
-              </PopoverTrigger>
-              <PopoverContent side="top" align="end">
-                <Legend />
-              </PopoverContent>
-            </Popover>
+            <div
+              className={[
+                styles.CodeMorph,
+                codeSearchMorphOpen ? styles.CodeMorphOpen : '',
+              ].join(' ')}
+            >
+              <div className={styles.CodeMorphCollapsed} aria-hidden={codeSearchMorphOpen}>
+                <div className={styles.PaneClip}>
+                  <Button
+                    variant="secondary"
+                    leftIcon={<PlusIcon />}
+                    tabIndex={codeSearchMorphOpen ? -1 : 0}
+                    onClick={openCodeSearch}
+                  >
+                    Code
+                  </Button>
+                </div>
+              </div>
+              <div
+                className={styles.CodeMorphExpanded}
+                aria-hidden={!codeSearchMounted}
+                inert={!codeSearchMorphOpen || undefined}
+              >
+                <div className={styles.PaneClip}>
+                  {codeSearchMounted ? (
+                    <CodeSearch
+                      codes={codes}
+                      active={codeSearchMorphOpen}
+                      onSelect={handleCodeSelect}
+                      onClose={closeCodeSearch}
+                    />
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.ActionCollapse} aria-hidden={codeSearchMorphOpen}>
+              <div className={styles.PaneClip}>
+                <Button variant="secondary" leftIcon={<PlusIcon />} tabIndex={codeSearchMorphOpen ? -1 : 0}>
+                  Note
+                </Button>
+              </div>
+            </div>
+
+            <div className={styles.ActionCollapse} aria-hidden={codeSearchMorphOpen}>
+              <div className={styles.PaneClip}>
+                <Popover>
+                  <PopoverTrigger openOnHover>
+                    <Button
+                      variant="ghost"
+                      iconOnly
+                      leftIcon={<InfoOutlineIcon />}
+                      aria-label="What do the care panel colors mean?"
+                      tabIndex={codeSearchMorphOpen ? -1 : 0}
+                    />
+                  </PopoverTrigger>
+                  <PopoverContent side="top" align="end">
+                    <Legend />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
       <div className={styles.ChipGridArea}>
         <div className={styles.ChipGrid}>
-          {tab === 'existing' && CONDITION_CHIPS.map(chip => (
-            <Chip key={chip.id} chip={chip} armed={chip.id === armedChipId} onSelect={handleSelect} />
-          ))}
-          {PROCEDURE_CHIPS.map(chip => (
-            <Chip key={chip.id} chip={chip} armed={chip.id === armedChipId} onSelect={handleSelect} />
-          ))}
-          {tab === 'new' && PLAN_AND_EXPLOSION_CHIPS.map(chip => (
-            <Chip key={chip.id} chip={chip} armed={chip.id === armedChipId} onSelect={handleSelect} />
+          {gridChips.map((chip, index) => (
+            <Chip
+              key={chip.id}
+              chip={chip}
+              armed={chip.id === armedChipId}
+              onSelect={handleSelect}
+              statusPulse={statusRipple}
+              pulseIndex={index}
+            />
           ))}
         </div>
       </div>
