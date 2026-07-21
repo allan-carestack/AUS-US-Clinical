@@ -283,8 +283,8 @@ function CodeSearch({
         items={codeLabels}
         filter={null}
         value={null}
-        onValueChange={(val: string | null) => {
-          if (!val || processingRef.current) return;
+        onValueChange={(val) => {
+          if (typeof val !== 'string' || processingRef.current) return;
           processingRef.current = true;
           queueMicrotask(() => { processingRef.current = false; });
           const code = codes.find(c => `${c.code} - ${c.description}` === val);
@@ -373,7 +373,7 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
     ? APPOINTMENTS.find(a => a.id === appointmentId) ?? null
     : null;
 
-  const handleTxTypeChange = (value: string) => {
+  const handleTxTypeChange = (value: unknown) => {
     setTxType(value as TxType);
     // Restart the staggered hover-pulse so rapid toggles always replay.
     if (statusRippleTimeoutRef.current) clearTimeout(statusRippleTimeoutRef.current);

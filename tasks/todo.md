@@ -1,18 +1,17 @@
-# Code button → search morph
+# Fix Vercel TypeScript build errors
 
 Status legend: [ ] pending · [~] in progress · [x] done
 
-- [x] Keep SelectRow always mounted; collapse Care Panel / Note / Info when code search open
-- [x] Add CodeMorph wrapper: button expands into CodeSearch input with reverse on close
-- [x] CSS grid/flex + opacity morph (~220ms) + reduced-motion instant swap
-- [x] Browser-check open morph, list enter, Escape/outside close reverse
+- [x] Widen Combobox/RadioGroup onValueChange handlers in App.tsx and CarePanel
+- [x] Replace chartRows.findLast with reverse().find in App.tsx
+- [x] Remove stickyKeys and maxHeight from Chart Details Table usage
+- [x] Run npm run build and confirm tsc passes
 
 ## Review
 
 **Changed**
-- `CarePanel/index.tsx` — SelectRow always mounted; `codeSearchMode` (`closed`/`open`/`closing`); CodeMorph crossfades +Code ↔ CodeSearch; siblings collapse while open; reverse morph waits 220ms before unmount
-- `CarePanel/index.module.css` — 0fr↔1fr + opacity morph for Care Panel / Note / Info; CodeMorph expand; reduced-motion disables transitions
+- `App.tsx` — Combobox `onValueChange` narrows `unknown` via `typeof`; `findLast` → `[...].reverse().find`; dropped unsupported `stickyKeys` / `maxHeight` on Table
+- `CarePanel/index.tsx` — same Combobox narrowing; `handleTxTypeChange` accepts `unknown`
 
 **Verified**
-- Open: morph width 62→467px; Care/Note/Info collapse; search field + listbox appear
-- Close: reverse width morph; siblings restore; search unmounts after morph
+- `npm run build` (`tsc && vite build`) exits 0

@@ -238,8 +238,8 @@ function CodeChangeCombobox({ currentCodeId, codes = DENTAL_CODES, onSelect, onC
       onInputValueChange={setInputValue}
       items={codeLabels}
       filter={null}
-      onValueChange={(val: string | null) => {
-        if (!val) return;
+      onValueChange={(val) => {
+        if (typeof val !== 'string') return;
         const code = codes.find(c => `${c.code} - ${c.description}` === val);
         if (code) onSelect(code);
       }}
@@ -842,7 +842,7 @@ export default function App() {
       if (oldest) { finalizePendingPlanProcedure(oldest, meta, surface); return; }
     }
     if (pendingRowIds.size > 0) {
-      const oldest = chartRows.findLast(r => pendingRowIds.has(r.id));
+      const oldest = [...chartRows].reverse().find(r => pendingRowIds.has(r.id));
       if (oldest) { finalizePendingRow(oldest.id, meta, surface); return; }
     }
     if (pendingSelection?.source === 'chip') {
@@ -859,7 +859,7 @@ export default function App() {
       if (oldest) { finalizePendingPlanProcedure(oldest, meta); return; }
     }
     if (pendingRowIds.size > 0) {
-      const oldest = chartRows.findLast(r => pendingRowIds.has(r.id));
+      const oldest = [...chartRows].reverse().find(r => pendingRowIds.has(r.id));
       if (oldest) { finalizePendingRow(oldest.id, meta); return; }
     }
     if (pendingSelection?.source === 'chip') {
@@ -1408,8 +1408,6 @@ export default function App() {
             data={chartRows}
             rowKey="id"
             selectable
-            stickyKeys={['description']}
-            maxHeight="100%"
             rowClassName={(row: ChartEntry) => {
               if (successRowIds.has(row.id)) return appStyles.SuccessRow;
               if (pendingRowIds.has(row.id)) return appStyles.PendingRow;
