@@ -1,17 +1,14 @@
-# Fix Vercel TypeScript build errors
+# Fix +code keyboard highlight padding
 
 Status legend: [ ] pending · [~] in progress · [x] done
 
-- [x] Widen Combobox/RadioGroup onValueChange handlers in App.tsx and CarePanel
-- [x] Replace chartRows.findLast with reverse().find in App.tsx
-- [x] Remove stickyKeys and maxHeight from Chart Details Table usage
-- [x] Run npm run build and confirm tsc passes
+- [x] Add `width: 100%` and `min-width: 0` to `.ListItem` in `listItem.module.css`
+- [x] Verify keyboard nav keeps inset highlight; long labels ellipsis
 
 ## Review
 
 **Changed**
-- `App.tsx` — Combobox `onValueChange` narrows `unknown` via `typeof`; `findLast` → `[...].reverse().find`; dropped unsupported `stickyKeys` / `maxHeight` on Table
-- `CarePanel/index.tsx` — same Combobox narrowing; `handleTxTypeChange` accepts `unknown`
+- `src/components/_shared/listItem.module.css` — constrain `.ListItem` with `width: 100%` and `min-width: 0` so column-flex rows shrink and ellipsis instead of overflowing the padded list
 
 **Verified**
-- `npm run build` (`tsc && vite build`) exits 0
+- Keyboard highlight on CarePanel +code list (filter `66`, ArrowDown): `leftGap`/`rightGap` = 4px (matches list padding), `min-width: 0px`, `scrollOverflow: 0`
