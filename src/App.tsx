@@ -11,6 +11,7 @@ import {
 import { CarePanel, type ChipDef, type CarePanelSelectionContext, type DentalCode } from './components/CarePanel';
 import { Tabs, TabsList, TabsTab } from './components/Tabs';
 import { ScrollArea, ScrollAreaViewport, ScrollAreaContent, ScrollAreaScrollbar, ScrollAreaThumb } from './components/ScrollArea';
+import scrollAreaStyles from './components/ScrollArea/index.module.css';
 import { Menu, MenuTrigger, MenuContent, MenuItem } from './components/Menu';
 import { Tooltip } from './components/Tooltip';
 import { TxLogFilters } from './components/TxLogFilters';
@@ -255,7 +256,7 @@ function CodeChangeCombobox({ currentCodeId, codes = DENTAL_CODES, onSelect, onC
           <BaseCombobox.Popup className={appStyles.CodeChangePopup}>
             <ScrollArea className={appStyles.CodeChangeScroll}>
               <ScrollAreaViewport>
-                <ScrollAreaContent>
+                <ScrollAreaContent className={scrollAreaStyles.BoundedContent}>
                   <BaseCombobox.List className={appStyles.CodeChangeList}>
                     {filtered.map(code => {
                       const label = `${code.code} - ${code.description}`;
@@ -589,6 +590,7 @@ export default function App() {
   // Pending rows created by re-coding an existing row (vs. adding a brand-new
   // one). These get no delete (✕) affordance — there's an original row to keep.
   const [changingRowIds, setChangingRowIds] = useState<Set<string>>(new Set());
+  const [showFeeEstimates, setShowFeeEstimates] = useState(true);
   const [editingCell, setEditingCell] = useState<{ rowId: string; field: 'thArea' | 'surface' } | null>(null);
   const [successRowIds, setSuccessRowIds] = useState<Set<string>>(new Set());
   // Active dentition, lifted from the Odontogram so tooth-input validation can
@@ -1278,9 +1280,11 @@ export default function App() {
     { key: 'location',    header: 'Location',        width: 90,  render: v => v },
     { key: 'txPlan',      header: 'Tx Plan',         width: 110, render: v => v || '--' },
     { key: 'phase',       header: 'Phase',           width: 100, render: v => v || '--' },
-    { key: 'fees',        header: 'Fees',            width: 90 },
-    { key: 'discount',    header: 'Discount',        width: 90 },
-    { key: 'patPayable',  header: 'Pat. Payable',    width: 100 },
+    ...(!showFeeEstimates ? [
+      { key: 'fees',        header: 'Fees',            width: 90 },
+      { key: 'discount',    header: 'Discount',        width: 90 },
+      { key: 'patPayable',  header: 'Pat. Payable',    width: 100 },
+    ] as Column<ChartEntry>[] : []),
     { key: 'status',      header: 'Status',          width: 140, render: v => v },
     { key: 'rowAction',   header: '',                width: 32,  render: (_v, row) => {
       // Delete (✕) is only for newly-added pending rows — re-coding an
@@ -1297,7 +1301,7 @@ export default function App() {
       return null;
     }},
     { key: 'userName',    header: 'User Name',       width: 120 },
-  ], [editingRowId, pendingRowIds, changingRowIds, editingCell, successRowIds, dentalCodes, dentition]);
+  ], [editingRowId, pendingRowIds, changingRowIds, editingCell, successRowIds, dentalCodes, dentition, showFeeEstimates]);
 
   return (
     <div className="root" style={{ fontFamily: 'inherit', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
@@ -1389,7 +1393,7 @@ export default function App() {
       {/* Tx log filters — Chart Details only; TX plan view has its own chrome */}
       {activeTab === 'chart-details' && (
         <div style={{ flexShrink: 0 }}>
-          <TxLogFilters />
+          <TxLogFilters onChange={state => setShowFeeEstimates(state.showFeeEstimates)} />
         </div>
       )}
 

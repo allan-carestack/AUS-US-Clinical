@@ -131,3 +131,30 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ── Badge (trailing count) — mirrors FilterChip's badge so a filter's count
+   reads the same whether it's a pill or an overflow/menu row. Unlike the
+   chip, a list row never inverts on press — the highlight background here
+   is a soft tint (--hover-default), not a solid fill, so a dark badge always
+   stays legible. */
+.Badge {
+  composes: text-sm weight-500 from global;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 var(--spacing-4);
+  border-radius: var(--radius-32);
+  color: var(--white);
+  flex-shrink: 0;
+}
+
+.badgeCount {
+  background-color: var(--grey-60);
+}
+
+.badgeNotification {
+  background-color: var(--red-80);
+}

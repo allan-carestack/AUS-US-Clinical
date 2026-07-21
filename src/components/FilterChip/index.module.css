@@ -25,7 +25,7 @@
   white-space: nowrap;
   cursor: pointer;
   user-select: none;
-  transition: background-color 100ms ease-out, border-color 100ms ease-out, color 100ms ease-out;
+  transition: background-color 100ms ease-out, border-color 100ms ease-out, color 100ms ease-out, width 160ms ease-out;
 
   &:focus-visible {
     outline: 2px solid var(--blue-80);

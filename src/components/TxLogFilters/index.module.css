@@ -22,6 +22,30 @@
   overflow: hidden;
 }
 
+/* Wraps each visible-row pill so it can grow/shrink in on width changes
+   (e.g. the browser resizing) instead of popping in and out instantly. */
+.PillWrap {
+  display: grid;
+  grid-template-columns: 1fr;
+  opacity: 1;
+  overflow: hidden;
+  /* Bleed room so the chip's focus outline (2px outline + 2px offset) isn't
+     clipped by this wrapper's overflow; the negative margin cancels the
+     padding so it doesn't add to the row's layout height. */
+  padding-block: var(--spacing-6);
+  margin-block: calc(var(--spacing-6) * -1);
+  transition: grid-template-columns 180ms ease, opacity 140ms ease;
+}
+
+.PillWrap > * {
+  min-width: 0;
+}
+
+.PillWrapHidden {
+  grid-template-columns: 0fr;
+  opacity: 0;
+}
+
 /* Natural-width probe for overflow math — not painted, not interactive. */
 .Measure {
   position: absolute;

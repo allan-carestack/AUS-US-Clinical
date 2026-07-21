@@ -3,6 +3,7 @@ import styles from './index.module.css';
 import { AngleUpIcon, TickIcon, CloseIcon } from '../Icon';
 import { ListItem, type ListItemProps } from '../_shared/ListItem';
 import { ScrollArea, ScrollAreaViewport, ScrollAreaContent, ScrollAreaScrollbar, ScrollAreaThumb } from '../ScrollArea';
+import scrollAreaStyles from '../ScrollArea/index.module.css';
 
 export function Combobox(props: React.ComponentPropsWithoutRef<typeof BaseCombobox.Root>) {
   return <BaseCombobox.Root {...props} />;
@@ -75,7 +76,7 @@ export function ComboboxContent({ children, className }: ComboboxContentProps) {
         <BaseCombobox.Popup className={[styles.Popup, className].filter(Boolean).join(' ')}>
           <ScrollArea className={styles.ListScrollArea}>
             <ScrollAreaViewport>
-              <ScrollAreaContent>
+              <ScrollAreaContent className={scrollAreaStyles.BoundedContent}>
                 <BaseCombobox.List className={styles.List}>
                   {children}
                 </BaseCombobox.List>
