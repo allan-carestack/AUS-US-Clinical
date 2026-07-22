@@ -1280,7 +1280,7 @@ export default function App() {
     { key: 'location',    header: 'Location',        width: 90,  render: v => v },
     { key: 'txPlan',      header: 'Tx Plan',         width: 110, render: v => v || '--' },
     { key: 'phase',       header: 'Phase',           width: 100, render: v => v || '--' },
-    ...(!showFeeEstimates ? [
+    ...(showFeeEstimates ? [
       { key: 'fees',        header: 'Fees',            width: 90 },
       { key: 'discount',    header: 'Discount',        width: 90 },
       { key: 'patPayable',  header: 'Pat. Payable',    width: 100 },

@@ -1,14 +1,20 @@
-# Fix +code keyboard highlight padding
+# Fix Claude branch bugs
 
 Status legend: [ ] pending · [~] in progress · [x] done
 
-- [x] Add `width: 100%` and `min-width: 0` to `.ListItem` in `listItem.module.css`
-- [x] Verify keyboard nav keeps inset highlight; long labels ellipsis
+- [x] Invert fee-column visibility: show when `showFeeEstimates` is true
+- [x] Revert accidental Popover full padding → `padding-top` only
+- [x] Restore `node_modules/.vite` to match `main` (undo cache churn commit)
+- [x] Add `prefers-reduced-motion` for new pill / chip width transitions
+- [x] Verify with build / spot-check
 
 ## Review
 
 **Changed**
-- `src/components/_shared/listItem.module.css` — constrain `.ListItem` with `width: 100%` and `min-width: 0` so column-flex rows shrink and ellipsis instead of overflowing the padded list
+- `src/App.tsx` — `showFeeEstimates ? feeCols : []` (was inverted `!showFeeEstimates`)
+- `src/components/Popover/index.module.css` — restore `padding-top` only (Header/Body already pad)
+- `src/components/TxLogFilters/index.module.css` + `FilterChip/index.module.css` — disable width/collapse transitions under `prefers-reduced-motion`
+- staged: `node_modules/.vite` reset to `main` (removes Vite dep hash churn from `5be4d89`)
 
 **Verified**
-- Keyboard highlight on CarePanel +code list (filter `66`, ArrowDown): `leftGap`/`rightGap` = 4px (matches list padding), `min-width: 0px`, `scrollOverflow: 0`
+- `npm run build` (`tsc && vite build`) exits 0

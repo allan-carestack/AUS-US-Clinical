@@ -17,7 +17,7 @@
   overflow: hidden;
   transform-origin: var(--transform-origin);
   transition: opacity 150ms ease-out, transform 150ms ease-out;
-  padding: var(--spacing-6);
+  padding-top: var(--spacing-6);
 
   &[data-starting-style],
   &[data-ending-style] {

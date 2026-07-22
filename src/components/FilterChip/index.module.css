@@ -27,6 +27,10 @@
   user-select: none;
   transition: background-color 100ms ease-out, border-color 100ms ease-out, color 100ms ease-out, width 160ms ease-out;
 
+  @media (prefers-reduced-motion: reduce) {
+    transition: background-color 100ms ease-out, border-color 100ms ease-out, color 100ms ease-out;
+  }
+
   &:focus-visible {
     outline: 2px solid var(--blue-80);
     outline-offset: 2px;

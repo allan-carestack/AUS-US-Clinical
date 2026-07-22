@@ -46,6 +46,12 @@
   opacity: 0;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .PillWrap {
+    transition: none;
+  }
+}
+
 /* Natural-width probe for overflow math — not painted, not interactive. */
 .Measure {
   position: absolute;
