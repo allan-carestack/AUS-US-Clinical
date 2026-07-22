@@ -93,9 +93,9 @@ export function MenuRadioGroup(props: React.ComponentPropsWithoutRef<typeof Base
 }
 
 type MenuRadioItemProps = React.ComponentPropsWithoutRef<typeof BaseMenu.RadioItem> &
-  Pick<ListItemProps, 'icon' | 'iconPosition' | 'subtext' | 'indicatorPosition'>;
+  Pick<ListItemProps, 'icon' | 'iconPosition' | 'subtext' | 'indicatorPosition' | 'badge' | 'badgeVariant'>;
 
-export function MenuRadioItem({ children, className, icon, iconPosition, subtext, indicatorPosition = 'right', ...props }: MenuRadioItemProps) {
+export function MenuRadioItem({ children, className, icon, iconPosition, subtext, indicatorPosition = 'right', badge, badgeVariant, ...props }: MenuRadioItemProps) {
   return (
     <BaseMenu.RadioItem className={[styles.Item, className].filter(Boolean).join(' ')} {...props}>
       <ListItem
@@ -103,6 +103,8 @@ export function MenuRadioItem({ children, className, icon, iconPosition, subtext
         icon={icon}
         iconPosition={iconPosition}
         subtext={subtext}
+        badge={badge}
+        badgeVariant={badgeVariant}
         indicator={<BaseMenu.RadioItemIndicator className={styles.ItemIndicator}><TickIcon /></BaseMenu.RadioItemIndicator>}
         indicatorPosition={indicatorPosition}
       />

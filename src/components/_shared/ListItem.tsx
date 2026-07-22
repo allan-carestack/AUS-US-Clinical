@@ -18,6 +18,13 @@ export interface ListItemProps {
   indicator?: React.ReactNode;
   /** Which side the indicator sits on. Defaults to 'left'. */
   indicatorPosition?: 'left' | 'right';
+  /** A small trailing count, rendered in a circular badge — mirrors
+      FilterChip's badge so a filter's count reads the same whether it's
+      shown as a pill or as a row in an overflow/menu list. */
+  badge?: React.ReactNode;
+  /** `count` (default) is a solid dark circle; `notification` is red — same
+      semantics as FilterChip's badgeVariant. */
+  badgeVariant?: 'count' | 'notification';
 }
 
 /**
@@ -26,7 +33,7 @@ export interface ListItemProps {
  * container class. Only the label is mandatory; checkbox, indicator, icon
  * and subtext are optional.
  */
-export function ListItem({ label, subtext, icon, iconPosition = 'left', checkbox, indicator, indicatorPosition = 'left' }: ListItemProps) {
+export function ListItem({ label, subtext, icon, iconPosition = 'left', checkbox, indicator, indicatorPosition = 'left', badge, badgeVariant = 'count' }: ListItemProps) {
   return (
     <>
       {checkbox && (
@@ -40,6 +47,11 @@ export function ListItem({ label, subtext, icon, iconPosition = 'left', checkbox
         <span className={styles.Label}>{label}</span>
         {subtext != null && <span className={styles.Subtext}>{subtext}</span>}
       </span>
+      {badge != null && (
+        <span className={[styles.Badge, badgeVariant === 'notification' ? styles.badgeNotification : styles.badgeCount].join(' ')}>
+          {badge}
+        </span>
+      )}
       {icon && iconPosition === 'right' && <span className={styles.Icon}>{icon}</span>}
       {indicator && indicatorPosition === 'right' && indicator}
     </>

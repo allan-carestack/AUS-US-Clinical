@@ -67,3 +67,17 @@
 .Corner {
   background-color: transparent;
 }
+
+/* Base UI's ScrollAreaContent hardcodes an inline min-width: fit-content, so
+   scrollable content never gets artificially squeezed narrower than its own
+   contents — correct for a horizontally-scrollable table, wrong for a
+   vertical dropdown list. There, an unwrapped long label (nowrap, pre-ellipsis
+   intrinsic width) inflates the fit-content box past the popup's width; every
+   row stretches to match via width:100%, invisibly, until one row's
+   highlight/selection background reveals the overflow past the list padding.
+   Apply to ScrollAreaContent in list/dropdown contexts (Select, Combobox, code
+   search) to clamp back to the viewport so long labels ellipsis instead.
+   Do NOT apply where horizontal scrolling is intentional (Table, wide grids). */
+.BoundedContent {
+  min-width: 0 !important;
+}

@@ -8,6 +8,7 @@ import { SegmentedButton, SegmentedButtonItem } from '../SegmentedButton';
 import { Combobox, ComboboxInput, ComboboxItem, ComboboxEmpty } from '../Combobox';
 import { Combobox as BaseCombobox } from '@base-ui/react/combobox';
 import { ScrollArea, ScrollAreaViewport, ScrollAreaContent, ScrollAreaScrollbar, ScrollAreaThumb } from '../ScrollArea';
+import scrollAreaStyles from '../ScrollArea/index.module.css';
 import { Popover, PopoverTrigger, PopoverContent } from '../Popover';
 import { Tag } from '../Tag';
 import Input from '../Input';
@@ -307,7 +308,7 @@ function CodeSearch({
             <BaseCombobox.Popup className={styles.CodeSearchPopup}>
               <ScrollArea className={styles.CodeSearchScroll}>
                 <ScrollAreaViewport>
-                  <ScrollAreaContent>
+                  <ScrollAreaContent className={scrollAreaStyles.BoundedContent}>
                     <BaseCombobox.List className={styles.CodeSearchList}>
                       {filtered.map(code => {
                         const label = `${code.code} - ${code.description}`;

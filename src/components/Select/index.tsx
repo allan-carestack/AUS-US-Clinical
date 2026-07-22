@@ -4,6 +4,7 @@ import styles from './index.module.css';
 import { AngleUpIcon, TickIcon, CloseIcon } from '../Icon';
 import { ListItem, type ListItemProps } from '../_shared/ListItem';
 import { ScrollArea, ScrollAreaViewport, ScrollAreaContent, ScrollAreaScrollbar, ScrollAreaThumb } from '../ScrollArea';
+import scrollAreaStyles from '../ScrollArea/index.module.css';
 
 export function Select(props: React.ComponentPropsWithoutRef<typeof BaseSelect.Root>) {
   return <BaseSelect.Root {...props} />;
@@ -118,7 +119,7 @@ export function SelectContent({
         <BaseSelect.Popup className={[styles.Popup, className].filter(Boolean).join(' ')}>
           <ScrollArea className={styles.ListScrollArea}>
             <ScrollAreaViewport>
-              <ScrollAreaContent>
+              <ScrollAreaContent className={scrollAreaStyles.BoundedContent}>
                 <BaseSelect.List className={styles.List}>
                   {children}
                 </BaseSelect.List>
