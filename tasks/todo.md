@@ -1,4 +1,4 @@
-# ChipGridArea tab slide-in + change notice
+# Proposed/Completed blur+tooltip notice
 
 Status legend: [ ] pending · [~] in progress · [x] done · [?] needs decision
 
@@ -6,17 +6,17 @@ Status legend: [ ] pending · [~] in progress · [x] done · [?] needs decision
 
 ## Implementation plan
 
-- [x] On tab switch, slide ChipGridArea in (Existing ← left, New Treatment ← right)
-- [x] Skip animation on initial mount; respect prefers-reduced-motion
-- [x] Outgoing ChipGridArea: subtle blur + opposite slide while incoming enters
-- [x] Centered tooltip + blur overlay over chip grid on tab change
-- [x] Auto-dismiss notice (~1.4s hold + fade out); restart on rapid toggles
+- [x] Generalize tab-change notice helper so Tx Type can reuse it
+- [x] Show blur+tooltip when switching Proposed ↔ Completed
+- [x] Use proper user-facing copy for tab and Tx Type notices
+- [x] Keep existing status-ripple on Tx Type change
+- [x] Verify interaction matches New Treatment ↔ Existing
 
 ---
 
 ## Review
 
-- Overlay split: static `.ChipGridChangeBlur` (opacity always 1) + fading veil/tooltip siblings.
-- Avoids backdrop-root bug from animating opacity on the `backdrop-filter` node.
-- Tooltip copy: `CarePanel changed to New Treatment` / `… Existing`.
-- Reduced-motion: no blur; stronger opaque veil instead.
+- `showChangeNotice(message)` shared by tab and Tx Type switches.
+- Proposed ↔ Completed shows the same chip-grid blur + tooltip overlay as New Treatment ↔ Existing.
+- Copy: "Switched to Proposed" / "Switched to Completed" (and "Switched to New Treatment" / "Switched to Existing" for tabs).
+- Status ripple on Tx Type change unchanged.

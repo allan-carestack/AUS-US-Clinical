@@ -28,10 +28,10 @@
   background-color: var(--orange-10) !important;
 }
 
-/* Area preset Select in Th/Area cells (chart + treatment plan). */
+/* Area preset Select in Th/Area cells (chart + treatment plan).
+   Trigger fills the narrow column; SelectContent pins the popup to 200px. */
 .AreaSelect {
-  width: 20rem;
-  flex-shrink: 0;
+  width: 100%;
 }
 
 /* ── Inline cell editing for pending rows ── */

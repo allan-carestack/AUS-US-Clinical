@@ -580,11 +580,13 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
-function InlineEditCell({ field, validate, onCommit, onCancel }: {
+function InlineEditCell({ field, validate, onCommit, onCancel, onEscape }: {
   field: 'thArea' | 'surface';
   validate: (v: string) => string | null;
   onCommit: (value: string) => void;
   onCancel: () => void;
+  /** When set, Escape calls this instead of onCancel (e.g. discard a code change). */
+  onEscape?: () => void;
 }) {
   const [value, setValue] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -621,7 +623,11 @@ function InlineEditCell({ field, validate, onCommit, onCancel }: {
           onChange={e => { setValue(e.target.value); setError(null); }}
           onKeyDown={e => {
             if (e.key === 'Enter') commit();
-            if (e.key === 'Escape') onCancel();
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              e.stopPropagation();
+              (onEscape ?? onCancel)();
+            }
           }}
           onBlur={commit}
           onAnimationEnd={() => setShake(false)}
@@ -656,6 +662,9 @@ export default function App() {
   // Pending rows created by re-coding an existing row (vs. adding a brand-new
   // one). These get no delete (✕) affordance — there's an original row to keep.
   const [changingRowIds, setChangingRowIds] = useState<Set<string>>(new Set());
+  // Pre-change row snapshots keyed by id — Esc restores these while a code
+  // change is still awaiting tooth/area input.
+  const codeChangeSnapshotsRef = useRef<Record<string, ChartEntry>>({});
   const [showFeeEstimates, setShowFeeEstimates] = useState(true);
   const [txLogFilter, setTxLogFilter] = useState('all');
   const filteredChartRows = useMemo(
@@ -724,18 +733,6 @@ export default function App() {
       .then(p => console.info(`[clinical] saved procedure ${p.treatmentProcedureId} (${codeId}${tooth ? ' · tooth ' + tooth : ''}${surface ? ' · ' + surface : ''})`))
       .catch(err => console.warn('[clinical] save failed:', err));
   };
-
-  // Escape backs out of tooth-first multi-select or the code-change combobox.
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (editingRowId) { setEditingRowId(null); return; }
-        setPendingSelection(null);
-      }
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [editingRowId]);
 
   const prependPlanProcedure = (planId: string, phaseId: string, procedure: PlanProcedure) => {
     setPlansById((prev) => {
@@ -873,6 +870,19 @@ export default function App() {
     persistProcedure(newRow.codeId, meta?.id ?? '', surface ? SURFACE_LABEL[surface] : '', context.txType);
   };
 
+  // Restore a row that was mid code-change (Esc before tooth/area is entered).
+  const discardCodeChange = (rowId: string) => {
+    const snapshot = codeChangeSnapshotsRef.current[rowId];
+    if (!snapshot) {
+      if (editingCell?.rowId === rowId) setEditingCell(null);
+      return;
+    }
+    delete codeChangeSnapshotsRef.current[rowId];
+    setChartRows(prev => prev.map(row => (row.id === rowId ? snapshot : row)));
+    clearPendingRow(rowId);
+    setEditingCell(null);
+  };
+
   // Code-change from table description: user clicked a link, picked a new code.
   // A code that needs a tooth/surface routes through the SAME pending-row
   // mechanism as adding a new code — the row goes orange, the required column
@@ -888,6 +898,9 @@ export default function App() {
       ));
       return;
     }
+    // Snapshot the pre-change row so Esc can discard before tooth/area is committed.
+    const current = chartRows.find(row => row.id === rowId);
+    if (current) codeChangeSnapshotsRef.current[rowId] = { ...current };
     // Reset to a pending state: new code, cleared tooth/surface awaiting input.
     setChartRows(prev => prev.map(row =>
       row.id === rowId
@@ -896,7 +909,10 @@ export default function App() {
     ));
     setPendingRowIds(prev => new Set(prev).add(rowId));
     setChangingRowIds(prev => new Set(prev).add(rowId));
-    requestAnimationFrame(() => setEditingCell({ rowId, field: 'thArea' }));
+    // Area cells stay on the warning icon until click — don't auto-open the Select.
+    if (code.requires !== 'area') {
+      requestAnimationFrame(() => setEditingCell({ rowId, field: 'thArea' }));
+    }
   };
 
   // Tooth-first: toggle a tooth/surface in/out of the multi-select armed set.
@@ -971,7 +987,9 @@ export default function App() {
       const procedure = chipToPlanProcedure(id, chip, undefined, undefined, true);
       prependPlanProcedure(activePlan.id, phaseId, procedure);
       setPendingProcedureIds((prev) => new Set(prev).add(id));
-      requestAnimationFrame(() => setEditingCell({ rowId: id, field: 'thArea' }));
+      if (chip.requires !== 'area') {
+        requestAnimationFrame(() => setEditingCell({ rowId: id, field: 'thArea' }));
+      }
       return;
     }
 
@@ -1030,7 +1048,9 @@ export default function App() {
       prependPlanProcedure(activePlan.id, phaseId, procedure);
       if (pending) {
         setPendingProcedureIds((prev) => new Set(prev).add(id));
-        requestAnimationFrame(() => setEditingCell({ rowId: id, field: 'thArea' }));
+        if (code.requires !== 'area') {
+          requestAnimationFrame(() => setEditingCell({ rowId: id, field: 'thArea' }));
+        }
       } else {
         persistProcedure(code.code, '', '', context.txType);
       }
@@ -1127,6 +1147,7 @@ export default function App() {
     ));
     applyAreaMark(chip, areaId);
     clearPendingRow(rowId);
+    setEditingCell(null);
     persistProcedure(chipCodeId(chip), areaId, '', 'Proposed');
   };
 
@@ -1143,12 +1164,14 @@ export default function App() {
     updatePlanProcedure(activePlan.id, procedureId, { thArea: areaId, surface: '--' });
     applyAreaMark(chip, areaId);
     clearPendingProcedure(procedureId);
+    setEditingCell(null);
     persistProcedure(proc.codeId, areaId, '', 'Proposed');
   };
 
   // Remove a row from every "pending" tracking set — used whenever a row
-  // leaves the pending state (completed, finalized, or deleted).
+  // leaves the pending state (completed, finalized, discarded, or deleted).
   const clearPendingRow = (rowId: string) => {
+    delete codeChangeSnapshotsRef.current[rowId];
     setPendingRowIds(prev => {
       const next = new Set(prev);
       next.delete(rowId);
@@ -1161,6 +1184,24 @@ export default function App() {
       return next;
     });
   };
+
+  // Escape: close code-change combobox → discard in-progress re-code → clear tooth-first arming.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (editingRowId) { setEditingRowId(null); return; }
+      if (changingRowIds.size > 0) {
+        const rowId = editingCell?.rowId && changingRowIds.has(editingCell.rowId)
+          ? editingCell.rowId
+          : [...changingRowIds][changingRowIds.size - 1];
+        discardCodeChange(rowId);
+        return;
+      }
+      setPendingSelection(null);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [editingRowId, changingRowIds, editingCell]);
 
   const isValidTooth = (v: string): string | null => {
     const num = parseInt(v, 10);
@@ -1274,7 +1315,12 @@ export default function App() {
     const plan = plansById[activePlan.id];
     const flat = plan?.phases.flatMap((p) => p.procedures) ?? [];
     const currentIdx = flat.findIndex((p) => p.id === procedureId);
-    const nextBelow = flat.find((p, i) => i > currentIdx && pendingProcedureIds.has(p.id) && p.id !== procedureId);
+    const nextBelow = flat.find((p, i) =>
+      i > currentIdx
+      && pendingProcedureIds.has(p.id)
+      && p.id !== procedureId
+      && p.requires !== 'area',
+    );
     if (nextBelow) {
       requestAnimationFrame(() => setEditingCell({ rowId: nextBelow.id, field: 'thArea' }));
     } else {
@@ -1313,7 +1359,12 @@ export default function App() {
     }, 1200);
 
     const currentIdx = chartRows.findIndex(r => r.id === rowId);
-    const nextBelow = chartRows.find((r, i) => i > currentIdx && pendingRowIds.has(r.id) && r.id !== rowId);
+    const nextBelow = chartRows.find((r, i) =>
+      i > currentIdx
+      && pendingRowIds.has(r.id)
+      && r.id !== rowId
+      && r.requires !== 'area',
+    );
     if (nextBelow) {
       requestAnimationFrame(() => setEditingCell({ rowId: nextBelow.id, field: 'thArea' }));
     } else {
@@ -1367,22 +1418,48 @@ export default function App() {
       }
       return <DescLink text={text} withPreview={false} />;
     }},
-    { key: 'thArea',      header: 'Th/Area',         width: 200,  render: (_v, row) => {
+    { key: 'thArea',      header: 'Th/Area',         width: 100,  render: (_v, row) => {
       if (!pendingRowIds.has(row.id)) return (row.thArea as string) || '--';
       if (!row.requires || row.requires === 'none') return (row.thArea as string) || '--';
       if (row.requires === 'area') {
+        if (editingCell?.rowId === row.id && editingCell.field === 'thArea') {
+          return (
+            <Select
+              value={row.thArea || null}
+              defaultOpen
+              onOpenChange={(open, details) => {
+                if (open) return;
+                if (details.reason === 'escape-key' && changingRowIds.has(row.id)) {
+                  discardCodeChange(row.id);
+                  return;
+                }
+                setEditingCell(null);
+              }}
+              onValueChange={val => { if (typeof val === 'string') finalizeAreaSelection(row.id, val); }}
+            >
+              <SelectTrigger className={appStyles.AreaSelect} placeholder="Choose area" aria-label="Choose area" />
+              <SelectContent positionerStyle={{ width: 200, minWidth: 200 }}>
+                {AREA_PRESETS.map(preset => (
+                  <SelectItem key={preset.id} value={preset.id}>{preset.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          );
+        }
+        if (row.thArea) {
+          return (
+            <span
+              style={{ cursor: 'pointer' }}
+              onClick={() => setEditingCell({ rowId: row.id, field: 'thArea' })}
+            >
+              {row.thArea}
+            </span>
+          );
+        }
         return (
-          <Select
-            value={row.thArea || null}
-            onValueChange={val => { if (typeof val === 'string') finalizeAreaSelection(row.id, val); }}
-          >
-            <SelectTrigger className={appStyles.AreaSelect} placeholder="Choose area" aria-label="Choose area" />
-            <SelectContent>
-              {AREA_PRESETS.map(preset => (
-                <SelectItem key={preset.id} value={preset.id}>{preset.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <span className={appStyles.PendingCell} onClick={() => setEditingCell({ rowId: row.id, field: 'thArea' })}>
+            <WarningIcon />
+          </span>
         );
       }
       if (editingCell?.rowId === row.id && editingCell.field === 'thArea') {
@@ -1392,6 +1469,7 @@ export default function App() {
             validate={isValidTooth}
             onCommit={val => handleCellEditCommit(row.id, 'thArea', val)}
             onCancel={() => setEditingCell(null)}
+            onEscape={changingRowIds.has(row.id) ? () => discardCodeChange(row.id) : undefined}
           />
         );
       }
@@ -1422,6 +1500,7 @@ export default function App() {
             validate={isValidSurface}
             onCommit={val => handleCellEditCommit(row.id, 'surface', val)}
             onCancel={() => setEditingCell(null)}
+            onEscape={changingRowIds.has(row.id) ? () => discardCodeChange(row.id) : undefined}
           />
         );
       }

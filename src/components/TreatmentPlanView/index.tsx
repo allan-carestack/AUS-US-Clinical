@@ -255,18 +255,50 @@ function ProcedureRow({
 
   const thAreaCell = (() => {
     if (pending && requires === 'area') {
+      if (editingCell?.rowId === procedure.id && editingCell.field === 'thArea') {
+        return (
+          <Select
+            value={procedure.thArea || null}
+            defaultOpen
+            onOpenChange={(open) => { if (!open) onCancelEditCell(); }}
+            onValueChange={(val) => { if (typeof val === 'string') onSelectArea(procedure.id, val); }}
+          >
+            <SelectTrigger className={appStyles.AreaSelect} placeholder="Choose area" aria-label="Choose area" />
+            <SelectContent positionerStyle={{ width: 200, minWidth: 200 }}>
+              {AREA_PRESETS.map((preset) => (
+                <SelectItem key={preset.id} value={preset.id}>{preset.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      }
+      if (procedure.thArea) {
+        return (
+          <span
+            style={{ cursor: 'pointer' }}
+            onClick={() => onStartEditCell(procedure.id, 'thArea')}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') onStartEditCell(procedure.id, 'thArea');
+            }}
+          >
+            {procedure.thArea}
+          </span>
+        );
+      }
       return (
-        <Select
-          value={procedure.thArea || null}
-          onValueChange={(val) => { if (typeof val === 'string') onSelectArea(procedure.id, val); }}
+        <span
+          className={appStyles.PendingCell}
+          onClick={() => onStartEditCell(procedure.id, 'thArea')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') onStartEditCell(procedure.id, 'thArea');
+          }}
         >
-          <SelectTrigger className={appStyles.AreaSelect} placeholder="Choose area" aria-label="Choose area" />
-          <SelectContent>
-            {AREA_PRESETS.map((preset) => (
-              <SelectItem key={preset.id} value={preset.id}>{preset.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <WarningIcon />
+        </span>
       );
     }
     if (!needsTooth) return procedure.thArea || '--';

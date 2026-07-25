@@ -138,10 +138,16 @@
   }
 }
 
-/* ── Empty state ── */
+/* ── Empty state ──
+   Base UI keeps this node mounted (live region) and nulls children when the
+   list has items — collapse the padded shell so it doesn't leave a blank row. */
 .Empty {
   composes: text-base weight-400 from global;
   padding: var(--spacing-12) var(--spacing-8);
   color: var(--grey-40);
   text-align: center;
+}
+
+.Empty:empty {
+  padding: 0;
 }
