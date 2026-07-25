@@ -4,6 +4,7 @@ import { FilterChip } from '../FilterChip';
 import Checkbox from '../Checkbox';
 import { Menu, MenuTrigger, MenuContent, MenuRadioGroup, MenuRadioItem, MenuCheckboxItem, MenuSeparator } from '../Menu';
 import { AngleDownIcon } from '../Icon';
+import { Tooltip } from '../Tooltip';
 
 // Tx-log filters row — AU Chart Revamp Figma node 925:110622.
 // Everything in this row that looks like a filter (the visible pills, the
@@ -218,11 +219,8 @@ export function TxLogFilters({ onChange }: { onChange?: (state: TxLogFiltersStat
       </div>
 
       <div className={styles.Pills} ref={pillsRef}>
-        {renderedFilters.map(f => (
-          <span
-            key={f.id}
-            className={[styles.PillWrap, f.phase !== 'idle' ? styles.PillWrapHidden : ''].filter(Boolean).join(' ')}
-          >
+        {renderedFilters.map(f => {
+          const chip = (
             <FilterChip
               pressed={selected === f.id}
               onPressedChange={() => selectPill(f.id)}
@@ -231,8 +229,22 @@ export function TxLogFilters({ onChange }: { onChange?: (state: TxLogFiltersStat
             >
               {f.label}
             </FilterChip>
-          </span>
-        ))}
+          );
+          return (
+            <span
+              key={f.id}
+              className={[styles.PillWrap, f.phase !== 'idle' ? styles.PillWrapHidden : ''].filter(Boolean).join(' ')}
+            >
+              {f.id === 'existing' ? (
+                <Tooltip content="Includes existing treatments and conditions." side="bottom" delay={400}>
+                  {chip}
+                </Tooltip>
+              ) : (
+                chip
+              )}
+            </span>
+          );
+        })}
 
         <Menu>
           <MenuTrigger>
