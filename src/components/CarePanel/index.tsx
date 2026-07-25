@@ -35,9 +35,14 @@ const TAB_LABELS: Record<CarePanelTab, string> = {
   existing: 'Existing',
 };
 
+const TX_TYPE_LABELS: Record<TxType, string> = {
+  proposed: 'Proposed',
+  completed: 'Completed',
+};
+
 /** How long the change notice stays readable before fading out. */
-const TAB_CHANGE_NOTICE_MS = 800;
-const TAB_CHANGE_NOTICE_EXIT_MS = 160;
+const CHANGE_NOTICE_MS = 800;
+const CHANGE_NOTICE_EXIT_MS = 160;
 
 export interface CarePanelSelectionContext {
   tab: CarePanelTab;
@@ -518,8 +523,8 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
     chips: ChipDef[];
     exitTo: 'left' | 'right';
   } | null>(null);
-  /** Centered confirmation over the chip grid after a tab switch. */
-  const [tabChangeNotice, setTabChangeNotice] = useState<{
+  /** Centered confirmation over the chip grid after tab or Tx Type change. */
+  const [changeNotice, setChangeNotice] = useState<{
     message: string;
     phase: 'in' | 'out';
   } | null>(null);
@@ -537,21 +542,18 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
   const noticeHoldTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const noticeExitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const showTabChangeNotice = (next: CarePanelTab) => {
+  const showChangeNotice = (message: string) => {
     if (noticeHoldTimeoutRef.current) clearTimeout(noticeHoldTimeoutRef.current);
     if (noticeExitTimeoutRef.current) clearTimeout(noticeExitTimeoutRef.current);
-    setTabChangeNotice({
-      message: `CarePanel changed to ${TAB_LABELS[next]}`,
-      phase: 'in',
-    });
+    setChangeNotice({ message, phase: 'in' });
     noticeHoldTimeoutRef.current = setTimeout(() => {
-      setTabChangeNotice(prev => (prev ? { ...prev, phase: 'out' } : null));
+      setChangeNotice(prev => (prev ? { ...prev, phase: 'out' } : null));
       noticeExitTimeoutRef.current = setTimeout(() => {
-        setTabChangeNotice(null);
+        setChangeNotice(null);
         noticeExitTimeoutRef.current = null;
-      }, TAB_CHANGE_NOTICE_EXIT_MS);
+      }, CHANGE_NOTICE_EXIT_MS);
       noticeHoldTimeoutRef.current = null;
-    }, TAB_CHANGE_NOTICE_MS);
+    }, CHANGE_NOTICE_MS);
   };
 
   const handleTabChange = (value: string) => {
@@ -567,7 +569,7 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
       setGridSlide(next === 'existing' ? 'fromLeft' : 'fromRight');
     }
     setTab(next);
-    showTabChangeNotice(next);
+    showChangeNotice(`Switched to ${TAB_LABELS[next]} carepanel`);
   };
 
   const applyAppointmentDefaults = (appt: Appointment | null) => {
@@ -606,7 +608,10 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
     : null;
 
   const handleTxTypeChange = (value: unknown) => {
-    setTxType(value as TxType);
+    const next = value as TxType;
+    if (next === txType) return;
+    setTxType(next);
+    showChangeNotice(`Switched to ${TX_TYPE_LABELS[next]} status`);
     // Restart the staggered hover-pulse so rapid toggles always replay.
     if (statusRippleTimeoutRef.current) clearTimeout(statusRippleTimeoutRef.current);
     setStatusRipple(false);
@@ -921,11 +926,11 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
           </div>
         </div>
 
-        {tabChangeNotice ? (
+        {changeNotice ? (
           <div
             className={[
               styles.ChipGridChangeOverlay,
-              tabChangeNotice.phase === 'out' ? styles.ChipGridChangeOverlayOut : '',
+              changeNotice.phase === 'out' ? styles.ChipGridChangeOverlayOut : '',
             ].join(' ')}
             aria-live="polite"
             aria-atomic="true"
@@ -935,7 +940,7 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
             <div className={styles.ChipGridChangeFade}>
               <div className={styles.ChipGridChangeVeil} aria-hidden="true" />
               <div className={styles.ChipGridChangeTooltip} role="status">
-                {tabChangeNotice.message}
+                {changeNotice.message}
               </div>
             </div>
           </div>
