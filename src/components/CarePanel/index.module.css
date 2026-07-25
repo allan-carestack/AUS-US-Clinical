@@ -18,15 +18,10 @@
 .Chrome {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-6);
-  padding: var(--spacing-8) var(--spacing-12);
+  gap: 0;
+  padding: 0;
   flex-shrink: 0;
-}
-
-.Header {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
+  background: var(--grey-10);
 }
 
 /* Appointment + meta — collapses on Existing. Stays mounted so local
@@ -37,16 +32,12 @@
   opacity: 1;
   transition:
     grid-template-rows 220ms cubic-bezier(0.23, 1, 0.32, 1),
-    opacity 180ms ease-out,
-    margin-top 220ms cubic-bezier(0.23, 1, 0.32, 1);
+    opacity 180ms ease-out;
 }
 
 .ContextSectionHidden {
   grid-template-rows: 0fr;
   opacity: 0;
-  /* Cancel one of the two flex gaps around a zero-height sibling so
-     Header → Tx Type stays a single spacing-6 apart. */
-  margin-top: calc(-1 * var(--spacing-6));
   pointer-events: none;
 }
 
@@ -55,11 +46,12 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-6);
+  gap: var(--spacing-4);
+  padding: var(--spacing-4) var(--spacing-8);
   /* Room for Input/Select focus rings (box-shadow) — overflow:hidden would
      otherwise clip the 1px ring on the last row (meta fields). */
-  padding: 2px;
-  margin: -2px;
+  padding-bottom: calc(var(--spacing-4) + 2px);
+  margin-bottom: -2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -85,9 +77,9 @@
 
 /* Fixed list width in both cleared and selected states. */
 .AppointmentSelectPositioner {
-  width: 467px;
-  min-width: 467px;
-  max-width: 467px;
+  width: 472px;
+  min-width: 472px;
+  max-width: 472px;
   box-sizing: border-box;
 }
 
@@ -133,51 +125,230 @@
 }
 
 .MetaItem {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: var(--spacing-2);
   min-width: 0;
 }
 
 .MetaDos {
-  flex: 0 0 14rem;
-  width: 14rem;
+  flex: 0 0 11.2rem;
+  width: 11.2rem;
 }
 
 .MetaLocation {
-  flex: 0 0 10rem;
-  width: 10rem;
+  flex: 0 0 8.4rem;
+  width: 8.4rem;
 }
 
 .MetaFill {
   flex: 1 1 0;
 }
 
-.MetaLabel {
+/* Figma Details card — whole surface opens the picker/dropdown.
+   Default transparent; hover ~10% grey-60; open/pressed ~14% grey-60. */
+.MetaCard {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  width: 100%;
+  height: 4.2rem;
+  padding: var(--spacing-6) var(--spacing-8);
+  border: none;
+  border-radius: var(--radius-4);
+  background: transparent;
+  color: var(--grey-100);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: background-color 100ms ease-out, color 100ms ease-out;
+}
+
+.MetaCardLabel {
   composes: text-sm weight-400 from global;
   color: var(--grey-60);
   white-space: nowrap;
+  transition: color 100ms ease-out;
 }
 
-.MetaValue {
-  composes: text-base weight-500 from global;
-  color: var(--grey-100);
-  height: 2.4rem;
+.MetaCardValueRow {
   display: flex;
   align-items: center;
+  gap: var(--spacing-4);
+  width: 100%;
+  min-width: 0;
+}
+
+.MetaCardValue {
+  composes: text-base weight-400 from global;
+  color: var(--grey-100);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.MetaControl {
-  width: 100%;
-  min-width: 0;
-  /* Extra paint room for focus rings without shifting layout. */
-  padding: 1px;
+.MetaCardIcon {
+  flex-shrink: 0;
+  color: var(--grey-60);
+  transition: color 100ms ease-out;
+}
+
+@media (hover: hover) {
+  .MetaCard:not(.MetaCardReadonly):hover {
+    background: rgb(from var(--grey-60) r g b / 10%);
+  }
+
+  .MetaCard:not(.MetaCardReadonly):hover .MetaCardLabel,
+  .MetaCard:not(.MetaCardReadonly):hover .MetaCardIcon {
+    color: var(--grey-100);
+  }
+}
+
+.MetaCard:not(.MetaCardReadonly):active,
+.MetaCard[data-popup-open] {
+  background: rgb(from var(--grey-60) r g b / 14%);
+}
+
+.MetaCard:not(.MetaCardReadonly):active .MetaCardLabel,
+.MetaCard:not(.MetaCardReadonly):active .MetaCardIcon,
+.MetaCard[data-popup-open] .MetaCardLabel,
+.MetaCard[data-popup-open] .MetaCardIcon {
+  color: var(--grey-100);
+}
+
+
+
+.MetaCard:not(.MetaCardReadonly):focus-visible {
+  outline: 2px solid var(--blue-80);
+  outline-offset: 1px;
+}
+
+.MetaCardReadonly {
+  cursor: default;
+  pointer-events: none;
+}
+
+.MetaCardDateInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
   margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .MetaCard,
+  .MetaCardLabel,
+  .MetaCardIcon {
+    transition: none;
+  }
+}
+
+.TabRow {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+  min-height: 3.6rem;
+  padding: 0 var(--spacing-8);
+  flex-shrink: 0;
+}
+
+.TabRoot {
+  width: auto;
+  flex: 0 1 auto;
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+}
+
+.TabList {
+  align-self: stretch;
+  height: 100%;
+}
+
+.TabActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  flex-shrink: 0;
+}
+
+/* Figma ai-button — teal→lime gradient stub (updated-ai-scribe 2489:61239).
+   Gradients live on the button itself (no overflow child) so border-radius
+   clips cleanly without square edge artifacts. */
+.AiScribe {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-4);
+  height: 2.4rem;
+  padding: var(--spacing-4) var(--spacing-6);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 0.6rem;
+  background-image:
+    linear-gradient(
+      105deg,
+      rgb(10, 159, 174) 0%,
+      rgb(34, 146, 170) 28%,
+      rgb(57, 189, 135) 68%,
+      rgb(182, 234, 101) 100%
+    ),
+    linear-gradient(
+      -84.45deg,
+      rgb(25, 116, 136) 3.06%,
+      rgb(13, 117, 127) 45.7%,
+      rgb(38, 173, 118) 85.62%,
+      rgb(122, 177, 36) 108.4%
+    );
+  background-origin: border-box;
+  background-clip: border-box;
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.12),
+    inset 0 2px 0 rgba(255, 255, 255, 0.07);
+  color: var(--white);
+  cursor: pointer;
+  flex-shrink: 0;
+  font: inherit;
+}
+
+.AiScribeIcon {
+  display: block;
+  width: 1.6rem;
+  height: 1.6rem;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.AiScribeLabel {
+  composes: text-base weight-400 from global;
+  color: var(--white);
+  white-space: nowrap;
+}
+
+.AiScribe:focus-visible {
+  outline: 2px solid var(--interactive-60);
+  outline-offset: 2px;
+}
+
+.Controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+  padding: var(--spacing-6) var(--spacing-8);
+  background: var(--white);
+  flex-shrink: 0;
 }
 
 .TxTypeRow {
@@ -289,31 +460,6 @@
   width: 18rem;
 }
 
-/* Note / Info — collapse with 0fr↔1fr so reverse morph interpolates. */
-.ActionCollapse {
-  display: grid;
-  grid-template-columns: 1fr;
-  opacity: 1;
-  min-width: 0;
-  transition:
-    grid-template-columns 220ms cubic-bezier(0.23, 1, 0.32, 1),
-    opacity 160ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.SelectRowCodeSearch .ActionCollapse {
-  grid-template-columns: 0fr;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.ActionCollapse > .PaneClip {
-  min-width: min-content;
-}
-
-.SelectRowCodeSearch .ActionCollapse > .PaneClip {
-  min-width: 0;
-}
-
 /* +Code button ↔ search field morph (PhaseDuration-style grid). */
 .CodeMorph {
   display: flex;
@@ -387,7 +533,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .CarePanelCollapse,
-  .ActionCollapse,
   .CodeMorphCollapsed,
   .CodeMorphExpanded {
     transition: none;
@@ -431,6 +576,8 @@
   grid-template-columns: repeat(6, 1fr);
   grid-auto-rows: 1fr;
   gap: 0;
+  width: 100%;
+  min-width: 0;
   height: 100%;
 }
 
@@ -439,6 +586,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
   padding: var(--spacing-4) var(--spacing-6);
   border-radius: 0;
   border: 1px solid transparent;
@@ -454,7 +604,7 @@
    a whole when it's short and lets it fill the row (truncating normally at
    the end) when it's long. */
 .ChipLabel {
-  composes: text-sm weight-600 from global;
+  composes: text-base weight-400 from global;
   display: block;
   min-width: 0;
   max-width: 100%;
@@ -462,9 +612,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: left;
-  text-transform: uppercase;
-  letter-spacing: 0.01em;
-  font-size: 1rem;
 }
 
 .Chip:disabled {
@@ -488,7 +635,7 @@
   --chip-hover: var(--green-20);
   background: var(--chip-rest);
   border-color: var(--green-20);
-  color: var(--green-100);
+  color: var(--grey-100);
 
   @media (hover: hover) {
     &:not(:disabled):hover {
@@ -502,7 +649,7 @@
   --chip-hover: var(--orange-20);
   background: var(--chip-rest);
   border-color: var(--orange-20);
-  color: var(--orange-100);
+  color: var(--grey-100);
 
   @media (hover: hover) {
     &:not(:disabled):hover {
@@ -516,7 +663,7 @@
   --chip-hover: var(--olive-20);
   background: var(--chip-rest);
   border-color: var(--olive-20);
-  color: var(--olive-100);
+  color: var(--grey-100);
 }
 
 .chipExplosion {
@@ -524,7 +671,7 @@
   --chip-hover: var(--red-20);
   background: var(--chip-rest);
   border-color: var(--red-20);
-  color: var(--red-100);
+  color: var(--grey-100);
 }
 
 .CodeSearchInput {

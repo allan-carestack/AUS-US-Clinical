@@ -1364,7 +1364,7 @@ export default function App() {
               onWholeToothClick={handleWholeToothClick}
             />
           </div>
-          <div style={{ width: '50rem', flexShrink: 0 }}>
+          <div style={{ width: '47.2rem', flexShrink: 0 }}>
             <CarePanel armedChipId={armedChipId} codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} />
           </div>
         </div>

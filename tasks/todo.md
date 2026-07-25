@@ -1,20 +1,26 @@
-# Fix Claude branch bugs
+# Care Panel — 472px chip grid fit
 
-Status legend: [ ] pending · [~] in progress · [x] done
+Status legend: [ ] pending · [~] in progress · [x] done · [?] needs decision
 
-- [x] Invert fee-column visibility: show when `showFeeEstimates` is true
-- [x] Revert accidental Popover full padding → `padding-top` only
-- [x] Restore `node_modules/.vite` to match `main` (undo cache churn commit)
-- [x] Add `prefers-reduced-motion` for new pill / chip width transitions
-- [x] Verify with build / spot-check
+---
+
+## Implementation plan
+
+- [x] Set CarePanel wrapper to `47.2rem` (472px) in `App.tsx`
+- [x] Sync appointment select positioner widths (467 → 472)
+- [x] Make chip grid shrink: `min-width: 0` / `overflow: hidden` on `.Chip` + `.ChipGrid`
+- [x] Verify in browser: 6 columns visible, no right-edge clip
+
+---
 
 ## Review
 
 **Changed**
-- `src/App.tsx` — `showFeeEstimates ? feeCols : []` (was inverted `!showFeeEstimates`)
-- `src/components/Popover/index.module.css` — restore `padding-top` only (Header/Body already pad)
-- `src/components/TxLogFilters/index.module.css` + `FilterChip/index.module.css` — disable width/collapse transitions under `prefers-reduced-motion`
-- staged: `node_modules/.vite` reset to `main` (removes Vite dep hash churn from `5be4d89`)
+- `src/App.tsx` — CarePanel shell width `50rem` → `47.2rem` (472px)
+- `src/components/CarePanel/index.module.css` — appointment positioner 472px; Chip/ChipGrid shrink so 6 cols fit with ellipsis
+- `src/components/CarePanel/index.tsx` — appointment `positionerStyle` 472
 
 **Verified**
-- `npm run build` (`tsc && vite build`) exits 0
+- Browser: panel width = 472px; all 6 first-row chips fully inside (Sealant visible)
+- `grid.scrollWidth === clientWidth` (no horizontal overflow)
+- Long labels ellipsize inside cells rather than forcing column overflow
