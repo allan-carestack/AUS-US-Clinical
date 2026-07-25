@@ -1,4 +1,4 @@
-# Care Panel — 472px chip grid fit
+# CarePanel chips → pending tx-log rows
 
 Status legend: [ ] pending · [~] in progress · [x] done · [?] needs decision
 
@@ -6,21 +6,20 @@ Status legend: [ ] pending · [~] in progress · [x] done · [?] needs decision
 
 ## Implementation plan
 
-- [x] Set CarePanel wrapper to `47.2rem` (472px) in `App.tsx`
-- [x] Sync appointment select positioner widths (467 → 472)
-- [x] Make chip grid shrink: `min-width: 0` / `overflow: hidden` on `.Chip` + `.ChipGrid`
-- [x] Verify in browser: 6 columns visible, no right-edge clip
+- [x] Add `ChartEntry.requires` + `resolveRowChip` for chip/CDT pending finalize
+- [x] Rewrite `handleChipSelect` to insert pending rows like +Code (chart + plan)
+- [x] Remove chip `pendingSelection`, blue banner, `armedChipId` wiring
+- [x] Verify tooth/surface/none, tooth-first, plan tab, +Code unchanged
 
 ---
 
 ## Review
 
 **Changed**
-- `src/App.tsx` — CarePanel shell width `50rem` → `47.2rem` (472px)
-- `src/components/CarePanel/index.module.css` — appointment positioner 472px; Chip/ChipGrid shrink so 6 cols fit with ellipsis
-- `src/components/CarePanel/index.tsx` — appointment `positionerStyle` 472
+- `src/App.tsx` — chip-first no longer arms chips / shows blue banner; inserts pending Chart Details rows (or pending plan procedures) mirroring +Code. `ChartEntry.requires` + `resolveRowChip` let chip slugs finalize via odontogram or keyboard.
 
-**Verified**
-- Browser: panel width = 472px; all 6 first-row chips fully inside (Sealant visible)
-- `grid.scrollWidth === clientWidth` (no horizontal overflow)
-- Long labels ellipsize inside cells rather than forcing column overflow
+**Verified (browser)**
+- Bridge Abutment → orange pending row “Bridge Abutment — select a tooth”; no blue banner; chip not armed
+- Tooth 11 click → row becomes “Tooth 11 — Bridge Abutment”, pending cleared
+- X-Rays (`requires: 'none'`) → completed row immediately (no pending affordance)
+- `tsc --noEmit` clean
