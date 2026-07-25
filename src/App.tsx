@@ -2,13 +2,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Button from './components/Button';
 import Table, { type Column } from './components/Table';
 import { Tag } from './components/Tag';
-import { AlertBanner } from './components/AlertBanner';
 import { PlusIcon, MemoIcon, PreviewIcon, AngleUpIcon, AngleLeftIcon, AngleRightIcon, CautionIcon, CloseIcon } from './components/Icon';
 import {
   Odontogram, SURFACE_LABEL,
   type ArmedTooth, type ToothState, type ToothMark, type ToothMeta, type SurfaceName, type Dentition,
 } from './components/Odontogram';
 import { CarePanel, type ChipDef, type CarePanelSelectionContext, type DentalCode } from './components/CarePanel';
+import {
+  PROCEDURE_CHIPS, CONDITION_CHIPS, PLAN_AND_EXPLOSION_CHIPS,
+  type ToothRequirement,
+} from './components/CarePanel/data';
 import { Tabs, TabsList, TabsTab } from './components/Tabs';
 import { ScrollArea, ScrollAreaViewport, ScrollAreaContent, ScrollAreaScrollbar, ScrollAreaThumb } from './components/ScrollArea';
 import scrollAreaStyles from './components/ScrollArea/index.module.css';
@@ -50,16 +53,21 @@ const INITIAL_TX_TABS: TxPlanTab[] = [
 
 // ── Code-addition workflow ──
 // Two entry points into the same completion: click teeth/surfaces first
-// (then pick a code) or pick a code first (then click a tooth/surface, if
-// that code needs one at all — see ChipDef.requires).
+// (then pick a code/chip) or pick a code/chip first (then enter tooth/surface
+// on the pending tx-log row — via keyboard or odontogram click — if that
+// item needs one at all; see ChipDef.requires).
 // Tooth-first supports MULTI-SELECT: each click toggles a tooth/surface in or
 // out of the armed set, and the eventual code applies to every selection
 // (one Tx-log row per tooth/surface).
 type ToothSelection = { meta: ToothMeta; surface?: SurfaceName };
 
-type PendingSelection =
-  | { source: 'tooth'; selections: ToothSelection[] }
-  | { source: 'chip'; chip: ChipDef; context: CarePanelSelectionContext };
+type PendingSelection = { source: 'tooth'; selections: ToothSelection[] };
+
+const ALL_CHIPS: ChipDef[] = [
+  ...PROCEDURE_CHIPS,
+  ...CONDITION_CHIPS,
+  ...PLAN_AND_EXPLOSION_CHIPS,
+];
 
 const sameSelection = (a: ToothSelection, b: ToothSelection) =>
   a.meta.id === b.meta.id && a.surface === b.surface;
@@ -90,6 +98,31 @@ function chipCodeId(chip: ChipDef): string | undefined {
   if (chip.id.startsWith('code-')) return chip.id.slice(5);
   // Condition / procedure chips use a slug id — keep it for pending finalize lookup.
   return chip.id;
+}
+
+/** Resolve a ChartEntry back to a ChipDef for pending finalize / keyboard complete. */
+function resolveRowChip(row: { codeId?: string; descriptionText: string; requires?: ToothRequirement }, codes: DentalCode[]): ChipDef | null {
+  if (!row.codeId) return null;
+  const code = codes.find(c => c.code === row.codeId) ?? DENTAL_CODES.find(c => c.code === row.codeId);
+  if (code) {
+    return {
+      id: `code-${code.code}`,
+      label: `${code.code} - ${code.description}`,
+      kind: 'procedure',
+      requires: code.requires,
+    };
+  }
+  const chip = ALL_CHIPS.find(c => c.id === row.codeId);
+  if (chip) return chip;
+  if (row.requires) {
+    return {
+      id: row.codeId,
+      label: row.descriptionText,
+      kind: 'procedure',
+      requires: row.requires,
+    };
+  }
+  return null;
 }
 
 function chipToPlanProcedure(
@@ -160,6 +193,8 @@ type ChartEntry = {
   date: string;
   descriptionText: string;
   codeId?: string;
+  /** Tooth/surface requirement — stored so chip slugs can finalize without a CDT lookup. */
+  requires?: ToothRequirement;
   thArea: string;
   surface: string;
   provider: React.ReactNode;
@@ -654,8 +689,7 @@ export default function App() {
       .catch(err => console.warn('[clinical] save failed:', err));
   };
 
-  // Escape backs out of any active workflow — armed tooth/chip or the code
-  // change combobox.
+  // Escape backs out of tooth-first multi-select or the code-change combobox.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -780,7 +814,8 @@ export default function App() {
       id,
       date: new Date().toLocaleDateString('en-US'),
       descriptionText: buildDescription(chip, meta?.id, surface),
-      codeId: chip.id.startsWith('code-') ? chip.id.slice(5) : undefined,
+      codeId: chipCodeId(chip),
+      requires: chip.requires,
       thArea: meta?.id ?? '',
       surface: surface ? SURFACE_LABEL[surface] : '',
       provider: '',
@@ -811,7 +846,7 @@ export default function App() {
     if (code.requires === 'none') {
       setChartRows(prev => prev.map(row =>
         row.id === rowId
-          ? { ...row, descriptionText: `${code.code} - ${code.description}`, codeId: code.code }
+          ? { ...row, descriptionText: `${code.code} - ${code.description}`, codeId: code.code, requires: code.requires }
           : row
       ));
       return;
@@ -819,7 +854,7 @@ export default function App() {
     // Reset to a pending state: new code, cleared tooth/surface awaiting input.
     setChartRows(prev => prev.map(row =>
       row.id === rowId
-        ? { ...row, descriptionText: `${code.code} - ${code.description}`, codeId: code.code, thArea: '', surface: '' }
+        ? { ...row, descriptionText: `${code.code} - ${code.description}`, codeId: code.code, requires: code.requires, thArea: '', surface: '' }
         : row
     ));
     setPendingRowIds(prev => new Set(prev).add(rowId));
@@ -827,11 +862,10 @@ export default function App() {
     requestAnimationFrame(() => setEditingCell({ rowId, field: 'thArea' }));
   };
 
-  // Tooth-first: clicking a tooth/surface either completes an already-armed
-  // chip, or toggles that tooth/surface in/out of the multi-select armed set.
+  // Tooth-first: toggle a tooth/surface in/out of the multi-select armed set.
   // Clicking an already-armed tooth/surface removes just that selection.
   const toggleToothSelection = (sel: ToothSelection) => {
-    const current = pendingSelection?.source === 'tooth' ? pendingSelection.selections : [];
+    const current = pendingSelection?.selections ?? [];
     const next = current.some(s => sameSelection(s, sel))
       ? current.filter(s => !sameSelection(s, sel))
       : [...current, sel];
@@ -847,11 +881,6 @@ export default function App() {
       const oldest = [...chartRows].reverse().find(r => pendingRowIds.has(r.id));
       if (oldest) { finalizePendingRow(oldest.id, meta, surface); return; }
     }
-    if (pendingSelection?.source === 'chip') {
-      applyEntry(pendingSelection.chip, pendingSelection.context, meta, pendingSelection.chip.requires === 'surface' ? surface : undefined);
-      setPendingSelection(null);
-      return;
-    }
     toggleToothSelection({ meta, surface });
   };
 
@@ -864,36 +893,58 @@ export default function App() {
       const oldest = [...chartRows].reverse().find(r => pendingRowIds.has(r.id));
       if (oldest) { finalizePendingRow(oldest.id, meta); return; }
     }
-    if (pendingSelection?.source === 'chip') {
-      applyEntry(pendingSelection.chip, pendingSelection.context, meta);
-      setPendingSelection(null);
-      return;
-    }
     toggleToothSelection({ meta });
   };
 
-  // Chip-first: picking a chip either completes an already-armed tooth,
-  // toggles off the currently-armed chip, applies instantly (whole-mouth
-  // codes need no tooth), or arms the chip and waits for a tooth click.
+  // Chip-first: same as +Code — insert a row immediately. Tooth/surface codes
+  // land as pending rows (keyboard or odontogram completes them). Tooth-first
+  // multi-select still applies one completed row per armed selection.
   const handleChipSelect = (chip: ChipDef, context: CarePanelSelectionContext) => {
     if (pendingSelection?.source === 'tooth') {
-      // Multi-select: one row per armed tooth/surface.
       pendingSelection.selections.forEach(sel =>
         applyEntry(chip, context, sel.meta, chip.requires === 'surface' ? sel.surface : undefined)
       );
       setPendingSelection(null);
       return;
     }
-    if (pendingSelection?.source === 'chip' && pendingSelection.chip.id === chip.id) {
-      setPendingSelection(null);
-      return;
-    }
     if (chip.requires === 'none') {
       applyEntry(chip, context);
-      setPendingSelection(null);
       return;
     }
-    setPendingSelection({ source: 'chip', chip, context });
+
+    const id = `entry-${++entryCounterRef.current}`;
+
+    if (activePlan) {
+      const phaseId = targetPhaseByPlan[activePlan.id]
+        ?? (plansById[activePlan.id] ? firstPhaseId(plansById[activePlan.id]) : 'phase-1');
+      const procedure = chipToPlanProcedure(id, chip, undefined, undefined, true);
+      prependPlanProcedure(activePlan.id, phaseId, procedure);
+      setPendingProcedureIds((prev) => new Set(prev).add(id));
+      requestAnimationFrame(() => setEditingCell({ rowId: id, field: 'thArea' }));
+      return;
+    }
+
+    const newRow: ChartEntry = {
+      id,
+      date: new Date().toLocaleDateString('en-US'),
+      descriptionText: chip.label,
+      codeId: chipCodeId(chip),
+      requires: chip.requires,
+      thArea: '',
+      surface: '',
+      provider: '',
+      location: '',
+      txPlan: '',
+      phase: '',
+      fees: '',
+      discount: '',
+      patPayable: '',
+      status: statusTagFor(chip, context),
+      rowAction: '',
+      userName: 'Mr. John Doe',
+    };
+    setChartRows(prev => [newRow, ...prev]);
+    setPendingRowIds(prev => new Set(prev).add(id));
   };
 
   // +Code combobox: selecting a code adds a row immediately. If the code
@@ -939,6 +990,7 @@ export default function App() {
       date: new Date().toLocaleDateString('en-US'),
       descriptionText: `${code.code} - ${code.description}`,
       codeId: code.code,
+      requires: code.requires,
       thArea: '',
       surface: '',
       provider: '',
@@ -964,19 +1016,19 @@ export default function App() {
   // Finalize a pending row when the user clicks a tooth/surface on the odontogram.
   const finalizePendingRow = (rowId: string, meta: ToothMeta, surface?: SurfaceName) => {
     const row = chartRows.find(r => r.id === rowId);
-    if (!row || !row.codeId) return;
-    const code = DENTAL_CODES.find(c => c.code === row.codeId);
-    if (!code) return;
-    const chip: ChipDef = { id: `code-${code.code}`, label: `${code.code} - ${code.description}`, kind: 'procedure', requires: code.requires };
-    const desc = buildDescription(chip, meta.id, code.requires === 'surface' ? surface : undefined);
+    if (!row) return;
+    const chip = resolveRowChip(row, dentalCodes);
+    if (!chip) return;
+    const useSurface = chip.requires === 'surface' ? surface : undefined;
+    const desc = buildDescription(chip, meta.id, useSurface);
     setChartRows(prev => prev.map(r =>
       r.id === rowId
-        ? { ...r, descriptionText: desc, thArea: meta.id, surface: surface && code.requires === 'surface' ? SURFACE_LABEL[surface] : '' }
+        ? { ...r, descriptionText: desc, thArea: meta.id, surface: useSurface ? SURFACE_LABEL[useSurface] : '' }
         : r
     ));
-    applyToothMark(chip, meta.id, code.requires === 'surface' ? surface : undefined);
+    applyToothMark(chip, meta.id, useSurface);
     clearPendingRow(rowId);
-    persistProcedure(code.code, meta.id, surface && code.requires === 'surface' ? SURFACE_LABEL[surface] : '', 'Proposed');
+    persistProcedure(chipCodeId(chip), meta.id, useSurface ? SURFACE_LABEL[useSurface] : '', 'Proposed');
   };
 
   const finalizePendingPlanProcedure = (procedureId: string, meta: ToothMeta, surface?: SurfaceName) => {
@@ -1055,15 +1107,15 @@ export default function App() {
     }
 
     const row = chartRows.find(r => r.id === rowId);
-    if (!row || !row.codeId) return;
-    const code = DENTAL_CODES.find(c => c.code === row.codeId);
-    if (!code) return;
+    if (!row) return;
+    const chip = resolveRowChip(row, dentalCodes);
+    if (!chip) return;
 
     if (field === 'thArea') {
       const err = isValidTooth(value);
       if (err) return;
       setChartRows(prev => prev.map(r => r.id === rowId ? { ...r, thArea: value } : r));
-      if (code.requires === 'surface') {
+      if (chip.requires === 'surface') {
         setEditingCell({ rowId, field: 'surface' });
         return;
       }
@@ -1138,12 +1190,13 @@ export default function App() {
 
   const completeEditedRow = (rowId: string, thArea: string, surfaceCode: string) => {
     const row = chartRows.find(r => r.id === rowId);
-    if (!row || !row.codeId) return;
-    const code = DENTAL_CODES.find(c => c.code === row.codeId);
-    if (!code) return;
-    const chip: ChipDef = { id: `code-${code.code}`, label: `${code.code} - ${code.description}`, kind: 'procedure', requires: code.requires };
+    if (!row) return;
+    const chip = resolveRowChip(row, dentalCodes);
+    if (!chip) return;
 
-    const surfaceName = surfaceCode ? SURFACE_CODE_TO_NAME[surfaceCode.charAt(0)] : undefined;
+    const surfaceName = chip.requires === 'surface' && surfaceCode
+      ? SURFACE_CODE_TO_NAME[surfaceCode.charAt(0)]
+      : undefined;
     const desc = buildDescription(chip, thArea, surfaceName);
     const surfaceLabel = surfaceCode || '';
 
@@ -1151,16 +1204,10 @@ export default function App() {
       r.id === rowId ? { ...r, descriptionText: desc, thArea, surface: surfaceLabel } : r
     ));
 
-    const mark = chipMark(chip);
-    setToothStates(prev => {
-      const prevTooth = prev[thArea] ?? { surfaces: {} };
-      return surfaceName
-        ? { ...prev, [thArea]: { ...prevTooth, surfaces: { ...prevTooth.surfaces, [surfaceName]: mark } } }
-        : { ...prev, [thArea]: { ...prevTooth, whole: mark } };
-    });
+    applyToothMark(chip, thArea, surfaceName);
 
     clearPendingRow(rowId);
-    persistProcedure(code.code, thArea, surfaceLabel, 'Proposed');
+    persistProcedure(chipCodeId(chip), thArea, surfaceLabel, 'Proposed');
 
     setSuccessRowIds(prev => new Set(prev).add(rowId));
     setTimeout(() => {
@@ -1192,10 +1239,9 @@ export default function App() {
     clearPendingProcedure(procedureId);
   };
 
-  const armedTeeth: ArmedTooth[] = pendingSelection?.source === 'tooth'
+  const armedTeeth: ArmedTooth[] = pendingSelection
     ? pendingSelection.selections.map(s => ({ toothId: s.meta.id, surface: s.surface }))
     : [];
-  const armedChipId = pendingSelection?.source === 'chip' ? pendingSelection.chip.id : undefined;
 
   const isNoteRow = (text: string) => text.includes('|') && text.includes('ADAS');
   const hasCodeId = (row: ChartEntry) => !!row.codeId;
@@ -1214,10 +1260,9 @@ export default function App() {
         );
       }
       if (pendingRowIds.has(row.id)) {
-        const code = DENTAL_CODES.find(c => c.code === row.codeId);
         return (
           <span style={{ ...truncateCell, color: 'var(--orange-100)', fontWeight: 500 }}>
-            {row.descriptionText} — select {code?.requires === 'surface' ? 'a surface' : 'a tooth'}
+            {row.descriptionText} — select {row.requires === 'surface' ? 'a surface' : 'a tooth'}
           </span>
         );
       }
@@ -1228,8 +1273,7 @@ export default function App() {
     }},
     { key: 'thArea',      header: 'Th/Area',         width: 90,  render: (_v, row) => {
       if (!pendingRowIds.has(row.id)) return (row.thArea as string) || '--';
-      const code = DENTAL_CODES.find(c => c.code === row.codeId);
-      if (!code || code.requires === 'none') return (row.thArea as string) || '--';
+      if (!row.requires || row.requires === 'none') return (row.thArea as string) || '--';
       if (editingCell?.rowId === row.id && editingCell.field === 'thArea') {
         return (
           <InlineEditCell
@@ -1249,8 +1293,7 @@ export default function App() {
     }},
     { key: 'surface',     header: 'Surface',         width: 90,  render: (_v, row) => {
       if (!pendingRowIds.has(row.id)) return (row.surface as string) || '--';
-      const code = DENTAL_CODES.find(c => c.code === row.codeId);
-      if (!code || code.requires !== 'surface') return (row.surface as string) || '--';
+      if (row.requires !== 'surface') return (row.surface as string) || '--';
       if (editingCell?.rowId === row.id && editingCell.field === 'surface') {
         return (
           <InlineEditCell
@@ -1341,20 +1384,6 @@ export default function App() {
         <div style={{ overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'stretch', gap: 'var(--spacing-24)', height: '33rem' }}>
           <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-            {/* Chip-first only: clicking a tooth/surface first is
-                self-explanatory from the highlight it leaves on the
-                odontogram, but an armed chip needs to tell the clinician
-                where to click next. Overlaid, not in flow, so it never
-                pushes the odontogram or anything below it — it just sits
-                on top until the selection resolves (click a tooth, click
-                the chip again, or Escape). */}
-            {pendingSelection?.source === 'chip' && (
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1, padding: 'var(--spacing-8)' }}>
-                <AlertBanner variant="info">
-                  {pendingSelection.chip.label} selected — click a {pendingSelection.chip.requires === 'surface' ? 'tooth surface' : 'tooth'} to chart it.
-                </AlertBanner>
-              </div>
-            )}
             <Odontogram
               toothStates={toothStates}
               armedTeeth={armedTeeth}
@@ -1366,6 +1395,7 @@ export default function App() {
           </div>
           <div style={{ width: '47.2rem', flexShrink: 0 }}>
             <CarePanel armedChipId={armedChipId} codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} />
+            <CarePanel codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} />
           </div>
         </div>
         </div>
