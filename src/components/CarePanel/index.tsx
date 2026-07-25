@@ -930,8 +930,13 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
             aria-live="polite"
             aria-atomic="true"
           >
-            <div className={styles.ChipGridChangeTooltip} role="status">
-              {tabChangeNotice.message}
+            {/* Blur stays at opacity 1 — animating opacity on this layer kills backdrop-filter. */}
+            <div className={styles.ChipGridChangeBlur} aria-hidden="true" />
+            <div className={styles.ChipGridChangeFade}>
+              <div className={styles.ChipGridChangeVeil} aria-hidden="true" />
+              <div className={styles.ChipGridChangeTooltip} role="status">
+                {tabChangeNotice.message}
+              </div>
             </div>
           </div>
         ) : null}
