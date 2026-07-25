@@ -260,7 +260,7 @@ function ProcedureRow({
           value={procedure.thArea || null}
           onValueChange={(val) => { if (typeof val === 'string') onSelectArea(procedure.id, val); }}
         >
-          <SelectTrigger placeholder="Choose area" aria-label="Choose area" />
+          <SelectTrigger className={appStyles.AreaSelect} placeholder="Choose area" aria-label="Choose area" />
           <SelectContent>
             {AREA_PRESETS.map((preset) => (
               <SelectItem key={preset.id} value={preset.id}>{preset.label}</SelectItem>

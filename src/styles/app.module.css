@@ -28,6 +28,12 @@
   background-color: var(--orange-10) !important;
 }
 
+/* Area preset Select in Th/Area cells (chart + treatment plan). */
+.AreaSelect {
+  width: 20rem;
+  flex-shrink: 0;
+}
+
 /* ── Inline cell editing for pending rows ── */
 .PendingCell {
   display: flex;

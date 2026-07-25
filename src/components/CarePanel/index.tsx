@@ -22,6 +22,23 @@ export type { ChipDef, ChipKind, ToothRequirement } from './data';
 export type TxType = 'proposed' | 'completed';
 export type CarePanelTab = 'new' | 'existing';
 
+function chipsForTab(tab: CarePanelTab): ChipDef[] {
+  return [
+    ...(tab === 'existing' ? CONDITION_CHIPS : []),
+    ...PROCEDURE_CHIPS,
+    ...(tab === 'new' ? PLAN_AND_EXPLOSION_CHIPS : []),
+  ];
+}
+
+const TAB_LABELS: Record<CarePanelTab, string> = {
+  new: 'New Treatment',
+  existing: 'Existing',
+};
+
+/** How long the change notice stays readable before fading out. */
+const TAB_CHANGE_NOTICE_MS = 800;
+const TAB_CHANGE_NOTICE_EXIT_MS = 160;
+
 export interface CarePanelSelectionContext {
   tab: CarePanelTab;
   txType: TxType;
@@ -494,6 +511,18 @@ function CodeSearch({
 
 export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: CarePanelProps) {
   const [tab, setTab] = useState<CarePanelTab>('new');
+  /** Enter direction for ChipGridArea on tab change — null skips (initial mount). */
+  const [gridSlide, setGridSlide] = useState<'fromLeft' | 'fromRight' | null>(null);
+  /** Snapshot of the previous grid while it blurs/slides out. */
+  const [outgoingGrid, setOutgoingGrid] = useState<{
+    chips: ChipDef[];
+    exitTo: 'left' | 'right';
+  } | null>(null);
+  /** Centered confirmation over the chip grid after a tab switch. */
+  const [tabChangeNotice, setTabChangeNotice] = useState<{
+    message: string;
+    phase: 'in' | 'out';
+  } | null>(null);
   const [txType, setTxType] = useState<TxType>('proposed');
   const [carePanelId, setCarePanelId] = useState(CARE_PANELS[0].id);
   const [appointmentId, setAppointmentId] = useState<string | null>(APPOINTMENTS[0].id);
@@ -505,6 +534,41 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
   const [statusRipple, setStatusRipple] = useState(false);
   const statusRippleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const codeMorphTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const noticeHoldTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const noticeExitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showTabChangeNotice = (next: CarePanelTab) => {
+    if (noticeHoldTimeoutRef.current) clearTimeout(noticeHoldTimeoutRef.current);
+    if (noticeExitTimeoutRef.current) clearTimeout(noticeExitTimeoutRef.current);
+    setTabChangeNotice({
+      message: `CarePanel changed to ${TAB_LABELS[next]}`,
+      phase: 'in',
+    });
+    noticeHoldTimeoutRef.current = setTimeout(() => {
+      setTabChangeNotice(prev => (prev ? { ...prev, phase: 'out' } : null));
+      noticeExitTimeoutRef.current = setTimeout(() => {
+        setTabChangeNotice(null);
+        noticeExitTimeoutRef.current = null;
+      }, TAB_CHANGE_NOTICE_EXIT_MS);
+      noticeHoldTimeoutRef.current = null;
+    }, TAB_CHANGE_NOTICE_MS);
+  };
+
+  const handleTabChange = (value: string) => {
+    const next = value as CarePanelTab;
+    if (next === tab) return;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduceMotion) {
+      // Existing enters from left (outgoing exits right); New Treatment opposite.
+      setOutgoingGrid({
+        chips: chipsForTab(tab),
+        exitTo: next === 'existing' ? 'right' : 'left',
+      });
+      setGridSlide(next === 'existing' ? 'fromLeft' : 'fromRight');
+    }
+    setTab(next);
+    showTabChangeNotice(next);
+  };
 
   const applyAppointmentDefaults = (appt: Appointment | null) => {
     if (!appt) return;
@@ -533,6 +597,8 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
 
   useEffect(() => () => {
     if (codeMorphTimeoutRef.current) clearTimeout(codeMorphTimeoutRef.current);
+    if (noticeHoldTimeoutRef.current) clearTimeout(noticeHoldTimeoutRef.current);
+    if (noticeExitTimeoutRef.current) clearTimeout(noticeExitTimeoutRef.current);
   }, []);
 
   const selectedAppointment = appointmentId
@@ -554,11 +620,7 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
     });
   };
 
-  const gridChips = [
-    ...(tab === 'existing' ? CONDITION_CHIPS : []),
-    ...PROCEDURE_CHIPS,
-    ...(tab === 'new' ? PLAN_AND_EXPLOSION_CHIPS : []),
-  ];
+  const gridChips = chipsForTab(tab);
 
   const handleSelect = (chip: ChipDef) => onChipSelect(chip, { tab, txType });
 
@@ -583,10 +645,7 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
   return (
     <div className={styles.CarePanel}>
       <div className={styles.Chrome}>
-        <div
-          className={[styles.ContextSection, tab === 'existing' ? styles.ContextSectionHidden : ''].join(' ')}
-          aria-hidden={tab === 'existing'}
-        >
+        <div className={styles.ContextSection}>
           <div className={styles.ContextSectionInner}>
             <div className={styles.AppointmentRow}>
               <div className={styles.AppointmentSelect}>
@@ -677,7 +736,7 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
           <Tabs
             variant="tertiary"
             value={tab}
-            onValueChange={v => setTab(v as CarePanelTab)}
+            onValueChange={handleTabChange}
             className={styles.TabRoot}
           >
             <TabsList className={styles.TabList}>
@@ -805,19 +864,77 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
         </div>
       </div>
 
-      <div className={styles.ChipGridArea}>
-        <div className={styles.ChipGrid}>
-          {gridChips.map((chip, index) => (
-            <Chip
-              key={chip.id}
-              chip={chip}
-              armed={chip.id === armedChipId}
-              onSelect={handleSelect}
-              statusPulse={statusRipple}
-              pulseIndex={index}
-            />
-          ))}
+      <div className={styles.ChipGridStage}>
+        {outgoingGrid ? (
+          <div
+            className={[
+              styles.ChipGridArea,
+              styles.ChipGridOutgoing,
+              outgoingGrid.exitTo === 'left'
+                ? styles.ChipGridExitToLeft
+                : styles.ChipGridExitToRight,
+            ].join(' ')}
+            aria-hidden="true"
+            onAnimationEnd={e => {
+              if (e.target !== e.currentTarget) return;
+              setOutgoingGrid(null);
+            }}
+          >
+            <div className={styles.ChipGrid}>
+              {outgoingGrid.chips.map(chip => (
+                <Chip
+                  key={chip.id}
+                  chip={chip}
+                  armed={false}
+                  onSelect={() => {}}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <div
+          key={tab}
+          className={[
+            styles.ChipGridArea,
+            styles.ChipGridIncoming,
+            gridSlide === 'fromLeft' ? styles.ChipGridSlideFromLeft : '',
+            gridSlide === 'fromRight' ? styles.ChipGridSlideFromRight : '',
+          ].join(' ')}
+          onAnimationEnd={e => {
+            // Chip status-pulse keyframes also bubble — only clear on our slide.
+            if (e.target !== e.currentTarget) return;
+            setGridSlide(null);
+          }}
+        >
+          <div className={styles.ChipGrid}>
+            {gridChips.map((chip, index) => (
+              <Chip
+                key={chip.id}
+                chip={chip}
+                armed={chip.id === armedChipId}
+                onSelect={handleSelect}
+                statusPulse={statusRipple}
+                pulseIndex={index}
+              />
+            ))}
+          </div>
         </div>
+
+        {tabChangeNotice ? (
+          <div
+            className={[
+              styles.ChipGridChangeOverlay,
+              tabChangeNotice.phase === 'out' ? styles.ChipGridChangeOverlayOut : '',
+            ].join(' ')}
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <div className={styles.ChipGridChangeTooltip} role="status">
+              {tabChangeNotice.message}
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
