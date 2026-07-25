@@ -23,9 +23,9 @@ interface FilterDef {
   notification?: boolean;
 }
 
+// Conditions are Existing findings — no separate pill; Existing includes them.
 const FILTERS: FilterDef[] = [
   { id: 'all', label: 'All' },
-  { id: 'conditions', label: 'Conditions' },
   { id: 'today', label: 'Today' },
   { id: 'existing', label: 'Existing', count: 2 },
   { id: 'planned', label: 'Planned Tx', count: 4 },

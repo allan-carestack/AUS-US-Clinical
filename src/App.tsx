@@ -83,6 +83,15 @@ function buildAreaDescription(chip: ChipDef, areaLabel: string): string {
   return `${areaLabel} — ${chip.label}`;
 }
 
+/** Tx-log filter bucket — conditions count as Existing (no separate Conditions pill). */
+type ChartLogKind = 'condition' | 'existing' | 'proposed' | 'completed' | 'note' | 'document' | 'other';
+
+function logKindFor(chip: ChipDef, context: CarePanelSelectionContext): ChartLogKind {
+  if (chip.kind === 'condition') return 'condition';
+  if (context.tab === 'existing') return 'existing';
+  return context.txType === 'proposed' ? 'proposed' : 'completed';
+}
+
 function statusTagFor(chip: ChipDef, context: CarePanelSelectionContext): React.ReactNode {
   if (chip.kind === 'condition') return <Tag variant="fill" color="orange">Active condition</Tag>;
   if (context.tab === 'existing') return <Tag variant="outline" color="grey">Existing</Tag>;
@@ -200,6 +209,8 @@ type ChartEntry = {
   codeId?: string;
   /** Tooth/surface/area requirement — stored so chip slugs can finalize without a CDT lookup. */
   requires?: ToothRequirement;
+  /** Bucket for TxLogFilters — conditions are included under Existing. */
+  logKind?: ChartLogKind;
   thArea: string;
   surface: string;
   provider: React.ReactNode;
@@ -216,18 +227,33 @@ type ChartEntry = {
 
 const NOTE_TEXT = '011 | ADAS: Adarsh Ash | <Type of exam> Reviewed medical and dental history: - <Reviewed Medical History> . <Blood Pressure>  Stated chief complaint…';
 
+function matchesTxLogFilter(row: ChartEntry, filter: string): boolean {
+  if (filter === 'all') return true;
+  // Conditions are Existing findings — show both under the Existing pill.
+  if (filter === 'existing') return row.logKind === 'condition' || row.logKind === 'existing';
+  if (filter === 'planned') return row.logKind === 'proposed';
+  if (filter === 'completed') return row.logKind === 'completed';
+  if (filter === 'notes' || filter === 'draft-notes') return row.logKind === 'note';
+  if (filter === 'documents') return row.logKind === 'document';
+  if (filter === 'today') {
+    const today = new Date().toLocaleDateString('en-US');
+    return row.date === today;
+  }
+  return true;
+}
+
 const INITIAL_CHART_ROWS: ChartEntry[] = [
-  { id: '1',  date: '12/09/2025', descriptionText: '011- Comprehensive oral ex...', codeId: '011', thArea: '--', surface: '--', provider: codeLink('ACHU'), location: codeLink('MEL'), txPlan: '--', phase: '--', fees: '$40.00', discount: '$0.00', patPayable: '$40.00', status: <Tag variant="fill" color="blue">Proposed</Tag>, rowAction: <Button variant="ghost" iconOnly leftIcon={<PlusIcon />} aria-label="Add entry" />, userName: 'Mr. John Doe' },
-  { id: '2',  date: '12/09/2025', descriptionText: 'Caries', codeId: 'caries', thArea: '26', surface: 'D', provider: codeLink('ACHU'), location: '', txPlan: '', phase: '', fees: '', discount: '', patPayable: '', status: <Tag variant="fill" color="orange">Active condition</Tag>, rowAction: '', userName: 'Mr. John Doe' },
-  { id: '3',  date: '12/09/2025', descriptionText: 'Treatment Plan proposal.pdf', thArea: '', surface: '', provider: '', location: '', txPlan: '', phase: '', fees: '', discount: '', patPayable: '', status: 'Document', rowAction: '', userName: 'Mr. John Doe' },
-  { id: '4',  date: '12/09/2025', descriptionText: NOTE_TEXT, thArea: '', surface: '', provider: '', location: '', txPlan: '', phase: '', fees: '', discount: '', patPayable: '', status: <Tag variant="outline" color="grey">To start</Tag>, rowAction: '', userName: 'Mr. Adarsh Kl...' },
-  { id: '5',  date: '12/09/2025', descriptionText: NOTE_TEXT, thArea: '', surface: '', provider: '', location: '', txPlan: '', phase: '', fees: '', discount: '', patPayable: '', status: <Tag variant="outline" color="grey">To start</Tag>, rowAction: '', userName: 'Mr. Adarsh Kl...' },
-  { id: '6',  date: '12/09/2025', descriptionText: '011- Comprehensive oral ex...', codeId: '011', thArea: '--', surface: '--', provider: codeLink('ACHU'), location: codeLink('MEL'), txPlan: 'All on 4 Tx...', phase: 'Phase 1', fees: '$40.00', discount: '$0.00', patPayable: '$40.00', status: <Tag variant="fill" color="blue">Proposed</Tag>, rowAction: <Button variant="ghost" iconOnly leftIcon={<MemoIcon />} aria-label="View notes" style={{ color: 'var(--interactive-80)' }} />, userName: 'Mr. John Doe' },
-  { id: '7',  date: '12/09/2025', descriptionText: 'Caries', codeId: 'caries', thArea: '26', surface: 'D', provider: codeLink('ACHU'), location: '', txPlan: '', phase: '', fees: '', discount: '', patPayable: '', status: <Tag variant="fill" color="orange">Active condition</Tag>, rowAction: '', userName: 'Mr. John Doe' },
-  { id: '8',  date: '12/09/2025', descriptionText: '012- Periodic oral evaluation', codeId: '012', thArea: '--', surface: '--', provider: codeLink('ACHU'), location: codeLink('MEL'), txPlan: '--', phase: '--', fees: '$40.00', discount: '$0.00', patPayable: '$40.00', status: <Tag variant="fill" color="blue">Proposed</Tag>, rowAction: <Button variant="ghost" iconOnly leftIcon={<PlusIcon />} aria-label="Add entry" />, userName: 'Mr. John Doe' },
-  { id: '9',  date: '12/09/2025', descriptionText: '011- Comprehensive oral ex...', codeId: '011', thArea: '--', surface: '--', provider: codeLink('ACHU'), location: codeLink('MEL'), txPlan: 'All on 4 Tx...', phase: '1st appoint...', fees: '$40.00', discount: '$0.00', patPayable: '$40.00', status: <Tag variant="fill" color="blue">Proposed</Tag>, rowAction: <Button variant="ghost" iconOnly leftIcon={<PlusIcon />} aria-label="Add entry" />, userName: 'Mr. John Doe' },
-  { id: '10', date: '12/09/2025', descriptionText: '586 | ADAS: Adarsh Ash | <Type of exam> Reviewed medical and dental history: - <Reviewed Medical History> . <Blood Pressure>  Stated chief complaint…', thArea: '', surface: '', provider: '', location: '', txPlan: '', phase: '', fees: '', discount: '', patPayable: '', status: <Tag variant="outline" color="grey">To start</Tag>, rowAction: '', userName: 'Mr. Adarsh Kl...' },
-  { id: '11', date: '12/09/2025', descriptionText: '586 - Crown - metallic - with tooth preparati...', codeId: '615', thArea: '--', surface: '--', provider: codeLink('ACHU'), location: codeLink('MEL'), txPlan: '--', phase: '--', fees: '$40.00', discount: '$0.00', patPayable: '$40.00', status: <Tag variant="fill" color="green">Completed</Tag>, rowAction: <Button variant="ghost" iconOnly leftIcon={<MemoIcon />} aria-label="View notes" style={{ color: 'var(--interactive-80)' }} />, userName: 'Mr. John Doe' },
+  { id: '1',  date: '12/09/2025', descriptionText: '011- Comprehensive oral ex...', codeId: '011', logKind: 'proposed', thArea: '--', surface: '--', provider: codeLink('ACHU'), location: codeLink('MEL'), txPlan: '--', phase: '--', fees: '$40.00', discount: '$0.00', patPayable: '$40.00', status: <Tag variant="fill" color="blue">Proposed</Tag>, rowAction: <Button variant="ghost" iconOnly leftIcon={<PlusIcon />} aria-label="Add entry" />, userName: 'Mr. John Doe' },
+  { id: '2',  date: '12/09/2025', descriptionText: 'Caries', codeId: 'caries', logKind: 'condition', thArea: '26', surface: 'D', provider: codeLink('ACHU'), location: '', txPlan: '', phase: '', fees: '', discount: '', patPayable: '', status: <Tag variant="fill" color="orange">Active condition</Tag>, rowAction: '', userName: 'Mr. John Doe' },
+  { id: '3',  date: '12/09/2025', descriptionText: 'Treatment Plan proposal.pdf', logKind: 'document', thArea: '', surface: '', provider: '', location: '', txPlan: '', phase: '', fees: '', discount: '', patPayable: '', status: 'Document', rowAction: '', userName: 'Mr. John Doe' },
+  { id: '4',  date: '12/09/2025', descriptionText: NOTE_TEXT, logKind: 'note', thArea: '', surface: '', provider: '', location: '', txPlan: '', phase: '', fees: '', discount: '', patPayable: '', status: <Tag variant="outline" color="grey">To start</Tag>, rowAction: '', userName: 'Mr. Adarsh Kl...' },
+  { id: '5',  date: '12/09/2025', descriptionText: NOTE_TEXT, logKind: 'note', thArea: '', surface: '', provider: '', location: '', txPlan: '', phase: '', fees: '', discount: '', patPayable: '', status: <Tag variant="outline" color="grey">To start</Tag>, rowAction: '', userName: 'Mr. Adarsh Kl...' },
+  { id: '6',  date: '12/09/2025', descriptionText: '011- Comprehensive oral ex...', codeId: '011', logKind: 'proposed', thArea: '--', surface: '--', provider: codeLink('ACHU'), location: codeLink('MEL'), txPlan: 'All on 4 Tx...', phase: 'Phase 1', fees: '$40.00', discount: '$0.00', patPayable: '$40.00', status: <Tag variant="fill" color="blue">Proposed</Tag>, rowAction: <Button variant="ghost" iconOnly leftIcon={<MemoIcon />} aria-label="View notes" style={{ color: 'var(--interactive-80)' }} />, userName: 'Mr. John Doe' },
+  { id: '7',  date: '12/09/2025', descriptionText: 'Caries', codeId: 'caries', logKind: 'condition', thArea: '26', surface: 'D', provider: codeLink('ACHU'), location: '', txPlan: '', phase: '', fees: '', discount: '', patPayable: '', status: <Tag variant="fill" color="orange">Active condition</Tag>, rowAction: '', userName: 'Mr. John Doe' },
+  { id: '8',  date: '12/09/2025', descriptionText: '012- Periodic oral evaluation', codeId: '012', logKind: 'proposed', thArea: '--', surface: '--', provider: codeLink('ACHU'), location: codeLink('MEL'), txPlan: '--', phase: '--', fees: '$40.00', discount: '$0.00', patPayable: '$40.00', status: <Tag variant="fill" color="blue">Proposed</Tag>, rowAction: <Button variant="ghost" iconOnly leftIcon={<PlusIcon />} aria-label="Add entry" />, userName: 'Mr. John Doe' },
+  { id: '9',  date: '12/09/2025', descriptionText: '011- Comprehensive oral ex...', codeId: '011', logKind: 'proposed', thArea: '--', surface: '--', provider: codeLink('ACHU'), location: codeLink('MEL'), txPlan: 'All on 4 Tx...', phase: '1st appoint...', fees: '$40.00', discount: '$0.00', patPayable: '$40.00', status: <Tag variant="fill" color="blue">Proposed</Tag>, rowAction: <Button variant="ghost" iconOnly leftIcon={<PlusIcon />} aria-label="Add entry" />, userName: 'Mr. John Doe' },
+  { id: '10', date: '12/09/2025', descriptionText: '586 | ADAS: Adarsh Ash | <Type of exam> Reviewed medical and dental history: - <Reviewed Medical History> . <Blood Pressure>  Stated chief complaint…', logKind: 'note', thArea: '', surface: '', provider: '', location: '', txPlan: '', phase: '', fees: '', discount: '', patPayable: '', status: <Tag variant="outline" color="grey">To start</Tag>, rowAction: '', userName: 'Mr. Adarsh Kl...' },
+  { id: '11', date: '12/09/2025', descriptionText: '586 - Crown - metallic - with tooth preparati...', codeId: '615', logKind: 'completed', thArea: '--', surface: '--', provider: codeLink('ACHU'), location: codeLink('MEL'), txPlan: '--', phase: '--', fees: '$40.00', discount: '$0.00', patPayable: '$40.00', status: <Tag variant="fill" color="green">Completed</Tag>, rowAction: <Button variant="ghost" iconOnly leftIcon={<MemoIcon />} aria-label="View notes" style={{ color: 'var(--interactive-80)' }} />, userName: 'Mr. John Doe' },
 ];
 
 function HighlightMatch({ text, query }: { text: string; query: string }) {
@@ -631,6 +657,11 @@ export default function App() {
   // one). These get no delete (✕) affordance — there's an original row to keep.
   const [changingRowIds, setChangingRowIds] = useState<Set<string>>(new Set());
   const [showFeeEstimates, setShowFeeEstimates] = useState(true);
+  const [txLogFilter, setTxLogFilter] = useState('all');
+  const filteredChartRows = useMemo(
+    () => chartRows.filter(row => matchesTxLogFilter(row, txLogFilter)),
+    [chartRows, txLogFilter],
+  );
   const [editingCell, setEditingCell] = useState<{ rowId: string; field: 'thArea' | 'surface' } | null>(null);
   const [successRowIds, setSuccessRowIds] = useState<Set<string>>(new Set());
   // Active dentition, lifted from the Odontogram so tooth-input validation can
@@ -821,6 +852,7 @@ export default function App() {
       descriptionText: buildDescription(chip, meta?.id, surface),
       codeId: chipCodeId(chip),
       requires: chip.requires,
+      logKind: logKindFor(chip, context),
       thArea: meta?.id ?? '',
       surface: surface ? SURFACE_LABEL[surface] : '',
       provider: '',
@@ -949,6 +981,7 @@ export default function App() {
       descriptionText: chip.label,
       codeId: chipCodeId(chip),
       requires: chip.requires,
+      logKind: logKindFor(chip, context),
       thArea: '',
       surface: '',
       provider: '',
@@ -1010,6 +1043,7 @@ export default function App() {
       descriptionText: `${code.code} - ${code.description}`,
       codeId: code.code,
       requires: code.requires,
+      logKind: logKindFor(chip, context),
       thArea: '',
       surface: '',
       provider: '',
@@ -1333,7 +1367,7 @@ export default function App() {
       }
       return <DescLink text={text} withPreview={false} />;
     }},
-    { key: 'thArea',      header: 'Th/Area',         width: 90,  render: (_v, row) => {
+    { key: 'thArea',      header: 'Th/Area',         width: 200,  render: (_v, row) => {
       if (!pendingRowIds.has(row.id)) return (row.thArea as string) || '--';
       if (!row.requires || row.requires === 'none') return (row.thArea as string) || '--';
       if (row.requires === 'area') {
@@ -1342,7 +1376,7 @@ export default function App() {
             value={row.thArea || null}
             onValueChange={val => { if (typeof val === 'string') finalizeAreaSelection(row.id, val); }}
           >
-            <SelectTrigger placeholder="Choose area" aria-label="Choose area" />
+            <SelectTrigger className={appStyles.AreaSelect} placeholder="Choose area" aria-label="Choose area" />
             <SelectContent>
               {AREA_PRESETS.map(preset => (
                 <SelectItem key={preset.id} value={preset.id}>{preset.label}</SelectItem>
@@ -1529,7 +1563,10 @@ export default function App() {
       {/* Tx log filters — Chart Details only; TX plan view has its own chrome */}
       {activeTab === 'chart-details' && (
         <div style={{ flexShrink: 0 }}>
-          <TxLogFilters onChange={state => setShowFeeEstimates(state.showFeeEstimates)} />
+          <TxLogFilters onChange={state => {
+            setTxLogFilter(state.filter);
+            setShowFeeEstimates(state.showFeeEstimates);
+          }} />
         </div>
       )}
 
@@ -1545,7 +1582,7 @@ export default function App() {
         {activeTab === 'chart-details' ? (
           <Table
             columns={chartColumns}
-            data={chartRows}
+            data={filteredChartRows}
             rowKey="id"
             selectable
             rowClassName={(row: ChartEntry) => {
