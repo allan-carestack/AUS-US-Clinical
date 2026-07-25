@@ -2,16 +2,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Button from './components/Button';
 import Table, { type Column } from './components/Table';
 import { Tag } from './components/Tag';
-import { PlusIcon, MemoIcon, PreviewIcon, AngleUpIcon, AngleLeftIcon, AngleRightIcon, CautionIcon, CloseIcon } from './components/Icon';
+import { PlusIcon, MemoIcon, PreviewIcon, AngleUpIcon, AngleLeftIcon, AngleRightIcon, WarningIcon, CloseIcon } from './components/Icon';
 import {
   Odontogram, SURFACE_LABEL,
   type ArmedTooth, type ToothState, type ToothMark, type ToothMeta, type SurfaceName, type Dentition,
 } from './components/Odontogram';
 import { CarePanel, type ChipDef, type CarePanelSelectionContext, type DentalCode } from './components/CarePanel';
 import {
-  PROCEDURE_CHIPS, CONDITION_CHIPS, PLAN_AND_EXPLOSION_CHIPS,
+  PROCEDURE_CHIPS, CONDITION_CHIPS, PLAN_AND_EXPLOSION_CHIPS, AREA_PRESETS, AREA_PRESET_TEETH,
   type ToothRequirement,
 } from './components/CarePanel/data';
+import { Select, SelectTrigger, SelectContent, SelectItem } from './components/Select';
 import { Tabs, TabsList, TabsTab } from './components/Tabs';
 import { ScrollArea, ScrollAreaViewport, ScrollAreaContent, ScrollAreaScrollbar, ScrollAreaThumb } from './components/ScrollArea';
 import scrollAreaStyles from './components/ScrollArea/index.module.css';
@@ -76,6 +77,10 @@ function buildDescription(chip: ChipDef, toothId?: string, surface?: SurfaceName
   if (!toothId) return chip.label;
   if (surface) return `Tooth ${toothId} — ${SURFACE_LABEL[surface]} — ${chip.label}`;
   return `Tooth ${toothId} — ${chip.label}`;
+}
+
+function buildAreaDescription(chip: ChipDef, areaLabel: string): string {
+  return `${areaLabel} — ${chip.label}`;
 }
 
 function statusTagFor(chip: ChipDef, context: CarePanelSelectionContext): React.ReactNode {
@@ -193,7 +198,7 @@ type ChartEntry = {
   date: string;
   descriptionText: string;
   codeId?: string;
-  /** Tooth/surface requirement — stored so chip slugs can finalize without a CDT lookup. */
+  /** Tooth/surface/area requirement — stored so chip slugs can finalize without a CDT lookup. */
   requires?: ToothRequirement;
   thArea: string;
   surface: string;
@@ -875,11 +880,19 @@ export default function App() {
   const handleSurfaceClick = (meta: ToothMeta, surface: SurfaceName) => {
     if (activePlan && pendingProcedureIds.size > 0) {
       const oldest = findOldestPendingPlanProcedureId();
-      if (oldest) { finalizePendingPlanProcedure(oldest, meta, surface); return; }
+      if (oldest) {
+        // Area-scoped codes are driven solely by the Tooth/Area dropdown —
+        // chart clicks on a pending area row are a deliberate no-op.
+        if (findPlanProcedure(activePlan.id, oldest)?.requires === 'area') return;
+        finalizePendingPlanProcedure(oldest, meta, surface); return;
+      }
     }
     if (pendingRowIds.size > 0) {
       const oldest = [...chartRows].reverse().find(r => pendingRowIds.has(r.id));
-      if (oldest) { finalizePendingRow(oldest.id, meta, surface); return; }
+      if (oldest) {
+        if (oldest.requires === 'area') return;
+        finalizePendingRow(oldest.id, meta, surface); return;
+      }
     }
     toggleToothSelection({ meta, surface });
   };
@@ -887,11 +900,17 @@ export default function App() {
   const handleWholeToothClick = (meta: ToothMeta) => {
     if (activePlan && pendingProcedureIds.size > 0) {
       const oldest = findOldestPendingPlanProcedureId();
-      if (oldest) { finalizePendingPlanProcedure(oldest, meta); return; }
+      if (oldest) {
+        if (findPlanProcedure(activePlan.id, oldest)?.requires === 'area') return;
+        finalizePendingPlanProcedure(oldest, meta); return;
+      }
     }
     if (pendingRowIds.size > 0) {
       const oldest = [...chartRows].reverse().find(r => pendingRowIds.has(r.id));
-      if (oldest) { finalizePendingRow(oldest.id, meta); return; }
+      if (oldest) {
+        if (oldest.requires === 'area') return;
+        finalizePendingRow(oldest.id, meta); return;
+      }
     }
     toggleToothSelection({ meta });
   };
@@ -1050,6 +1069,47 @@ export default function App() {
     applyToothMark(chip, meta.id, useSurface);
     clearPendingProcedure(procedureId);
     persistProcedure(proc.codeId, meta.id, useSurface ? SURFACE_LABEL[useSurface] : '', 'Proposed');
+  };
+
+  // Batch-mark every tooth in an area preset — reuses the same per-tooth
+  // odontogram state `applyToothMark` already writes, just looped over the
+  // preset's tooth list instead of a single tooth.
+  const applyAreaMark = (chip: ChipDef, areaId: string) => {
+    (AREA_PRESET_TEETH[areaId] ?? []).forEach(toothId => applyToothMark(chip, toothId));
+  };
+
+  // Area-scoped codes are driven by the Tooth/Area dropdown, not an odontogram
+  // click — this is the dropdown's onValueChange target.
+  const finalizeAreaSelection = (rowId: string, areaId: string) => {
+    const row = chartRows.find(r => r.id === rowId);
+    if (!row) return;
+    const chip = resolveRowChip(row, dentalCodes);
+    if (!chip) return;
+    const areaLabel = AREA_PRESETS.find(a => a.id === areaId)?.label ?? areaId;
+    setChartRows(prev => prev.map(r =>
+      r.id === rowId
+        ? { ...r, descriptionText: buildAreaDescription(chip, areaLabel), thArea: areaId, surface: '' }
+        : r
+    ));
+    applyAreaMark(chip, areaId);
+    clearPendingRow(rowId);
+    persistProcedure(chipCodeId(chip), areaId, '', 'Proposed');
+  };
+
+  const finalizeAreaPlanSelection = (procedureId: string, areaId: string) => {
+    if (!activePlan) return;
+    const proc = findPlanProcedure(activePlan.id, procedureId);
+    if (!proc) return;
+    const chip: ChipDef = {
+      id: proc.codeId ? `code-${proc.codeId}` : proc.id,
+      label: proc.code,
+      kind: 'procedure',
+      requires: 'area',
+    };
+    updatePlanProcedure(activePlan.id, procedureId, { thArea: areaId, surface: '--' });
+    applyAreaMark(chip, areaId);
+    clearPendingProcedure(procedureId);
+    persistProcedure(proc.codeId, areaId, '', 'Proposed');
   };
 
   // Remove a row from every "pending" tracking set — used whenever a row
@@ -1262,18 +1322,35 @@ export default function App() {
       if (pendingRowIds.has(row.id)) {
         return (
           <span style={{ ...truncateCell, color: 'var(--orange-100)', fontWeight: 500 }}>
-            {row.descriptionText} — select {row.requires === 'surface' ? 'a surface' : 'a tooth'}
+            {row.descriptionText} — select {row.requires === 'surface' ? 'a surface' : row.requires === 'area' ? 'an area' : 'a tooth'}
           </span>
         );
       }
       const text = row.descriptionText as string;
       if (isNoteRow(text)) return <DescNote text={text} />;
-      if (hasCodeId(row)) return <DescLink text={text} onClick={() => setEditingRowId(row.id)} />;
+      if (hasCodeId(row)) {
+        return <DescLink text={text} onClick={() => setEditingRowId(row.id)} />;
+      }
       return <DescLink text={text} withPreview={false} />;
     }},
     { key: 'thArea',      header: 'Th/Area',         width: 90,  render: (_v, row) => {
       if (!pendingRowIds.has(row.id)) return (row.thArea as string) || '--';
       if (!row.requires || row.requires === 'none') return (row.thArea as string) || '--';
+      if (row.requires === 'area') {
+        return (
+          <Select
+            value={row.thArea || null}
+            onValueChange={val => { if (typeof val === 'string') finalizeAreaSelection(row.id, val); }}
+          >
+            <SelectTrigger placeholder="Choose area" aria-label="Choose area" />
+            <SelectContent>
+              {AREA_PRESETS.map(preset => (
+                <SelectItem key={preset.id} value={preset.id}>{preset.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      }
       if (editingCell?.rowId === row.id && editingCell.field === 'thArea') {
         return (
           <InlineEditCell
@@ -1284,10 +1361,20 @@ export default function App() {
           />
         );
       }
+      // Tooth already entered (e.g. waiting on surface) — show it, not the warning.
+      if (row.thArea) {
+        return (
+          <span
+            style={{ cursor: 'pointer' }}
+            onClick={() => setEditingCell({ rowId: row.id, field: 'thArea' })}
+          >
+            {row.thArea}
+          </span>
+        );
+      }
       return (
         <span className={appStyles.PendingCell} onClick={() => setEditingCell({ rowId: row.id, field: 'thArea' })}>
-          <CautionIcon />
-          <span className={appStyles.PendingCellDash}>--</span>
+          <WarningIcon />
         </span>
       );
     }},
@@ -1307,15 +1394,13 @@ export default function App() {
       if (row.thArea) {
         return (
           <span className={appStyles.PendingCell} onClick={() => setEditingCell({ rowId: row.id, field: 'surface' })}>
-            <CautionIcon />
-            <span className={appStyles.PendingCellDash}>--</span>
+            <WarningIcon />
           </span>
         );
       }
       return (
         <span className={appStyles.PendingCell}>
-          <CautionIcon />
-          <span className={appStyles.PendingCellDash}>--</span>
+          <WarningIcon />
         </span>
       );
     }},
@@ -1351,27 +1436,10 @@ export default function App() {
       {/* Patient details header — not built yet */}
       <PlaceholderBar height="4.4rem" label="Patient details header. 44px height" />
 
-      {/* Chart / Treatment Planner tabs + pending recalls */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', flexShrink: 0,
-        gap: 'var(--spacing-16)', padding: 'var(--spacing-4) var(--spacing-8)', borderBottom: '1px solid var(--grey-20)',
-      }}>
-        <Tabs variant="primary" defaultValue="chart" style={{ width: 'auto' }}>
-          <TabsList>
-            <TabsTab value="chart">Chart</TabsTab>
-            <TabsTab value="planner">Treatment Planner</TabsTab>
-          </TabsList>
-        </Tabs>
-        <PendingRecallsBanner />
-      </div>
-
-      {/* Odontogram (patient-level, not scoped to any Tx Plan tab) + care panel.
-          Fixed 330px height regardless of care panel content — switching
-          New Treatment/Existing must not resize this row. Collapsible via
-          the chevron at the right of the Tx Plan header below — the outer
-          wrapper animates height/opacity while staying mounted, so
-          collapsing doesn't reset odontogram or care panel state, and the
-          inner row keeps its own fixed height so content doesn't squash. */}
+      {/* Top band: left column = Chart tabs + odontogram; right = Care Panel
+          full-height beside both (tabs no longer span over the care panel).
+          Odontogram stays 300px; row height = tabs + odontogram. Collapsible
+          via the Tx Plan header chevron — stays mounted so state is preserved. */}
       <div
         style={{
           flexShrink: 0,
@@ -1381,22 +1449,61 @@ export default function App() {
           transition: 'grid-template-rows 260ms cubic-bezier(0.23, 1, 0.32, 1), opacity 200ms cubic-bezier(0.23, 1, 0.32, 1)',
         }}
       >
-        <div style={{ overflow: 'hidden' }}>
-        <div style={{ display: 'flex', alignItems: 'stretch', gap: 'var(--spacing-24)', height: '33rem' }}>
-          <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-            <Odontogram
-              toothStates={toothStates}
-              armedTeeth={armedTeeth}
-              dentition={dentition}
-              onDentitionChange={setDentition}
-              onSurfaceClick={handleSurfaceClick}
-              onWholeToothClick={handleWholeToothClick}
-            />
+        <div style={{ overflow: 'hidden', minHeight: 0 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'stretch',
+              gap: 0,
+              boxSizing: 'border-box',
+            }}
+          >
+            <div
+              style={{
+                flex: 1,
+                minWidth: 0,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  flexShrink: 0,
+                  gap: 'var(--spacing-8)',
+                  padding: 'var(--spacing-4) var(--spacing-8)',
+                  borderBottom: '1px solid var(--grey-20)',
+                  minWidth: 0,
+                }}
+              >
+                <Tabs variant="primary" defaultValue="chart" style={{ width: 'auto', flexShrink: 0 }}>
+                  <TabsList>
+                    <TabsTab value="chart">Chart</TabsTab>
+                    <TabsTab value="planner">Treatment Planner</TabsTab>
+                  </TabsList>
+                </Tabs>
+                <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                  <PendingRecallsBanner />
+                </div>
+              </div>
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <Odontogram
+                  toothStates={toothStates}
+                  armedTeeth={armedTeeth}
+                  dentition={dentition}
+                  onDentitionChange={setDentition}
+                  onSurfaceClick={handleSurfaceClick}
+                  onWholeToothClick={handleWholeToothClick}
+                />
+              </div>
+            </div>
+            <div style={{ width: '47.2rem', flexShrink: 0, alignSelf: 'stretch' }}>
+              <CarePanel codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} />
+            </div>
           </div>
-          <div style={{ width: '47.2rem', flexShrink: 0 }}>
-            <CarePanel codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} />
-          </div>
-        </div>
         </div>
       </div>
 
@@ -1432,7 +1539,7 @@ export default function App() {
         display: 'flex',
         flexDirection: 'column',
         /* Plan view is full-bleed (header under tabs + sticky footer); Chart Details keeps padding. */
-        padding: activePlan ? 0 : 'var(--spacing-12)',
+        padding: activePlan ? 0 : 'var(--spacing-2) var(--spacing-12) var(--spacing-12)',
         overflow: 'hidden',
       }}>
         {activeTab === 'chart-details' ? (
@@ -1471,6 +1578,7 @@ export default function App() {
             onDeletePendingProcedure={handleDeletePendingProcedure}
             isValidTooth={isValidTooth}
             isValidSurface={isValidSurface}
+            onSelectArea={finalizeAreaPlanSelection}
           />
         ) : planTabIds.has(activeTab) ? (
           <div style={{ padding: 'var(--spacing-12)', flex: 1, minHeight: 0 }}>

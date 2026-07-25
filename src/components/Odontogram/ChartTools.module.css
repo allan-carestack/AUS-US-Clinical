@@ -1,0 +1,60 @@
+.Rail {
+  position: absolute;
+  left: var(--spacing-8);
+  top: var(--spacing-8);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+  background: var(--white);
+  border: 1px solid var(--grey-20);
+  border-radius: var(--radius-4);
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.08), 0 8px 12px -4px rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+}
+
+.Tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-2, 2px);
+  background: transparent;
+  color: var(--grey-100);
+  cursor: pointer;
+  transition: background-color 100ms ease-out, color 100ms ease-out;
+}
+
+@media (hover: hover) {
+  .Tool:not([data-active]):not(:disabled):hover {
+    background: var(--hover-default);
+    color: var(--grey-100);
+  }
+}
+
+.Tool[data-active] {
+  background: var(--interactive-10);
+  color: var(--interactive-80);
+}
+
+.Tool:focus-visible {
+  outline: 2px solid var(--interactive-60);
+  outline-offset: 0;
+}
+
+.Tool:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.Tool svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex-shrink: 0;
+}

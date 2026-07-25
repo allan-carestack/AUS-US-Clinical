@@ -20,11 +20,9 @@
   gap: var(--spacing-4);
 }
 
-/*
 .listTertiary {
-  border-bottom: 1px solid var(--outline-default);
+  /* Border owned by consumers (e.g. CarePanel TabRow). */
 }
-*/
 
 /* ── Tab — shared ── */
 .Tab {
@@ -136,7 +134,7 @@
   top: 0px;
   transform: translateX(var(--active-tab-left));
   width: var(--active-tab-width);
-  height: 3px;
+  height: 4px;
 }
 
 /* ── Panel ── */

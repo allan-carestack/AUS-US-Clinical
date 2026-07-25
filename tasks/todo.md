@@ -1,4 +1,4 @@
-# CarePanel chips → pending tx-log rows
+# Remove ICD, Class I/V, and Supernumerary
 
 Status legend: [ ] pending · [~] in progress · [x] done · [?] needs decision
 
@@ -6,20 +6,19 @@ Status legend: [ ] pending · [~] in progress · [x] done · [?] needs decision
 
 ## Implementation plan
 
-- [x] Add `ChartEntry.requires` + `resolveRowChip` for chip/CDT pending finalize
-- [x] Rewrite `handleChipSelect` to insert pending rows like +Code (chart + plan)
-- [x] Remove chip `pendingSelection`, blue banner, `armedChipId` wiring
-- [x] Verify tooth/surface/none, tooth-first, plan tab, +Code unchanged
+- [x] Delete ProcedureCodeCell + icdCodes; unexport; remove attachments from App + TreatmentPlanView
+- [x] Remove restorativeClasses / icdEligible / allowsSupernumerary from CarePanel + API plumbing
+- [x] Remove supernumerary switch, tooth slots, CSS, and App wiring
+- [x] Confirm none/area/tooth/surface flows still work; lint/typecheck touched files
+- [x] Fix Th/Area warning persisting after valid tooth entry (show committed tooth while waiting on surface)
 
 ---
 
 ## Review
 
-**Changed**
-- `src/App.tsx` — chip-first no longer arms chips / shows blue banner; inserts pending Chart Details rows (or pending plan procedures) mirroring +Code. `ChartEntry.requires` + `resolveRowChip` let chip slugs finalize via odontogram or keyboard.
-
-**Verified (browser)**
-- Bridge Abutment → orange pending row “Bridge Abutment — select a tooth”; no blue banner; chip not armed
-- Tooth 11 click → row becomes “Tooth 11 — Bridge Abutment”, pending cleared
-- X-Rays (`requires: 'none'`) → completed row immediately (no pending affordance)
-- `tsc --noEmit` clean
+- Deleted `ProcedureCodeCell` and `CarePanel/icdCodes.ts`; Class I/V pill and `+ ICD` UI are gone from chart + treatment plan description cells.
+- Stripped `restorativeClasses` / `icdEligible` / `allowsSupernumerary` from ChipDef, DentalCode, API mapping; kept backend `isICDCodeMandatory` unused on the DTO.
+- Removed odontogram Supernumerary switch, extra tooth slots, and related CSS.
+- Kept `requires: 'none'` immediate finalize and area Th/Area dropdown path unchanged.
+- Pending Th/Area now shows the entered tooth after commit (chart + treatment plan) instead of always rendering CautionIcon/`--`.
+- `tsc --noEmit` clean.

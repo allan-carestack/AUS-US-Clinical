@@ -1,11 +1,13 @@
+import type { ToothRequirement } from '../CarePanel/data';
+
 export type PlanProcedure = {
   id: string;
   date: string;
   code: string;
   /** Catalog code string when known (used to finalize pending tooth/surface). */
   codeId?: string;
-  /** Tooth/surface requirement for pending-row UX (mirrors ChipDef.requires). */
-  requires?: 'none' | 'tooth' | 'surface';
+  /** Tooth/surface/area requirement for pending-row UX (mirrors ChipDef.requires). */
+  requires?: ToothRequirement;
   thArea: string;
   surface: string;
   provider: string;

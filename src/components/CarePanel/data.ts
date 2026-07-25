@@ -3,8 +3,10 @@ export type ChipKind = 'procedure' | 'condition' | 'treatment-plan' | 'explosion
 // How much tooth context a code needs before it can be charted — drives the
 // code-addition workflow (see odontogram_charting_checklist.md at the repo
 // root): whole-mouth/session codes never touch the odontogram, tooth-level
-// codes need a tooth, and surface-level codes need a specific surface.
-export type ToothRequirement = 'none' | 'tooth' | 'surface';
+// codes need a tooth, surface-level codes need a specific surface, and
+// area-level codes need a region (arch/quadrant/sextant/whole mouth) rather
+// than a single tooth.
+export type ToothRequirement = 'none' | 'tooth' | 'surface' | 'area';
 
 export interface ChipDef {
   id: string;
@@ -12,6 +14,51 @@ export interface ChipDef {
   kind: ChipKind;
   requires: ToothRequirement;
 }
+
+export interface AreaPreset {
+  id: string;
+  label: string;
+}
+
+// Fixed, non-searchable preset list for `requires: 'area'` codes.
+export const AREA_PRESETS: AreaPreset[] = [
+  { id: 'whole-mouth', label: 'Whole mouth' },
+  { id: 'upper-arch',  label: 'Upper arch' },
+  { id: 'lower-arch',  label: 'Lower arch' },
+  { id: 'urq',         label: 'Upper right quadrant' },
+  { id: 'ulq',         label: 'Upper left quadrant' },
+  { id: 'lrq',         label: 'Lower right quadrant' },
+  { id: 'llq',         label: 'Lower left quadrant' },
+  { id: 'sextant-1',   label: 'Sextant 1 — upper right posterior' },
+  { id: 'sextant-2',   label: 'Sextant 2 — upper anterior' },
+  { id: 'sextant-3',   label: 'Sextant 3 — upper left posterior' },
+  { id: 'sextant-4',   label: 'Sextant 4 — lower left posterior' },
+  { id: 'sextant-5',   label: 'Sextant 5 — lower anterior' },
+  { id: 'sextant-6',   label: 'Sextant 6 — lower right posterior' },
+];
+
+// FDI tooth ids (permanent dentition) each area preset expands to — used to
+// batch-highlight the odontogram when an area preset is picked.
+const URQ = ['11', '12', '13', '14', '15', '16', '17', '18'];
+const ULQ = ['21', '22', '23', '24', '25', '26', '27', '28'];
+const LLQ = ['31', '32', '33', '34', '35', '36', '37', '38'];
+const LRQ = ['41', '42', '43', '44', '45', '46', '47', '48'];
+
+export const AREA_PRESET_TEETH: Record<string, string[]> = {
+  'whole-mouth': [...URQ, ...ULQ, ...LLQ, ...LRQ],
+  'upper-arch':  [...URQ, ...ULQ],
+  'lower-arch':  [...LLQ, ...LRQ],
+  urq: URQ,
+  ulq: ULQ,
+  lrq: LRQ,
+  llq: LLQ,
+  'sextant-1': ['14', '15', '16', '17', '18'],
+  'sextant-2': ['13', '12', '11', '21', '22', '23'],
+  'sextant-3': ['24', '25', '26', '27', '28'],
+  'sextant-4': ['34', '35', '36', '37', '38'],
+  'sextant-5': ['33', '32', '31', '41', '42', '43'],
+  'sextant-6': ['44', '45', '46', '47', '48'],
+};
 
 // Placeholder "General Dentistry" care panel contents. In the real product
 // this grid is clinician-customizable (see the gear button) and can differ

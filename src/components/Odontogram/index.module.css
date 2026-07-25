@@ -1,21 +1,18 @@
 .Odontogram {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: center;
-  gap: var(--spacing-16);
-  height: 33rem;
+  gap: var(--spacing-8);
+  height: 30rem;
   padding: var(--spacing-12);
+  padding-left: 3.2rem;
   background: var(--white);
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
   overflow: hidden;
-}
-
-.Toolbar {
-  align-self: flex-start;
-  flex-shrink: 0;
 }
 
 .ChartViewport {
@@ -65,7 +62,7 @@
 
 .ToothOutline {
   fill: var(--white);
-  stroke: var(--grey-40);
+  stroke: var(--grey-60);
 }
 
 .ToothSurface {
@@ -73,23 +70,22 @@
   stroke: var(--grey-20);
   stroke-width: 1;
   cursor: pointer;
-  transition: fill 120ms ease;
+  outline: none;
 }
 
 .ToothSurface:hover {
-  fill: var(--interactive-5);
+  fill: var(--hover-default);
 }
 
+.ToothSurface:focus,
 .ToothSurface:focus-visible {
-  outline: 2px solid var(--interactive-80);
-  outline-offset: 1px;
+  outline: none;
 }
 
 /* Tooth-first flow: this specific surface was just clicked and is waiting
    for a CarePanel chip to complete the selection. */
 .ToothSurfaceArmed {
-  fill: var(--interactive-10);
-  stroke: var(--interactive-80);
+  fill: var(--interactive-80);
   stroke-width: 1.5;
 }
 

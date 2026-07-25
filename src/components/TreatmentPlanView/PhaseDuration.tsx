@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import Button from '../Button';
 import { Select, SelectTrigger, SelectContent, SelectItem } from '../Select';
-import { CloseIcon, RenameIcon, TickIcon } from '../Icon';
+import { CloseIcon, EditIcon, TickIcon } from '../Icon';
 import styles from './PhaseDuration.module.css';
 
 export type DurationValue = { hours: number; minutes: number };
@@ -144,7 +144,7 @@ export function PhaseDuration({
                 }}
                 onClick={openEditor}
               >
-                <RenameIcon />
+                <EditIcon />
               </button>
             </div>
           </div>

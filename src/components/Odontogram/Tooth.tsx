@@ -26,8 +26,9 @@ interface ToothProps {
   onWholeToothClick: (meta: ToothMeta) => void;
 }
 
-// A tooth is drawn as a 44×44 viewBox square rendered at 48px — the
-// odontogram scales the whole chart to fit available width when needed.
+// A tooth is drawn in a 44×44 coordinate space, rendered at 48px. The viewBox
+// is padded by 1 unit so centered strokes on the outer edges aren't clipped
+// by the SVG viewport (or by ChartFit's overflow:hidden).
 const TOOTH_SIZE = 48;
 const EDGES: { edge: SurfaceEdge; points: string }[] = [
   { edge: 'top',    points: '0,0 44,0 30,14 14,14' },
@@ -43,12 +44,15 @@ export default function Tooth({ meta, state, armedWhole, armedSurfaces = [], onS
   const toothSvg = (
     <svg
       className={styles.ToothSvg}
-      viewBox="0 0 44 44"
+      viewBox="-1 -1 46 46"
       width={TOOTH_SIZE}
       height={TOOTH_SIZE}
       aria-label={`Tooth ${meta.id}`}
     >
-      <rect x={0.5} y={0.5} width={43} height={43} className={styles.ToothOutline} />
+      <rect
+        x={0.5} y={0.5} width={43} height={43}
+        className={styles.ToothOutline}
+      />
       {EDGES.map(({ edge, points }) => {
         const surface = surfaceName(edge, meta);
         const mark = state?.surfaces[surface];
@@ -62,7 +66,12 @@ export default function Tooth({ meta, state, armedWhole, armedSurfaces = [], onS
             role="button"
             tabIndex={0}
             aria-label={`Tooth ${meta.id} ${surface}`}
-            onClick={() => onSurfaceClick(meta, surface)}
+            onClick={e => {
+              onSurfaceClick(meta, surface);
+              // Armed fill is the selection indicator — drop focus so the UA
+              // ring doesn't linger after a pointer click on the SVG polygon.
+              e.currentTarget.blur();
+            }}
             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSurfaceClick(meta, surface); } }}
           />
         );
