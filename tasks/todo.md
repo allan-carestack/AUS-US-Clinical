@@ -16,7 +16,7 @@ Status legend: [ ] pending · [~] in progress · [x] done · [?] needs decision
 
 ## Review
 
-- Overlay: light white veil + `backdrop-filter: blur(2.5px)` over `.ChipGridStage`.
-- Tooltip copy: `CarePanel changed to New Treatment` / `… Existing` (matches Tooltip grey-80 styling).
-- `aria-live="polite"` + `role="status"` for the confirmation.
-- Reduced-motion: no blur/scale animations; stronger opaque veil instead.
+- Overlay split: static `.ChipGridChangeBlur` (opacity always 1) + fading veil/tooltip siblings.
+- Avoids backdrop-root bug from animating opacity on the `backdrop-filter` node.
+- Tooltip copy: `CarePanel changed to New Treatment` / `… Existing`.
+- Reduced-motion: no blur; stronger opaque veil instead.
