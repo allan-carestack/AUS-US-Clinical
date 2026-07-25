@@ -12,21 +12,23 @@ import {
 } from '../ScrollArea';
 import {
   AngleDownIcon,
-  CautionIcon,
+  WarningIcon,
   CloseIcon,
+  EditIcon,
   InfoSolidIcon,
   KebabMenuIcon,
   NotScheduledIcon,
   NotesIcon,
   PlusIcon,
   PrintIcon,
-  RenameIcon,
   RetryIcon,
 } from '../Icon';
 import { Tooltip } from '../Tooltip';
 import type { PlanPhase, PlanProcedure, TreatmentPlanMock } from './mockData';
 import { PhaseDuration, type DurationValue } from './PhaseDuration';
 import { EditableName } from './EditableName';
+import { AREA_PRESETS } from '../CarePanel/data';
+import { Select, SelectTrigger, SelectContent, SelectItem } from '../Select';
 import appStyles from '../../styles/app.module.css';
 import styles from './index.module.css';
 
@@ -50,6 +52,7 @@ export interface TreatmentPlanViewProps {
   onDeletePendingProcedure: (id: string) => void;
   isValidTooth: (value: string) => string | null;
   isValidSurface: (value: string) => string | null;
+  onSelectArea: (procedureId: string, areaId: string) => void;
 }
 
 const STATUS_COLOR = {
@@ -157,7 +160,7 @@ function PlanHeader({
             <Button
               variant="ghost"
               iconOnly
-              leftIcon={<RenameIcon />}
+              leftIcon={<EditIcon />}
               aria-label={`Rename ${planLabel}`}
               className={styles.EditButton}
               onMouseDown={(event) => event.preventDefault()}
@@ -231,6 +234,7 @@ function ProcedureRow({
   onDeletePending,
   isValidTooth,
   isValidSurface,
+  onSelectArea,
 }: {
   procedure: PlanProcedure;
   selected: boolean;
@@ -243,12 +247,28 @@ function ProcedureRow({
   onDeletePending: (id: string) => void;
   isValidTooth: (value: string) => string | null;
   isValidSurface: (value: string) => string | null;
+  onSelectArea: (procedureId: string, areaId: string) => void;
 }) {
   const requires = procedure.requires ?? 'none';
-  const needsTooth = pending && requires !== 'none';
+  const needsTooth = pending && requires !== 'none' && requires !== 'area';
   const needsSurface = pending && requires === 'surface';
 
   const thAreaCell = (() => {
+    if (pending && requires === 'area') {
+      return (
+        <Select
+          value={procedure.thArea || null}
+          onValueChange={(val) => { if (typeof val === 'string') onSelectArea(procedure.id, val); }}
+        >
+          <SelectTrigger placeholder="Choose area" aria-label="Choose area" />
+          <SelectContent>
+            {AREA_PRESETS.map((preset) => (
+              <SelectItem key={preset.id} value={preset.id}>{preset.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    }
     if (!needsTooth) return procedure.thArea || '--';
     if (editingCell?.rowId === procedure.id && editingCell.field === 'thArea') {
       return (
@@ -258,6 +278,22 @@ function ProcedureRow({
           onCommit={(val) => onCommitCell(procedure.id, 'thArea', val)}
           onCancel={onCancelEditCell}
         />
+      );
+    }
+    // Tooth already entered (e.g. waiting on surface) — show it, not the warning.
+    if (procedure.thArea) {
+      return (
+        <span
+          style={{ cursor: 'pointer' }}
+          onClick={() => onStartEditCell(procedure.id, 'thArea')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') onStartEditCell(procedure.id, 'thArea');
+          }}
+        >
+          {procedure.thArea}
+        </span>
       );
     }
     return (
@@ -270,8 +306,7 @@ function ProcedureRow({
           if (e.key === 'Enter' || e.key === ' ') onStartEditCell(procedure.id, 'thArea');
         }}
       >
-        <CautionIcon />
-        <span className={appStyles.PendingCellDash}>--</span>
+        <WarningIcon />
       </span>
     );
   })();
@@ -299,15 +334,13 @@ function ProcedureRow({
             if (e.key === 'Enter' || e.key === ' ') onStartEditCell(procedure.id, 'surface');
           }}
         >
-          <CautionIcon />
-          <span className={appStyles.PendingCellDash}>--</span>
+          <WarningIcon />
         </span>
       );
     }
     return (
       <span className={appStyles.PendingCell}>
-        <CautionIcon />
-        <span className={appStyles.PendingCellDash}>--</span>
+        <WarningIcon />
       </span>
     );
   })();
@@ -337,7 +370,7 @@ function ProcedureRow({
       <div className={styles.CodeCell} role="cell">
         {pending ? (
           <span className={styles.PendingCode}>
-            {procedure.code} — select {requires === 'surface' ? 'a surface' : 'a tooth'}
+            {procedure.code} — select {requires === 'surface' ? 'a surface' : requires === 'area' ? 'an area' : 'a tooth'}
           </span>
         ) : (
           <Button variant="link">{procedure.code}</Button>
@@ -386,6 +419,7 @@ function PhaseSection({
   onDeletePendingProcedure,
   isValidTooth,
   isValidSurface,
+  onSelectArea,
 }: {
   phase: PlanPhase;
   phaseName: string;
@@ -408,6 +442,7 @@ function PhaseSection({
   onDeletePendingProcedure: (id: string) => void;
   isValidTooth: (value: string) => string | null;
   isValidSurface: (value: string) => string | null;
+  onSelectArea: (procedureId: string, areaId: string) => void;
 }) {
   const active = expanded && phase.procedures.length > 0;
 
@@ -517,6 +552,7 @@ function PhaseSection({
               onDeletePending={onDeletePendingProcedure}
               isValidTooth={isValidTooth}
               isValidSurface={isValidSurface}
+              onSelectArea={onSelectArea}
             />
           ))}
           {phase.estimate && (
@@ -597,6 +633,7 @@ export function TreatmentPlanView({
   onDeletePendingProcedure,
   isValidTooth,
   isValidSurface,
+  onSelectArea,
 }: TreatmentPlanViewProps) {
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(() => {
     const first = plan.phases[0]?.id;
@@ -710,6 +747,7 @@ export function TreatmentPlanView({
                         onDeletePendingProcedure={onDeletePendingProcedure}
                         isValidTooth={isValidTooth}
                         isValidSurface={isValidSurface}
+                        onSelectArea={onSelectArea}
                       />
                     );
                   })}

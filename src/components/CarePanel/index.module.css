@@ -278,6 +278,18 @@
   height: 100%;
 }
 
+/* Figma tertiary care-panel tabs: bold label, top radius, L/R borders when active. */
+.TabList :global(button) {
+  border-radius: var(--radius-4) var(--radius-4) 0 0;
+  font-weight: var(--weight-700);
+  color: var(--grey-80);
+}
+
+.TabList :global(button[data-active]) {
+  border-left: 1px solid var(--grey-20);
+  border-right: 1px solid var(--grey-20);
+}
+
 .TabActions {
   display: flex;
   align-items: center;
@@ -457,7 +469,8 @@
 }
 
 .SelectWrapper {
-  width: 18rem;
+  width: 24rem;
+  max-width: 24rem;
 }
 
 /* +Code button ↔ search field morph (PhaseDuration-style grid). */

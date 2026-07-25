@@ -1,7 +1,7 @@
 import { useState, useRef, useLayoutEffect } from 'react';
 import styles from './index.module.css';
-import { SegmentedButton, SegmentedButtonItem } from '../SegmentedButton';
 import Tooth, { type ToothState } from './Tooth';
+import { ChartTools } from './ChartTools';
 import { getArchRows, SURFACE_LABEL, type Dentition, type ToothMeta, type SurfaceName } from './toothData';
 
 export type { ToothState, ToothMark } from './Tooth';
@@ -107,12 +107,7 @@ export function Odontogram({ toothStates = {}, armedTeeth = [], dentition: denti
 
   return (
     <div className={styles.Odontogram}>
-      <div className={styles.Toolbar}>
-        <SegmentedButton value={dentition} onValueChange={v => setDentition(v as Dentition)}>
-          <SegmentedButtonItem value="permanent">Permanent</SegmentedButtonItem>
-          <SegmentedButtonItem value="primary">Primary</SegmentedButtonItem>
-        </SegmentedButton>
-      </div>
+      <ChartTools dentition={dentition} onDentitionChange={setDentition} />
 
       <div className={styles.ChartViewport} ref={viewportRef}>
         <div

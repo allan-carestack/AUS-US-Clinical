@@ -1,9 +1,10 @@
+import { forwardRef } from 'react';
 import styles from './index.module.css';
 
 export type TagVariant = 'dot' | 'fill' | 'semi' | 'outline';
 export type TagColor = 'green' | 'red' | 'orange' | 'blue' | 'teal' | 'grey' | 'brown' | 'gold' | 'olive' | 'turquoise' | 'purple' | 'pink';
 
-interface TagProps {
+interface TagProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: TagVariant;
   color?: TagColor;
   children: React.ReactNode;
@@ -32,11 +33,18 @@ const variantClass: Record<TagVariant, string> = {
   outline: styles.variantOutline,
 };
 
-export function Tag({ variant = 'semi', color = 'grey', children, className }: TagProps) {
+export const Tag = forwardRef<HTMLSpanElement, TagProps>(function Tag(
+  { variant = 'semi', color = 'grey', children, className, ...rest },
+  ref,
+) {
   return (
-    <span className={[styles.Tag, colorClass[color], variantClass[variant], className].filter(Boolean).join(' ')}>
+    <span
+      ref={ref}
+      className={[styles.Tag, colorClass[color], variantClass[variant], className].filter(Boolean).join(' ')}
+      {...rest}
+    >
       {variant === 'dot' && <span className={styles.Dot} aria-hidden="true" />}
       {children}
     </span>
   );
-}
+});

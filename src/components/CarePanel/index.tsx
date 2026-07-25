@@ -11,7 +11,7 @@ import { ScrollArea, ScrollAreaViewport, ScrollAreaContent, ScrollAreaScrollbar,
 import scrollAreaStyles from '../ScrollArea/index.module.css';
 import { Popover, PopoverTrigger, PopoverContent } from '../Popover';
 import { Tag } from '../Tag';
-import { PlusIcon, InfoOutlineIcon, InfoSolidIcon, RenameIcon } from '../Icon';
+import { PlusIcon, InfoOutlineIcon, InfoSolidIcon, EditIcon } from '../Icon';
 import { Select as BaseSelect } from '@base-ui/react/select';
 import { PROCEDURE_CHIPS, PLAN_AND_EXPLOSION_CHIPS, CONDITION_CHIPS, CARE_PANELS, CHIP_LEGEND, type ChipDef } from './data';
 import { DENTAL_CODES, type DentalCode } from './dentalCodes';
@@ -146,7 +146,7 @@ function MetaCardFace({
       <span className={styles.MetaCardValueRow}>
         <span className={styles.MetaCardValue}>{value}</span>
         {editable ? (
-          <RenameIcon className={styles.MetaCardIcon} aria-hidden="true" />
+          <EditIcon className={styles.MetaCardIcon} aria-hidden="true" />
         ) : null}
       </span>
     </>
@@ -706,7 +706,7 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
         <div className={styles.Controls}>
           {tab === 'new' ? (
             <div className={styles.TxTypeRow}>
-              <Label size="xs">Tx Type :</Label>
+              <Label size="xs">Tx Type</Label>
               <RadioGroup value={txType} onValueChange={handleTxTypeChange} style={{ flexDirection: 'row', gap: 'var(--spacing-24)' }}>
                 <Radio value="proposed">Proposed</Radio>
                 <Radio value="completed">Completed</Radio>
@@ -731,7 +731,7 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
             >
               <div className={styles.PaneClip}>
                 <div className={styles.CarePanelPicker}>
-                  <Label size="xs">Care Panel :</Label>
+                  <Label size="xs">Care Panel</Label>
                   <div className={styles.SelectWrapper}>
                     <Select
                       items={CARE_PANELS.map(panel => ({ value: panel.id, label: panel.label }))}
