@@ -1394,7 +1394,6 @@ export default function App() {
             />
           </div>
           <div style={{ width: '47.2rem', flexShrink: 0 }}>
-            <CarePanel armedChipId={armedChipId} codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} />
             <CarePanel codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} />
           </div>
         </div>
