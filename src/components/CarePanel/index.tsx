@@ -12,6 +12,7 @@ import scrollAreaStyles from '../ScrollArea/index.module.css';
 import { Popover, PopoverTrigger, PopoverContent } from '../Popover';
 import { Tag } from '../Tag';
 import { PlusIcon, InfoOutlineIcon, InfoSolidIcon, EditIcon } from '../Icon';
+import { DatePicker } from '../DatePicker';
 import { Select as BaseSelect } from '@base-ui/react/select';
 import { PROCEDURE_CHIPS, PLAN_AND_EXPLOSION_CHIPS, CONDITION_CHIPS, CARE_PANELS, CHIP_LEGEND, type ChipDef } from './data';
 import { DENTAL_CODES, type DentalCode } from './dentalCodes';
@@ -157,14 +158,21 @@ function MetaCardFace({
   label,
   value,
   editable,
+  required = false,
 }: {
   label: string;
   value: string;
   editable: boolean;
+  required?: boolean;
 }) {
   return (
     <>
-      <span className={styles.MetaCardLabel}>{label}</span>
+      <span className={styles.MetaCardLabel}>
+        {label}
+        {required ? (
+          <span className={styles.MetaCardRequired} aria-hidden="true"> *</span>
+        ) : null}
+      </span>
       <span className={styles.MetaCardValueRow}>
         <span className={styles.MetaCardValue}>{value}</span>
         {editable ? (
@@ -182,6 +190,7 @@ function MetaSelectCard({
   onValueChange,
   className,
   readOnly = false,
+  required = false,
   'aria-label': ariaLabel,
 }: {
   label: string;
@@ -190,6 +199,7 @@ function MetaSelectCard({
   onValueChange: (value: string) => void;
   className?: string;
   readOnly?: boolean;
+  required?: boolean;
   'aria-label': string;
 }) {
   const display = items.find(i => i.value === value)?.label ?? value;
@@ -198,7 +208,7 @@ function MetaSelectCard({
     return (
       <div className={[styles.MetaItem, className].filter(Boolean).join(' ')}>
         <div className={[styles.MetaCard, styles.MetaCardReadonly].join(' ')}>
-          <MetaCardFace label={label} value={display} editable={false} />
+          <MetaCardFace label={label} value={display} editable={false} required={required} />
         </div>
       </div>
     );
@@ -211,8 +221,12 @@ function MetaSelectCard({
         value={value}
         onValueChange={v => onValueChange(v as string)}
       >
-        <BaseSelect.Trigger className={styles.MetaCard} aria-label={ariaLabel}>
-          <MetaCardFace label={label} value={display} editable />
+        <BaseSelect.Trigger
+          className={styles.MetaCard}
+          aria-label={ariaLabel}
+          aria-required={required || undefined}
+        >
+          <MetaCardFace label={label} value={display} editable required={required} />
         </BaseSelect.Trigger>
         <SelectContent align="start">
           {items.map(item => (
@@ -230,6 +244,7 @@ function MetaDateCard({
   onChange,
   className,
   readOnly = false,
+  required = false,
   'aria-label': ariaLabel,
 }: {
   label: string;
@@ -237,30 +252,16 @@ function MetaDateCard({
   onChange: (iso: string) => void;
   className?: string;
   readOnly?: boolean;
+  required?: boolean;
   'aria-label': string;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
   const display = formatDosDisplay(value);
-
-  const openPicker = () => {
-    const input = inputRef.current;
-    if (!input) return;
-    if (typeof input.showPicker === 'function') {
-      try {
-        input.showPicker();
-        return;
-      } catch {
-        // Fall through to click() when showPicker is blocked.
-      }
-    }
-    input.click();
-  };
 
   if (readOnly) {
     return (
       <div className={[styles.MetaItem, className].filter(Boolean).join(' ')}>
         <div className={[styles.MetaCard, styles.MetaCardReadonly].join(' ')}>
-          <MetaCardFace label={label} value={display} editable={false} />
+          <MetaCardFace label={label} value={display} editable={false} required={required} />
         </div>
       </div>
     );
@@ -268,23 +269,16 @@ function MetaDateCard({
 
   return (
     <div className={[styles.MetaItem, className].filter(Boolean).join(' ')}>
-      <button
-        type="button"
-        className={styles.MetaCard}
-        aria-label={ariaLabel}
-        onClick={openPicker}
-      >
-        <MetaCardFace label={label} value={display} editable />
-      </button>
-      <input
-        ref={inputRef}
-        type="date"
-        className={styles.MetaCardDateInput}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        tabIndex={-1}
-        aria-hidden="true"
-      />
+      <DatePicker value={value} onValueChange={onChange}>
+        <button
+          type="button"
+          className={styles.MetaCard}
+          aria-label={ariaLabel}
+          aria-required={required || undefined}
+        >
+          <MetaCardFace label={label} value={display} editable required={required} />
+        </button>
+      </DatePicker>
     </div>
   );
 }
@@ -704,6 +698,7 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
                 value={manualDos}
                 onChange={setManualDos}
                 className={styles.MetaDos}
+                required={!selectedAppointment}
                 readOnly={!!selectedAppointment}
                 aria-label="Date of service"
               />
@@ -713,6 +708,7 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
                 items={locationItems}
                 onValueChange={setLocationId}
                 className={styles.MetaLocation}
+                required={!selectedAppointment}
                 readOnly={!!selectedAppointment}
                 aria-label="Location"
               />
@@ -722,6 +718,7 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
                 items={providerItems}
                 onValueChange={setProviderId}
                 className={styles.MetaFill}
+                required={!selectedAppointment}
                 readOnly={!!selectedAppointment}
                 aria-label="Provider"
               />

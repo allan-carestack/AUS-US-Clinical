@@ -1,4 +1,4 @@
-# Edit plan details modal
+# DatePicker day cell + ghost nav polish
 
 Status legend: [ ] pending · [~] in progress · [x] done · [?] needs decision
 
@@ -6,15 +6,16 @@ Status legend: [ ] pending · [~] in progress · [x] done · [?] needs decision
 
 ## Implementation plan
 
-- [x] Build EditPlanDetailsDialog from Figma using Dialog/Field/Select/Checkbox/Button
-- [x] Open modal from plan-name edit button (replace inline rename)
-- [x] Verify open/close, plan name save, required fields
+- [x] Month nav buttons → `variant="ghost"`
+- [x] Day cells `2.4rem` (24px) with `--radius-default`
+- [x] Outside-month cells show adjacent dates, same color, `opacity: 0.4`, disabled
+- [x] Verify in browser
 
 ---
 
 ## Review
 
-- Added `EditPlanDetailsDialog` matching Figma node 2748:144289: header, Plan Name, Presented Location, Diagnosed Conditions, Coordinator + lock checkbox, disabled Plan Alternative to, Cancel/Create.
-- Reuses Dialog, Field, Label, Select, Checkbox, Button.
-- Plan header pencil opens the modal; Create saves plan name via `onPlanLabelChange`.
-- Verified in browser: modal opens over plan view with correct location label.
+- Nav: `Button variant="ghost" iconOnly`.
+- Day buttons: `24×24px`, `border-radius: var(--radius-default)`.
+- Outside-month pads show real adjacent dates (e.g. Nov 30 / Jan 1–3 for Dec 2025), same `grey-100` as in-month days, `opacity: 0.4`, `disabled`.
+- Verified via CDP: day `24px`, radius `6px`, outside opacity `0.4`, nav has `_ghost_` class.
