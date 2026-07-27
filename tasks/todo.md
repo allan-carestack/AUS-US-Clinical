@@ -1,4 +1,4 @@
-# Global header responsive overflow correction
+# Clinical sidebar
 
 Status legend: [ ] pending · [~] in progress · [x] done · [?] needs decision
 
@@ -6,19 +6,17 @@ Status legend: [ ] pending · [~] in progress · [x] done · [?] needs decision
 
 ## Implementation plan
 
-- [x] Reproduce the sticky More state and capture layout measurements
-- [x] Make overflow recovery use stable available-width measurements
-- [x] Reduce More to its compact content width
-- [x] Run build and lint checks
-- [x] Verify narrow-to-wide resizing restores every quick action
+- [x] Reuse the existing NavBar and icon set for the Figma navigation items
+- [x] Mount the 64px sidebar below GlobalHeader and left of PatientHeader/workspace
+- [x] Match the Figma rail geometry and active Clinical state
+- [x] Build, lint, and verify the result in the browser
 
 ---
 
 ## Review
 
-- Replaced the hard-coded 56px overflow reservation with a hidden natural-width probe.
-- More now uses its content width (39.64px in browser verification) instead of a fixed 56px.
-- At 1016px, Patient through Memo remain visible with compact More.
-- At 1240px, Message also remains visible with compact More.
-- At 1280px, all eight quick actions are restored and More is removed.
-- Production build passes; edited header files report no linter errors.
+- Added a reusable ClinicalSidebar from the existing NavBar and icon primitives.
+- The 64px rail starts immediately below the 32px GlobalHeader and remains left of PatientHeader and the clinical workspace.
+- Clinical is exposed as the active/pressed navigation item; the rail scrolls independently when viewport height is constrained.
+- Production build passes and edited files report no linter errors.
+- Browser geometry at 1016×947: header 1016×32 at (0,0), sidebar 64×915 at (0,32), workspace 952×915 at (64,32).

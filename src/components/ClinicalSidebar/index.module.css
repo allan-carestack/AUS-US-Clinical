@@ -1,0 +1,31 @@
+.Sidebar {
+  width: 6.4rem;
+  height: 100%;
+  flex: 0 0 6.4rem;
+  align-self: stretch;
+  border: 0;
+  border-right: 1px solid var(--grey-20);
+  border-radius: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.ClinicalIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  background: var(--interactive-80);
+  color: var(--white);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: lowercase;
+}

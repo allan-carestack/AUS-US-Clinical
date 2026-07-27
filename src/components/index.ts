@@ -13,6 +13,7 @@ export * from './Accordion';
 export * from './AlertBanner';
 export * from './Avatar';
 export * from './CarePanel';
+export * from './ClinicalSidebar';
 export * from './Combobox';
 export * from './Dialog';
 export * from './Drawer';
