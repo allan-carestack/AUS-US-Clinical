@@ -8,6 +8,7 @@ import {
   type ArmedTooth, type ToothState, type ToothMark, type ToothMeta, type SurfaceName, type Dentition,
 } from './components/Odontogram';
 import { CarePanel, type ChipDef, type CarePanelSelectionContext, type DentalCode } from './components/CarePanel';
+import { ClinicalSidebar } from './components/ClinicalSidebar';
 import { GlobalHeader } from './components/GlobalHeader';
 import { PatientHeader } from './components/PatientHeader';
 import {
@@ -1541,6 +1542,9 @@ export default function App() {
   return (
     <div className="root" style={{ fontFamily: 'inherit', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       <GlobalHeader />
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
+      <ClinicalSidebar />
+      <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <PatientHeader
         avatarSrc="https://i.pravatar.cc/150?img=12"
         name="Mr. John Doe"
@@ -1725,6 +1729,8 @@ export default function App() {
             <EmptyState label="Switch back to Chart Details to view this patient's treatment log." />
           </div>
         )}
+      </div>
+      </main>
       </div>
     </div>
   );
