@@ -13,6 +13,7 @@ export interface InputProps {
   defaultValue?: string;
   disabled?: boolean;
   required?: boolean;
+  autoFocus?: boolean;
   id?: string;
   name?: string;
   onChange?: (value: string) => void;
@@ -30,6 +31,7 @@ export function Input({
   defaultValue,
   disabled,
   required,
+  autoFocus,
   id,
   name,
   onChange,
@@ -81,6 +83,7 @@ export function Input({
           value={value}
           defaultValue={defaultValue}
           required={required}
+          autoFocus={autoFocus}
           id={id}
           onChange={handleChange}
           className={styles.Control}

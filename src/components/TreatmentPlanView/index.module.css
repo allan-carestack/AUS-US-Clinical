@@ -27,7 +27,8 @@
   gap: var(--spacing-12);
   min-width: 0;
   flex: 1 1 auto;
-  overflow: hidden;
+  /* visible so the plan-name edit button's focus ring isn't clipped */
+  overflow: visible;
 }
 
 .TitleGroup {
@@ -41,13 +42,13 @@
   flex: 0 1 auto;
   width: fit-content;
   max-width: min(32rem, 100%);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .TitleCluster {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
+  gap: var(--spacing-4);
   min-width: 0;
   width: fit-content;
   max-width: 100%;
@@ -66,6 +67,11 @@
 .EditButton {
   color: var(--grey-60);
   flex-shrink: 0;
+}
+
+.TitleCluster .EditButton:focus-visible {
+  outline: 2px solid var(--blue-80);
+  outline-offset: 2px;
 }
 
 .MetaGroup {
@@ -260,14 +266,10 @@
   transform: rotate(-90deg);
 }
 
-.PhaseName {
-  composes: text-base weight-700 from global;
-  color: var(--grey-100);
-  /* Definite flex-basis avoids ellipsis collapse in the phase header row. */
-  flex: 0 1 20rem;
+.PhaseDetails {
+  flex: 0 1 auto;
   min-width: 0;
-  max-width: 20rem;
-  overflow: hidden;
+  max-width: 100%;
 }
 
 .InfoChip {

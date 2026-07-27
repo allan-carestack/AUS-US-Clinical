@@ -5,6 +5,8 @@
   flex-shrink: 0;
   vertical-align: middle;
   z-index: 0;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .RootOpen {
@@ -15,9 +17,9 @@
 .Sizer {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-4);
+  gap: var(--spacing-6);
   height: 2.4rem;
-  padding: 0 var(--spacing-4);
+  padding: 0 var(--spacing-4) 0 var(--spacing-6);
   visibility: hidden;
   pointer-events: none;
   white-space: nowrap;
@@ -34,10 +36,9 @@
      otherwise push auto height to 26px (24px content + 1px border × 2). */
   height: 2.4rem;
   min-height: 2.4rem;
-  padding: 0 var(--spacing-4);
   border: 1px solid transparent;
   border-radius: var(--radius-default);
-  background: var(--grey-10);
+  background: transparent;
   box-shadow: none;
   overflow: hidden;
   transform-origin: left center;
@@ -50,8 +51,10 @@
 .ChipOpen {
   /* Allow focus rings to paint outside; width morph still clips via grid while closed. */
   height: auto;
+  width: 60rem; /* 600px */
   overflow: visible;
-  padding: var(--spacing-4) var(--spacing-8);
+  padding: var(--spacing-4);
+  border-radius: var(--radius-8);
   background: var(--white);
   border-color: var(--grey-20);
   box-shadow:
@@ -93,16 +96,80 @@
 }
 
 .ChipOpen .Expanded > .PaneClip {
-  min-width: min-content;
+  min-width: 0;
+  width: 100%;
   overflow: visible;
+}
+
+.CollapsedButton {
+  display: inline-flex;
+  align-items: center;
+  height: 2.4rem;
+  padding: 0 var(--spacing-4) 0 var(--spacing-6);
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-default);
+  max-width: 100%;
+  min-width: 0;
+  transition: background-color 100ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .CollapsedButton:hover {
+    background: var(--hover-darker);
+  }
+
+  .CollapsedButton:hover .EditButton {
+    color: var(--grey-100);
+  }
+}
+
+.CollapsedButton:focus-visible {
+  outline: 2px solid var(--interactive-60);
+  outline-offset: 2px;
 }
 
 .CollapsedInner {
   display: flex;
   align-items: center;
-  gap: var(--spacing-4);
+  gap: var(--spacing-6);
   width: max-content;
+  max-width: 100%;
+  min-width: 0;
   white-space: nowrap;
+}
+
+.Name {
+  composes: text-base weight-700 from global;
+  color: var(--grey-100);
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.Divider {
+  width: 1px;
+  height: 1.2rem;
+  background: var(--grey-20);
+  flex-shrink: 0;
+}
+
+.DurationGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  flex-shrink: 0;
+}
+
+.ClockIcon {
+  flex-shrink: 0;
+  color: var(--grey-60);
 }
 
 .Expanded {
@@ -120,14 +187,46 @@
   opacity: 1;
   pointer-events: auto;
   overflow: visible;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
 }
 
 .ExpandedInner {
   display: flex;
   align-items: center;
   gap: var(--spacing-12);
-  width: max-content;
+  width: 100%;
   white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.NameInput {
+  composes: text-base weight-700 from global;
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  height: 2.4rem;
+  padding: 0 var(--spacing-8);
+  margin: 0;
+  border: 1px solid var(--outline-darker);
+  border-radius: var(--radius-default);
+  background: var(--white);
+  color: var(--grey-100);
+  outline: none;
+}
+
+.NameInput:focus {
+  border-color: var(--blue-80);
+  box-shadow: 0 0 0 1px var(--blue-80);
+}
+
+.DurationLabel {
+  composes: text-base weight-400 from global;
+  color: var(--grey-60);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .Label {
@@ -152,27 +251,9 @@
   border: none;
   background: transparent;
   color: var(--grey-60);
-  cursor: pointer;
-  border-radius: var(--radius-default);
   flex-shrink: 0;
-  transition:
-    color 100ms cubic-bezier(0.23, 1, 0.32, 1),
-    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .EditButton:hover {
-    color: var(--grey-100);
-  }
-
-  .EditButton:active {
-    transform: scale(0.97);
-  }
-}
-
-.EditButton:focus-visible {
-  outline: 2px solid var(--interactive-60);
-  outline-offset: 2px;
+  pointer-events: none;
+  transition: color 100ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .Field {

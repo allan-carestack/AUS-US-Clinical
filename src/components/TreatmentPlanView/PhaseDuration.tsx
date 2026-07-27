@@ -1,13 +1,15 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import Button from '../Button';
 import { Select, SelectTrigger, SelectContent, SelectItem } from '../Select';
-import { CloseIcon, EditIcon, TickIcon } from '../Icon';
+import { ClockIcon, CloseIcon, EditIcon, TickIcon } from '../Icon';
+import { Tooltip } from '../Tooltip';
 import styles from './PhaseDuration.module.css';
 
 export type DurationValue = { hours: number; minutes: number };
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = Array.from({ length: 60 }, (_, i) => i);
+const DEFAULT_NAME_MAX_LENGTH = 125;
 
 export function formatDuration({ hours, minutes }: DurationValue): string {
   if (hours === 0 && minutes === 0) return '0 m';
@@ -18,24 +20,45 @@ export function formatDuration({ hours, minutes }: DurationValue): string {
 }
 
 interface PhaseDurationProps {
+  name: string;
+  onNameChange: (name: string) => void;
   value: DurationValue;
   onChange: (value: DurationValue) => void;
+  maxLength?: number;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   'aria-label'?: string;
 }
 
 export function PhaseDuration({
+  name,
+  onNameChange,
   value,
   onChange,
-  'aria-label': ariaLabel = 'Phase duration',
+  maxLength = DEFAULT_NAME_MAX_LENGTH,
+  open: openProp,
+  onOpenChange,
+  'aria-label': ariaLabel = 'Phase details',
 }: PhaseDurationProps) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const hoursFieldRef = useRef<HTMLDivElement>(null);
   const minutesFieldRef = useRef<HTMLDivElement>(null);
-  const draftRef = useRef<DurationValue>(value);
+  const draftDurationRef = useRef<DurationValue>(value);
   const chipId = useId();
   const hoursTriggerId = useId();
   const minutesTriggerId = useId();
-  const [open, setOpen] = useState(false);
+
+  const isControlled = openProp !== undefined;
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = isControlled ? openProp : uncontrolledOpen;
+
+  const setOpen = (next: boolean) => {
+    onOpenChange?.(next);
+    if (!isControlled) setUncontrolledOpen(next);
+  };
+
+  const [draftName, setDraftName] = useState(name);
   const [draftHours, setDraftHours] = useState(value.hours);
   const [draftMinutes, setDraftMinutes] = useState(value.minutes);
   const [hoursListOpen, setHoursListOpen] = useState(false);
@@ -47,23 +70,32 @@ export function PhaseDuration({
     field?.querySelector<HTMLElement>('button')?.focus();
   };
 
-  const openEditor = () => {
+  const seedDrafts = () => {
     const next = { hours: value.hours, minutes: value.minutes };
-    draftRef.current = next;
+    draftDurationRef.current = next;
+    setDraftName(name);
     setDraftHours(next.hours);
     setDraftMinutes(next.minutes);
     setHoursListOpen(false);
     setMinutesListOpen(false);
+  };
+
+  const openEditor = () => {
+    seedDrafts();
     setOpen(true);
   };
 
+  // Seed drafts when opened externally (e.g. Rename phase menu).
   useEffect(() => {
     if (!open) return;
-    // Defer past the edit-button click so it can't steal focus back.
+    seedDrafts();
     const timer = window.setTimeout(() => {
-      focusTrigger(hoursFieldRef.current);
+      nameInputRef.current?.focus();
+      nameInputRef.current?.select();
     }, 0);
     return () => window.clearTimeout(timer);
+    // Only re-seed when the editor opens, not when name/value change mid-edit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional open-only sync
   }, [open]);
 
   useEffect(() => {
@@ -72,7 +104,6 @@ export function PhaseDuration({
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
       if (!target) return;
-      // Keep open while interacting with portaled select menus.
       if (rootRef.current?.contains(target)) return;
       if ((target as Element).closest?.('[data-base-ui-portal], [role="listbox"]')) return;
       setOpen(false);
@@ -83,7 +114,9 @@ export function PhaseDuration({
   }, [open]);
 
   const apply = () => {
-    onChange({ ...draftRef.current });
+    const trimmed = draftName.trim().slice(0, maxLength);
+    if (trimmed && trimmed !== name) onNameChange(trimmed);
+    onChange({ ...draftDurationRef.current });
     setOpen(false);
   };
 
@@ -92,12 +125,17 @@ export function PhaseDuration({
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
-    // While a select list is open, Enter/Esc belong to the list (select value / close list).
     if (listOpen) return;
 
     if (event.key === 'Escape') {
       event.preventDefault();
       dismiss();
+      return;
+    }
+
+    if (event.key === 'Enter' && event.target === nameInputRef.current) {
+      event.preventDefault();
+      apply();
     }
   };
 
@@ -109,15 +147,29 @@ export function PhaseDuration({
 
   const hasValue = value.hours > 0 || value.minutes > 0;
 
+  const renderCollapsedInner = () => (
+    <div className={styles.CollapsedInner}>
+      <span className={styles.Name}>{name}</span>
+      <span className={styles.Divider} aria-hidden="true" />
+      <span className={styles.DurationGroup}>
+        <ClockIcon className={styles.ClockIcon} />
+        <span className={[styles.Label, hasValue ? styles.LabelSet : ''].filter(Boolean).join(' ')}>
+          {formatDuration(value)}
+        </span>
+      </span>
+      <span className={styles.EditButton} aria-hidden="true">
+        <EditIcon />
+      </span>
+    </div>
+  );
+
   return (
     <div
       ref={rootRef}
       className={[styles.Root, open ? styles.RootOpen : ''].filter(Boolean).join(' ')}
     >
-      {/* Collapsed footprint so layout doesn't jump when the chip expands over content */}
       <div className={styles.Sizer} aria-hidden="true">
-        <span className={styles.Label}>{formatDuration(value)}</span>
-        <span className={styles.EditButton} />
+        {renderCollapsedInner()}
       </div>
 
       <div
@@ -127,39 +179,55 @@ export function PhaseDuration({
       >
         <div className={styles.Collapsed} aria-hidden={open}>
           <div className={styles.PaneClip}>
-            <div className={styles.CollapsedInner}>
-              <span className={[styles.Label, hasValue ? styles.LabelSet : ''].filter(Boolean).join(' ')}>
-                {formatDuration(value)}
-              </span>
+            <Tooltip
+              content="Edit phase details"
+              side="right"
+              delay={400}
+              closeOnClick
+              disabled={open}
+            >
               <button
                 type="button"
-                className={styles.EditButton}
+                className={styles.CollapsedButton}
                 aria-label={`Edit ${ariaLabel}`}
                 aria-expanded={open}
                 aria-controls={chipId}
                 tabIndex={open ? -1 : 0}
                 onMouseDown={(event) => {
-                  // Keep focus from landing on the pencil so hours can take it on open.
                   event.preventDefault();
                 }}
                 onClick={openEditor}
               >
-                <EditIcon />
+                {renderCollapsedInner()}
               </button>
-            </div>
+            </Tooltip>
           </div>
         </div>
 
         <div className={styles.Expanded} aria-hidden={!open} inert={!open || undefined}>
           <div className={styles.PaneClip}>
             <div className={styles.ExpandedInner}>
+              <input
+                ref={nameInputRef}
+                type="text"
+                className={styles.NameInput}
+                value={draftName}
+                maxLength={maxLength}
+                aria-label="Phase name"
+                onChange={(event) => setDraftName(event.target.value)}
+              />
+
+              <span className={styles.Divider} aria-hidden="true" />
+
+              <span className={styles.DurationLabel}>Duration :</span>
+
               <div className={styles.Field} ref={hoursFieldRef}>
                 <Select
                   value={String(draftHours)}
                   modal={false}
                   onValueChange={(v) => {
                     const hours = Number(v);
-                    draftRef.current = { ...draftRef.current, hours };
+                    draftDurationRef.current = { ...draftDurationRef.current, hours };
                     setDraftHours(hours);
                   }}
                   onOpenChange={(next, details) => {
@@ -189,7 +257,7 @@ export function PhaseDuration({
                   modal={false}
                   onValueChange={(v) => {
                     const minutes = Number(v);
-                    draftRef.current = { ...draftRef.current, minutes };
+                    draftDurationRef.current = { ...draftDurationRef.current, minutes };
                     setDraftMinutes(minutes);
                   }}
                   onOpenChange={(next, details) => {
@@ -218,14 +286,14 @@ export function PhaseDuration({
                   variant="secondary"
                   iconOnly
                   leftIcon={<TickIcon />}
-                  aria-label="Apply duration"
+                  aria-label="Apply phase details"
                   onClick={apply}
                 />
                 <Button
                   variant="secondary-destructive"
                   iconOnly
                   leftIcon={<CloseIcon />}
-                  aria-label="Cancel duration edit"
+                  aria-label="Cancel phase details edit"
                   onClick={dismiss}
                 />
               </div>
