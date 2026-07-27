@@ -1,0 +1,201 @@
+/* ── Root bar — fixed 44px height, matches the page shell placeholder it replaces ── */
+.PatientHeader {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  height: var(--spacing-44);
+  flex-shrink: 0;
+  overflow: hidden;
+  background-color: var(--blue-5);
+  border-bottom: 1px solid var(--blue-20);
+}
+
+/* ── Section — one column of the bar, divided by a hairline rule ── */
+.Section {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+  min-width: 0;
+  padding: 0 var(--spacing-12);
+}
+
+.Section:not(:last-child) {
+  border-right: 1px solid rgb(from var(--grey-100) r g b / 12%);
+}
+
+.PatientHeader > .Section:first-child {
+  padding-left: 0;
+}
+
+/* ── Patient identity ── */
+.Avatar {
+  width: var(--spacing-44) !important;
+  height: var(--spacing-44) !important;
+  flex-shrink: 0;
+}
+
+.PatientInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0 var(--spacing-8) 0 0;
+}
+
+.NameRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+}
+
+.Name {
+  composes: text-lg weight-700 from global;
+  color: var(--grey-100);
+  white-space: nowrap;
+}
+
+/* When rendered as a `<button>` (name is clickable) — reset button chrome. */
+button.Name {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--interactive-60);
+    outline-offset: 2px;
+  }
+}
+
+.DemographicsRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.DimText {
+  composes: text-base weight-400 from global;
+  color: var(--grey-100);
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.Divider {
+  width: 1px;
+  height: 1rem;
+  flex-shrink: 0;
+  background-color: var(--grey-20);
+}
+
+/* ── Chart flags + linked account/referral counts ── */
+.TagsCol {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.TagsRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.FlagsEditButton {
+  color: var(--grey-60);
+}
+
+.LinksRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+}
+
+.CountLink {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+/* Matches FilterChip's `count` badge treatment (solid grey-60 + white text). */
+.CountBadge {
+  composes: text-sm weight-500 from global;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 var(--spacing-4);
+  border-radius: var(--radius-32);
+  background-color: var(--grey-60);
+  color: var(--white);
+  border: 1px solid var(--white);
+  flex-shrink: 0;
+}
+
+/* ── Insurance ── */
+.InsuranceIcon {
+  display: flex;
+  align-items: center;
+  color: var(--grey-40);
+  flex-shrink: 0;
+}
+
+.InsuranceText {
+  composes: text-base weight-400 from global;
+  color: var(--grey-100);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Balances ── */
+.BalanceSection {
+  justify-content: flex-end;
+}
+
+.BalanceCol {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.BalanceRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+}
+
+.BalanceLabel {
+  composes: text-base weight-700 from global;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  color: var(--grey-60);
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+.InfoButton {
+  color: inherit;
+}
+
+.BalanceValue {
+  composes: text-base weight-700 from global;
+  text-decoration: underline;
+  white-space: nowrap;
+
+  &[data-tone='positive'] { color: var(--green-80); }
+  &[data-tone='negative'] { color: var(--red-80); }
+}
+
+/* ── Flex distribution across sections — mirrors the Figma frame's relative
+   column widths; the clinical-summary section stays content-sized while the
+   rest share the remaining width. ── */
+.PatientHeader > .Section:nth-child(1) { flex: 1.6 1 0%; }
+.PatientHeader > .Section:nth-child(2) { flex: 1.3 1 0%; }
+.PatientHeader > .Section:nth-child(3) { flex: 1.3 1 0%; }
+.PatientHeader > .Section:nth-child(4) { flex: 1.3 1 0%; }
+.PatientHeader > .Section:nth-child(5) { flex: 0 0 auto; }

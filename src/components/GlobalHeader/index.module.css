@@ -1,0 +1,253 @@
+.GlobalHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  width: 100%;
+  height: var(--spacing-32);
+  flex-shrink: 0;
+  overflow: hidden;
+  background-color: var(--grey-80);
+  color: var(--white);
+}
+
+.GlobalHeader button,
+.GlobalHeader input {
+  font-family: inherit;
+  font-size: var(--text-base-size);
+  font-weight: var(--weight-400);
+  line-height: var(--text-base-line-height);
+  letter-spacing: 0;
+}
+
+.GlobalHeader button {
+  border: 0;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--white);
+    outline-offset: -2px;
+  }
+}
+
+.Left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  width: 84.3rem;
+  min-width: 33.9rem;
+  height: 100%;
+  flex: 0 1 84.3rem;
+}
+
+.Logo {
+  display: flex;
+  align-items: center;
+  width: 12.3rem;
+  height: 100%;
+  padding-left: var(--spacing-12);
+  flex-shrink: 0;
+  text-decoration: none;
+
+  & img:first-child {
+    width: 4.785rem;
+    height: 1.231rem;
+  }
+
+  & img:last-child {
+    width: 5.467rem;
+    height: 1.231rem;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--white);
+    outline-offset: -2px;
+  }
+}
+
+.Search {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  width: 16rem;
+  height: var(--spacing-24);
+  padding: var(--spacing-4) var(--spacing-8);
+  flex-shrink: 0;
+  border-radius: var(--radius-4);
+  background-color: var(--white);
+
+  & > img {
+    width: var(--spacing-12);
+    height: var(--spacing-12);
+    flex-shrink: 0;
+  }
+
+  & input {
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--grey-100);
+
+    &::placeholder {
+      color: var(--grey-40);
+      opacity: 1;
+    }
+
+    &::-webkit-search-cancel-button {
+      display: none;
+    }
+  }
+
+  &:focus-within {
+    outline: 2px solid var(--interactive-40);
+    outline-offset: -2px;
+  }
+}
+
+.PatientSwitcher {
+  display: grid;
+  place-items: center;
+  width: 2.8rem;
+  height: 100%;
+  padding: var(--spacing-6);
+  flex-shrink: 0;
+  background: transparent;
+
+  & img {
+    width: var(--spacing-12);
+    height: var(--spacing-12);
+  }
+}
+
+.QuickActions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: var(--spacing-24);
+  flex: 1 1 50.8rem;
+  overflow: hidden;
+  border-radius: var(--radius-4);
+  background-color: var(--interactive-80);
+
+  & button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-4);
+    height: 100%;
+    padding: 0 var(--spacing-6);
+    flex-shrink: 0;
+    border-right: 1px solid var(--interactive-60);
+    background: transparent;
+    color: var(--white);
+    white-space: nowrap;
+
+    & img {
+      width: var(--spacing-12);
+      height: var(--spacing-12);
+    }
+
+    @media (hover: hover) {
+      &:hover {
+        background-color: var(--interactive-100);
+      }
+    }
+  }
+
+  & button[hidden] {
+    display: none;
+  }
+
+  & .PrintAction {
+    gap: var(--spacing-4);
+    border-right: 0;
+
+    & img {
+      width: var(--spacing-12);
+      height: var(--spacing-12);
+    }
+  }
+
+  & .MoreAction {
+    margin-left: auto;
+    border-right: 0;
+  }
+
+  & .MoreActionMeasure {
+    position: absolute;
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+.UtilityActions {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  margin-left: auto;
+  flex-shrink: 0;
+
+  & > button:not(:first-child) {
+    border-left: 1px solid rgb(from var(--white) r g b / 16%);
+  }
+}
+
+.UtilityIconButton,
+.TextUtilityButton,
+.LocationButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: var(--spacing-6) var(--spacing-8);
+  background: transparent;
+  color: var(--white);
+  white-space: nowrap;
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: rgb(from var(--white) r g b / 10%);
+    }
+  }
+}
+
+.UtilityIconButton {
+  width: var(--spacing-32);
+  padding: var(--spacing-6) var(--spacing-8);
+
+  & img {
+    width: var(--spacing-12);
+    height: var(--spacing-12);
+  }
+}
+
+.TextUtilityButton {
+  min-width: 5.7rem;
+}
+
+.LocationButton {
+  gap: var(--spacing-4);
+
+  & img {
+    width: var(--spacing-12);
+    height: var(--spacing-12);
+  }
+}
+
+@media (max-width: 1200px) {
+  .UtilityActions > button:nth-of-type(5),
+  .UtilityActions > button:nth-of-type(6),
+  .UtilityActions > button:nth-of-type(7) {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .TextUtilityButton,
+  .LocationButton {
+    display: none;
+  }
+}

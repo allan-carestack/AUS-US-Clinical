@@ -356,6 +356,15 @@ export function CdtIcon(props: IconProps) {
   );
 }
 
+export function OpenPanelIcon(props: IconProps) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg" {...defaults} {...props}>
+      <path d="M5.14648 2.64648C5.34175 2.45122 5.65825 2.45122 5.85352 2.64648L7.85352 4.64648C8.04878 4.84175 8.04878 5.15825 7.85352 5.35352L5.85352 7.35352C5.65825 7.54878 5.34175 7.54878 5.14648 7.35352C4.95122 7.15825 4.95122 6.84175 5.14648 6.64648L6.79297 5L5.14648 3.35352C4.95122 3.15825 4.95122 2.84175 5.14648 2.64648Z" fill="currentColor" />
+      <path fillRule="evenodd" clipRule="evenodd" d="M8 0C9.10457 0 10 0.895431 10 2V8C10 9.03565 9.21278 9.887 8.2041 9.98926L8 10H2L1.7959 9.98926C0.854346 9.8938 0.1062 9.14565 0.0107422 8.2041L0 8V2C0 0.895431 0.895431 1.61064e-08 2 0H8ZM4 9H8C8.55228 9 9 8.55228 9 8V2C9 1.44772 8.55228 1 8 1H4V9ZM2 1C1.44772 1 1 1.44772 1 2V8C1 8.55228 1.44772 9 2 9H3V1H2Z" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function BurstModeIcon(props: IconProps) {
   return (
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" {...defaults} {...props}>

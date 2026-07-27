@@ -8,6 +8,8 @@ import {
   type ArmedTooth, type ToothState, type ToothMark, type ToothMeta, type SurfaceName, type Dentition,
 } from './components/Odontogram';
 import { CarePanel, type ChipDef, type CarePanelSelectionContext, type DentalCode } from './components/CarePanel';
+import { GlobalHeader } from './components/GlobalHeader';
+import { PatientHeader } from './components/PatientHeader';
 import {
   PROCEDURE_CHIPS, CONDITION_CHIPS, PLAN_AND_EXPLOSION_CHIPS, AREA_PRESETS, AREA_PRESET_TEETH,
   type ToothRequirement,
@@ -522,22 +524,6 @@ function TxPlanHeader({
   );
 }
 
-// ── Page shell placeholders ──
-// These mirror sections of the real product page that aren't built yet —
-// each is labeled with its intended size so it's obvious what still needs
-// implementing versus what's a functioning part of this prototype.
-function PlaceholderBar({ height, label }: { height: string; label: string }) {
-  return (
-    <div style={{
-      height, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      color: 'var(--grey-40)', fontSize: 'var(--text-sm-size)',
-      borderBottom: '1px solid var(--grey-20)', background: 'var(--grey-5)',
-    }}>
-      {label}
-    </div>
-  );
-}
-
 function PendingRecallsBanner() {
   const divider = <span style={{ color: 'var(--grey-20)' }} aria-hidden="true">|</span>;
   return (
@@ -562,7 +548,13 @@ function PendingRecallsBanner() {
       <Button variant="link">Book</Button>
       {divider}
       <Button variant="link">Add to Clipboard</Button>
-      <Button variant="ghost" iconOnly leftIcon={<AngleUpIcon className={txStyles.ChevronDown} />} aria-label="More recall options" />
+      <Button
+        variant="ghost"
+        iconOnly
+        leftIcon={<AngleUpIcon className={txStyles.ChevronDown} />}
+        aria-label="More recall options"
+        style={{ width: '1.8rem', height: '1.8rem' }}
+      />
     </div>
   );
 }
@@ -640,6 +632,8 @@ function InlineEditCell({ field, validate, onCommit, onCancel, onEscape }: {
 export default function App() {
   const [activeTab, setActiveTab] = useState('chart-details');
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [balanceHidden, setBalanceHidden] = useState(false);
+  const [showPendingRecalls, setShowPendingRecalls] = useState(false);
   const [txTabs, setTxTabs] = useState<TxPlanTab[]>(INITIAL_TX_TABS);
   const planCounterRef = useRef(0);
   const planTabIds = useMemo(() => new Set(txTabs.map(t => t.id)), [txTabs]);
@@ -1546,8 +1540,32 @@ export default function App() {
 
   return (
     <div className="root" style={{ fontFamily: 'inherit', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-      {/* Patient details header — not built yet */}
-      <PlaceholderBar height="4.4rem" label="Patient details header. 44px height" />
+      <GlobalHeader />
+      <PatientHeader
+        avatarSrc="https://i.pravatar.cc/150?img=12"
+        name="Mr. John Doe"
+        patientId="11091"
+        dob="09/12/1990"
+        age="29y 1m"
+        gender="Male"
+        relationshipTag={{ label: 'RP', color: 'green', variant: 'fill' }}
+        statusTag={{ label: 'Active', color: 'green', variant: 'semi' }}
+        chartFlags={[
+          { label: 'CDB', color: 'orange' },
+          { label: 'DV', color: 'red' },
+          { label: 'CDBS', color: 'orange' },
+          { label: 'PV', color: 'orange' },
+          { label: 'RO', color: 'red' },
+        ]}
+        linkedAccountMembers={{ count: 4, label: 'Linked Acct Members' }}
+        referralSources={{ count: 2, label: 'Ref. Sources' }}
+        insuranceDescription="Medibank Private Limited, Medicare Insurance"
+        totalBalance="$0.00"
+        unappliedCredits="$50.00"
+        balanceHidden={balanceHidden}
+        onToggleBalanceVisibility={() => setBalanceHidden(v => !v)}
+        onNameClick={() => setShowPendingRecalls(v => !v)}
+      />
 
       {/* Top band: left column = Chart tabs + odontogram; right = Care Panel
           full-height beside both (tabs no longer span over the care panel).
@@ -1598,9 +1616,11 @@ export default function App() {
                     <TabsTab value="planner">Treatment Planner</TabsTab>
                   </TabsList>
                 </Tabs>
-                <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                  <PendingRecallsBanner />
-                </div>
+                {showPendingRecalls && (
+                  <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                    <PendingRecallsBanner />
+                  </div>
+                )}
               </div>
               <div style={{ position: 'relative', flexShrink: 0 }}>
                 <Odontogram

@@ -25,6 +25,7 @@ export * from './FilterChip';
 export * from './NavBar';
 export * from './NumberField';
 export * from './Odontogram';
+export * from './PatientHeader';
 export * from './Popover';
 export * from './Radio';
 export * from './ScrollArea';
