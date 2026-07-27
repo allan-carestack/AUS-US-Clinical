@@ -1,0 +1,37 @@
+.Body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-12);
+  padding: var(--spacing-12);
+  padding-bottom: 0;
+}
+
+.Row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-8);
+}
+
+.RowStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+}
+
+.Control {
+  flex: 1;
+  min-width: 0;
+}
+
+.SelectTrigger {
+  width: 100%;
+}
+
+.CheckboxOffset {
+  /* Align under the control column (md label text 12rem + colon gap 1.2rem + row gap 0.8rem). */
+  padding-left: calc(12rem + var(--spacing-12) + var(--spacing-8));
+}
+
+.Footer {
+  padding: var(--spacing-12) var(--spacing-12) var(--spacing-8) var(--spacing-12);
+}

@@ -27,6 +27,7 @@ import { Tooltip } from '../Tooltip';
 import type { PlanPhase, PlanProcedure, TreatmentPlanMock } from './mockData';
 import { PhaseDuration, type DurationValue } from './PhaseDuration';
 import { EditableName } from './EditableName';
+import { EditPlanDetailsDialog } from './EditPlanDetailsDialog';
 import { AREA_PRESETS } from '../CarePanel/data';
 import { Select, SelectTrigger, SelectContent, SelectItem } from '../Select';
 import appStyles from '../../styles/app.module.css';
@@ -141,6 +142,7 @@ function PlanHeader({
   onShowInsBreakdownChange: (checked: boolean) => void;
 }) {
   const [renaming, setRenaming] = useState(false);
+  const [editDetailsOpen, setEditDetailsOpen] = useState(false);
 
   return (
     <header className={styles.Header}>
@@ -157,15 +159,16 @@ function PlanHeader({
               editing={renaming}
               onEditingChange={setRenaming}
             />
-            <Button
-              variant="ghost"
-              iconOnly
-              leftIcon={<EditIcon />}
-              aria-label={`Rename ${planLabel}`}
-              className={styles.EditButton}
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => setRenaming(true)}
-            />
+            <Tooltip content="Edit Tx plan details" side="right" delay={400} disabled={editDetailsOpen}>
+              <Button
+                variant="ghost"
+                iconOnly
+                leftIcon={<EditIcon />}
+                aria-label="Edit Tx plan details"
+                className={styles.EditButton}
+                onClick={() => setEditDetailsOpen(true)}
+              />
+            </Tooltip>
             <Tag variant="fill" color="grey">{status}</Tag>
           </div>
         </div>
@@ -194,6 +197,13 @@ function PlanHeader({
           Show Ins. breakdown
         </Checkbox>
       </div>
+
+      <EditPlanDetailsDialog
+        open={editDetailsOpen}
+        onOpenChange={setEditDetailsOpen}
+        planName={planLabel}
+        onSave={onPlanLabelChange}
+      />
     </header>
   );
 }
@@ -514,24 +524,19 @@ function PhaseSection({
             }}
           />
           <div
+            className={styles.PhaseDetails}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
           >
-            <EditableName
-              value={phaseName}
-              onCommit={onPhaseNameChange}
-              maxLength={NAME_MAX_LENGTH}
-              className={styles.PhaseName}
-              aria-label="Phase name"
-              editing={renaming}
-              onEditingChange={onRenamingChange}
-            />
-          </div>
-          <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
             <PhaseDuration
+              name={phaseName}
+              onNameChange={onPhaseNameChange}
               value={duration}
               onChange={onDurationChange}
-              aria-label={`${phaseName} duration`}
+              maxLength={NAME_MAX_LENGTH}
+              open={renaming}
+              onOpenChange={onRenamingChange}
+              aria-label={`${phaseName} details`}
             />
           </div>
           {expanded && isTarget && (

@@ -1,4 +1,4 @@
-# Existing filter chip tooltip
+# Edit plan details modal
 
 Status legend: [ ] pending · [~] in progress · [x] done · [?] needs decision
 
@@ -6,14 +6,15 @@ Status legend: [ ] pending · [~] in progress · [x] done · [?] needs decision
 
 ## Implementation plan
 
-- [x] Write checkable plan items to tasks/todo.md
-- [x] Wrap Existing FilterChip with Tooltip + UX copy in TxLogFilters
-- [x] Verify hover shows tooltip; mark todo complete + review notes
+- [x] Build EditPlanDetailsDialog from Figma using Dialog/Field/Select/Checkbox/Button
+- [x] Open modal from plan-name edit button (replace inline rename)
+- [x] Verify open/close, plan name save, required fields
 
 ---
 
 ## Review
 
-- Existing visible-row chip wrapped with `Tooltip` in `TxLogFilters`.
-- Copy: "Includes existing treatments and conditions." (sentence case helper text per UXcopy.md).
-- Confirmed in DOM: Pills-row Existing button has `data-base-ui-tooltip-trigger` (Base UI Tooltip wired). Measure row and More-filters menu left unchanged.
+- Added `EditPlanDetailsDialog` matching Figma node 2748:144289: header, Plan Name, Presented Location, Diagnosed Conditions, Coordinator + lock checkbox, disabled Plan Alternative to, Cancel/Create.
+- Reuses Dialog, Field, Label, Select, Checkbox, Button.
+- Plan header pencil opens the modal; Create saves plan name via `onPlanLabelChange`.
+- Verified in browser: modal opens over plan view with correct location label.

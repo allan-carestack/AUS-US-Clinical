@@ -7,6 +7,7 @@ interface LabelProps {
   required?: boolean;
   children: React.ReactNode;
   htmlFor?: string;
+  id?: string;
   className?: string;
 }
 
@@ -18,9 +19,10 @@ const sizeClass: Record<LabelSize, string> = {
   xl: styles.xl,
 };
 
-export function Label({ size = 'md', required, children, htmlFor, className }: LabelProps) {
+export function Label({ size = 'md', required, children, htmlFor, id, className }: LabelProps) {
   return (
     <label
+      id={id}
       htmlFor={htmlFor}
       className={[styles.Label, sizeClass[size], className].filter(Boolean).join(' ')}
     >
