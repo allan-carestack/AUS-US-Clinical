@@ -390,18 +390,7 @@ function ProcedureRow({
 
   return (
     <div className={[styles.Row, pending ? styles.PendingRow : ''].filter(Boolean).join(' ')} role="row">
-      <div className={styles.TdCenter} role="cell">
-        {pending ? (
-          <button
-            type="button"
-            className={appStyles.DeleteButton}
-            onClick={() => onDeletePending(procedure.id)}
-            aria-label="Remove pending row"
-          >
-            <CloseIcon />
-          </button>
-        ) : null}
-      </div>
+      <div className={styles.TdCenter} role="cell" />
       <div className={styles.TdCenter} role="cell">
         <Checkbox
           checked={selected}
@@ -434,7 +423,19 @@ function ProcedureRow({
         <Button variant="ghost" iconOnly leftIcon={<NotesIcon />} aria-label={`Notes for ${procedure.code}`} />
       </div>
       <div className={styles.Td} role="cell">
-        <Tag variant="fill" color={STATUS_COLOR[procedure.status]}>{procedure.status}</Tag>
+        <div className={styles.StatusCell}>
+          <Tag variant="fill" color={STATUS_COLOR[procedure.status]}>{procedure.status}</Tag>
+          {pending ? (
+            <Button
+              type="button"
+              variant="secondary-destructive-ghost"
+              iconOnly
+              leftIcon={<CloseIcon />}
+              onClick={() => onDeletePending(procedure.id)}
+              aria-label="Remove pending row"
+            />
+          ) : null}
+        </div>
       </div>
     </div>
   );

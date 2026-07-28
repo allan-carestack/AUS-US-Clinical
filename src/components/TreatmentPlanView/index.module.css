@@ -176,17 +176,17 @@
   --col-disc: 7.2rem;
   --col-pat: 9.6rem;
   --col-notes: 3.8rem;
-  --col-status: 9.6rem;
+  --col-status: 12.8rem;
   --grid-cols: var(--col-drag) var(--col-check) var(--col-date) var(--col-code)
     var(--col-th) var(--col-surface) var(--col-provider) var(--col-loc)
     var(--col-fee) var(--col-disc) var(--col-pat) var(--col-notes) var(--col-status);
-  min-width: 120rem;
+  min-width: 123.2rem;
 }
 
 .Compact .Grid {
   --col-code: 17rem;
   --col-th: 7.2rem;
-  min-width: 102rem;
+  min-width: 105.2rem;
 }
 
 .HeaderRow {
@@ -348,6 +348,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.StatusCell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  min-width: 0;
+  width: 100%;
 }
 
 .Td {
