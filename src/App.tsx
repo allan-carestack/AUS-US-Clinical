@@ -48,6 +48,9 @@ import txStyles from './styles/txHeader.module.css';
 import appStyles from './styles/app.module.css';
 
 type TxPlanTab = { id: string; label: string };
+type WorkspaceTab = 'chart' | 'planner';
+
+const PENDING_ROW_ANIMATION_MS = 240;
 
 const INITIAL_TX_TABS: TxPlanTab[] = [
   { id: 'ungrouped', label: 'Ungrouped Tx' },
@@ -631,6 +634,7 @@ function InlineEditCell({ field, validate, onCommit, onCancel, onEscape }: {
 }
 
 export default function App() {
+  const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>('chart');
   const [activeTab, setActiveTab] = useState('chart-details');
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [balanceHidden, setBalanceHidden] = useState(false);
@@ -654,6 +658,7 @@ export default function App() {
   const [pendingSelection, setPendingSelection] = useState<PendingSelection | null>(null);
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [pendingRowIds, setPendingRowIds] = useState<Set<string>>(new Set());
+  const [deletingRowIds, setDeletingRowIds] = useState<Set<string>>(new Set());
   // Pending rows created by re-coding an existing row (vs. adding a brand-new
   // one). These get no delete (✕) affordance — there's an original row to keep.
   const [changingRowIds, setChangingRowIds] = useState<Set<string>>(new Set());
@@ -1368,9 +1373,22 @@ export default function App() {
   };
 
   const handleDeletePendingRow = (rowId: string) => {
-    setChartRows(prev => prev.filter(r => r.id !== rowId));
-    clearPendingRow(rowId);
+    if (deletingRowIds.has(rowId)) return;
     if (editingCell?.rowId === rowId) setEditingCell(null);
+    setDeletingRowIds(prev => new Set(prev).add(rowId));
+
+    const removeRow = () => {
+      setChartRows(prev => prev.filter(r => r.id !== rowId));
+      clearPendingRow(rowId);
+      setDeletingRowIds(prev => {
+        const next = new Set(prev);
+        next.delete(rowId);
+        return next;
+      });
+    };
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.setTimeout(removeRow, reduceMotion ? 0 : PENDING_ROW_ANIMATION_MS);
   };
 
   const handleDeletePendingProcedure = (procedureId: string) => {
@@ -1522,22 +1540,78 @@ export default function App() {
       { key: 'patPayable',  header: 'Pat. Payable',    width: 100 },
     ] as Column<ChartEntry>[] : []),
     { key: 'status',      header: 'Status',          width: 140, render: v => v },
-    { key: 'rowAction',   header: '',                width: 32,  render: (_v, row) => {
+    { key: 'rowAction',   header: '',                width: 32,  render: v => v },
+    { key: 'userName',    header: 'User Name',       width: 100, render: (v, row) => {
       // Delete (✕) is only for newly-added pending rows — re-coding an
-      // existing row has an original to preserve, so no delete affordance.
-      if (pendingRowIds.has(row.id) && !changingRowIds.has(row.id)) {
-        return (
-          <div className={appStyles.DeleteCell}>
-            <button type="button" className={appStyles.DeleteButton} onClick={() => handleDeletePendingRow(row.id)} aria-label="Remove pending row">
-              <CloseIcon />
-            </button>
-          </div>
-        );
-      }
-      return null;
+      // existing row has an original to preserve, so no delete affordance. It
+      // lives inside User Name because pending rows must not add a new column.
+      const canDelete = pendingRowIds.has(row.id) && !changingRowIds.has(row.id);
+      return (
+        <div className={appStyles.UserNameCell}>
+          <span className={appStyles.UserNameValue}>{v}</span>
+          {canDelete && (
+            <Button
+              type="button"
+              variant="secondary-destructive-ghost"
+              iconOnly
+              leftIcon={<CloseIcon />}
+              onClick={() => handleDeletePendingRow(row.id)}
+              aria-label="Remove pending row"
+            />
+          )}
+        </div>
+      );
     }},
-    { key: 'userName',    header: 'User Name',       width: 120 },
-  ], [editingRowId, pendingRowIds, changingRowIds, editingCell, successRowIds, dentalCodes, dentition, showFeeEstimates]);
+  ], [editingRowId, pendingRowIds, deletingRowIds, changingRowIds, editingCell, successRowIds, dentalCodes, dentition, showFeeEstimates]);
+
+  const handleWorkspaceTabChange = (value: string) => {
+    if (value !== 'chart' && value !== 'planner') return;
+    if (value === 'planner') setActiveTab('all-on-4');
+    setWorkspaceTab(value);
+  };
+
+  const workspaceTabs = (
+    <Tabs
+      variant="primary"
+      value={workspaceTab}
+      onValueChange={handleWorkspaceTabChange}
+      style={{ width: 'auto', flexShrink: 0 }}
+    >
+      <TabsList>
+        <TabsTab value="chart">Chart</TabsTab>
+        <TabsTab value="planner">Treatment Planner</TabsTab>
+      </TabsList>
+    </Tabs>
+  );
+
+  const renderActiveTreatmentPlanView = (compact = false) => activePlan && activePlanData ? (
+    <TreatmentPlanView
+      planId={activePlan.id}
+      plan={activePlanData}
+      planLabel={activePlan.label}
+      compact={compact}
+      onPlanLabelChange={(label) => {
+        setTxTabs((prev) =>
+          prev.map((tab) => (tab.id === activePlan.id ? { ...tab, label } : tab)),
+        );
+      }}
+      targetPhaseId={targetPhaseId}
+      onSelectTargetPhase={(phaseId) => {
+        setTargetPhaseByPlan((prev) => ({ ...prev, [activePlan.id]: phaseId }));
+      }}
+      pendingProcedureIds={pendingProcedureIds}
+      editingCell={
+        editingCell && pendingProcedureIds.has(editingCell.rowId) ? editingCell : null
+      }
+      onStartEditCell={(rowId, field) => setEditingCell({ rowId, field })}
+      onCommitCell={handlePlanCellEditCommit}
+      onCancelEditCell={() => setEditingCell(null)}
+      onDeletePendingProcedure={handleDeletePendingProcedure}
+      isValidTooth={isValidTooth}
+      isValidSurface={isValidSurface}
+      onSelectArea={finalizeAreaPlanSelection}
+    />
+  ) : null;
 
   return (
     <div className="root" style={{ fontFamily: 'inherit', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
@@ -1571,78 +1645,49 @@ export default function App() {
         onNameClick={() => setShowPendingRecalls(v => !v)}
       />
 
-      {/* Top band: left column = Chart tabs + odontogram; right = Care Panel
-          full-height beside both (tabs no longer span over the care panel).
-          Odontogram stays 300px; row height = tabs + odontogram. Collapsible
-          via the Tx Plan header chevron — stays mounted so state is preserved. */}
+      {/* One persistent shell owns the workspace tabs in both views. The primary
+          column widens as the CarePanel leaves and narrows as it returns, so
+          React never swaps one tab bar for another. */}
       <div
-        style={{
-          flexShrink: 0,
-          display: 'grid',
-          gridTemplateRows: headerCollapsed ? '0fr' : '1fr',
-          opacity: headerCollapsed ? 0 : 1,
-          transition: 'grid-template-rows 260ms cubic-bezier(0.23, 1, 0.32, 1), opacity 200ms cubic-bezier(0.23, 1, 0.32, 1)',
-        }}
+        className={[
+          appStyles.WorkspaceTopBand,
+          workspaceTab === 'planner' ? appStyles.isPlanner : '',
+          workspaceTab === 'chart' && headerCollapsed ? appStyles.isCollapsed : '',
+        ].filter(Boolean).join(' ')}
       >
-        <div style={{ overflow: 'hidden', minHeight: 0 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'stretch',
-              gap: 0,
-              boxSizing: 'border-box',
-            }}
-          >
-            <div
-              style={{
-                flex: 1,
-                minWidth: 0,
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  flexShrink: 0,
-                  gap: 'var(--spacing-8)',
-                  padding: 'var(--spacing-4) var(--spacing-8)',
-                  borderBottom: '1px solid var(--grey-20)',
-                  minWidth: 0,
-                }}
-              >
-                <Tabs variant="primary" defaultValue="chart" style={{ width: 'auto', flexShrink: 0 }}>
-                  <TabsList>
-                    <TabsTab value="chart">Chart</TabsTab>
-                    <TabsTab value="planner">Treatment Planner</TabsTab>
-                  </TabsList>
-                </Tabs>
-                {showPendingRecalls && (
-                  <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                    <PendingRecallsBanner />
-                  </div>
-                )}
+        <div className={appStyles.WorkspacePrimaryColumn}>
+          <div className={appStyles.WorkspaceTabBar}>
+            {workspaceTabs}
+            {workspaceTab === 'chart' && showPendingRecalls && (
+              <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                <PendingRecallsBanner />
               </div>
-              <div style={{ position: 'relative', flexShrink: 0 }}>
-                <Odontogram
-                  toothStates={toothStates}
-                  armedTeeth={armedTeeth}
-                  dentition={dentition}
-                  onDentitionChange={setDentition}
-                  onSurfaceClick={handleSurfaceClick}
-                  onWholeToothClick={handleWholeToothClick}
-                />
-              </div>
-            </div>
-            <div style={{ width: '47.2rem', flexShrink: 0, alignSelf: 'stretch' }}>
-              <CarePanel codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} />
-            </div>
+            )}
           </div>
+          {workspaceTab === 'chart' && (
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <Odontogram
+                toothStates={toothStates}
+                armedTeeth={armedTeeth}
+                dentition={dentition}
+                onDentitionChange={setDentition}
+                onSurfaceClick={handleSurfaceClick}
+                onWholeToothClick={handleWholeToothClick}
+              />
+            </div>
+          )}
+        </div>
+        <div
+          className={appStyles.CarePanelTransition}
+          aria-hidden={workspaceTab === 'planner'}
+          inert={workspaceTab === 'planner'}
+        >
+          <CarePanel codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} />
         </div>
       </div>
+
+      {workspaceTab === 'chart' ? (
+      <>
 
       <div style={{ flexShrink: 0 }}>
         <TxPlanHeader
@@ -1690,36 +1735,17 @@ export default function App() {
             selectable
             rowClassName={(row: ChartEntry) => {
               if (successRowIds.has(row.id)) return appStyles.SuccessRow;
-              if (pendingRowIds.has(row.id)) return appStyles.PendingRow;
+              if (pendingRowIds.has(row.id)) {
+                return [
+                  appStyles.PendingRow,
+                  deletingRowIds.has(row.id) ? appStyles.DeletingRow : '',
+                ].filter(Boolean).join(' ');
+              }
               return undefined;
             }}
           />
         ) : activePlan && activePlanData ? (
-          <TreatmentPlanView
-            planId={activePlan.id}
-            plan={activePlanData}
-            planLabel={activePlan.label}
-            onPlanLabelChange={(label) => {
-              setTxTabs((prev) =>
-                prev.map((tab) => (tab.id === activePlan.id ? { ...tab, label } : tab)),
-              );
-            }}
-            targetPhaseId={targetPhaseId}
-            onSelectTargetPhase={(phaseId) => {
-              setTargetPhaseByPlan((prev) => ({ ...prev, [activePlan.id]: phaseId }));
-            }}
-            pendingProcedureIds={pendingProcedureIds}
-            editingCell={
-              editingCell && pendingProcedureIds.has(editingCell.rowId) ? editingCell : null
-            }
-            onStartEditCell={(rowId, field) => setEditingCell({ rowId, field })}
-            onCommitCell={handlePlanCellEditCommit}
-            onCancelEditCell={() => setEditingCell(null)}
-            onDeletePendingProcedure={handleDeletePendingProcedure}
-            isValidTooth={isValidTooth}
-            isValidSurface={isValidSurface}
-            onSelectArea={finalizeAreaPlanSelection}
-          />
+          renderActiveTreatmentPlanView()
         ) : planTabIds.has(activeTab) ? (
           <div style={{ padding: 'var(--spacing-12)', flex: 1, minHeight: 0 }}>
             <EmptyState label="Treatment plan not found." />
@@ -1730,6 +1756,17 @@ export default function App() {
           </div>
         )}
       </div>
+      </>
+      ) : (
+        <div className={appStyles.PlannerWorkspace}>
+          <aside className={appStyles.PlannerSidebar} aria-label="Treatment planner sidebar">
+            <span>placeholder &lt;div&gt;</span>
+          </aside>
+          <section className={appStyles.PlannerPane} aria-label="All on 4 Tx treatment plan">
+            {renderActiveTreatmentPlanView(true) ?? <EmptyState label="All on 4 Tx treatment plan not found." />}
+          </section>
+        </div>
+      )}
       </main>
       </div>
     </div>

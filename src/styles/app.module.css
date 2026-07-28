@@ -2,6 +2,111 @@
   height: 2.4rem;
 }
 
+.WorkspaceTopBand {
+  --care-panel-width: 47.2rem;
+  position: relative;
+  flex: 0 0 34rem;
+  min-width: 0;
+  height: 34rem;
+  overflow: hidden;
+  background: var(--white);
+  opacity: 1;
+  transition:
+    height 400ms cubic-bezier(0.23, 1, 0.32, 1),
+    flex-basis 400ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 400ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.WorkspaceTopBand.isPlanner {
+  flex-basis: 4rem;
+  height: 4rem;
+}
+
+.WorkspaceTopBand.isCollapsed {
+  flex-basis: 0;
+  height: 0;
+  opacity: 0;
+}
+
+.WorkspacePrimaryColumn {
+  display: flex;
+  flex-direction: column;
+  width: calc(100% - var(--care-panel-width));
+  min-width: 0;
+  height: 100%;
+  transition: width 400ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.WorkspaceTopBand.isPlanner .WorkspacePrimaryColumn {
+  width: 100%;
+}
+
+.WorkspaceTopBand.isPlanner .WorkspaceTabBar {
+  box-shadow: inset 0 -1px 0 var(--grey-20);
+}
+
+.WorkspaceTabBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  flex: 0 0 4rem;
+  min-width: 0;
+  gap: var(--spacing-8);
+  box-sizing: border-box;
+  padding: var(--spacing-4) var(--spacing-8);
+  border-bottom: 1px solid var(--grey-20);
+  background: var(--white);
+}
+
+.CarePanelTransition {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: var(--care-panel-width);
+  overflow: hidden;
+  opacity: 1;
+  transform: translateX(0);
+  transform-origin: right center;
+  transition:
+    transform 400ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 400ms ease-out;
+  contain: paint;
+}
+
+.WorkspaceTopBand.isPlanner .CarePanelTransition {
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.PlannerWorkspace {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.PlannerSidebar {
+  composes: text-base weight-400 from global;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 25.8rem;
+  flex: 0 0 25.8rem;
+  border-right: 1px solid var(--grey-20);
+  background: var(--white);
+  color: var(--grey-40);
+}
+
+.PlannerPane {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .CodeChangePositioner {
   z-index: 50;
   width: 36rem;
@@ -24,8 +129,32 @@
   padding: var(--spacing-4);
 }
 
+.PendingRow {
+  animation: pendingRowEnter 240ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  will-change: transform, opacity;
+}
+
 .PendingRow td {
   background-color: var(--orange-10) !important;
+}
+
+.PendingRow.DeletingRow {
+  pointer-events: none;
+  animation: pendingRowExit 240ms cubic-bezier(0.77, 0, 0.175, 1) both;
+}
+
+@keyframes pendingRowEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pendingRowExit {
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
 }
 
 /* Area preset Select in Th/Area cells (chart + treatment plan).
@@ -110,30 +239,20 @@
   .InlineInput.shake { animation: none; }
 }
 
-/* ── Delete button for pending rows ── */
-.DeleteCell {
+/* Pending-row delete is a trailing action inside the existing User Name cell. */
+.UserNameCell {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  min-width: 0;
 }
 
-.DeleteButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border: none;
-  border-radius: var(--radius-4);
-  background: transparent;
-  color: var(--grey-60);
-  cursor: pointer;
-  transition: background 100ms ease, color 100ms ease;
-}
-
-.DeleteButton:hover {
-  background: var(--red-10);
-  color: var(--red-80);
+.UserNameValue {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ── Success flash animation ── */
@@ -147,7 +266,25 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .WorkspaceTopBand,
+  .WorkspacePrimaryColumn,
+  .CarePanelTransition {
+    transition: none;
+  }
+
+  .PendingRow,
+  .PendingRow.DeletingRow {
+    animation: none;
+  }
+
   .SuccessRow td {
     animation-duration: 0.2s !important;
+  }
+}
+
+@media (max-width: 80rem) {
+  .PlannerSidebar {
+    width: 20rem;
+    flex-basis: 20rem;
   }
 }

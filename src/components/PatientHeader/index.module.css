@@ -31,6 +31,7 @@
 .Avatar {
   width: var(--spacing-44) !important;
   height: var(--spacing-44) !important;
+  border-radius: 0;
   flex-shrink: 0;
 }
 

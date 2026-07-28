@@ -42,6 +42,7 @@ export interface TreatmentPlanViewProps {
   planId: string;
   plan: TreatmentPlanMock;
   planLabel: string;
+  compact?: boolean;
   onPlanLabelChange: (label: string) => void;
   targetPhaseId: string;
   onSelectTargetPhase: (phaseId: string) => void;
@@ -659,6 +660,7 @@ export function TreatmentPlanView({
   planId,
   plan,
   planLabel,
+  compact = false,
   onPlanLabelChange,
   targetPhaseId,
   onSelectTargetPhase,
@@ -733,7 +735,7 @@ export function TreatmentPlanView({
   };
 
   return (
-    <div className={styles.Root}>
+    <div className={[styles.Root, compact ? styles.Compact : ''].filter(Boolean).join(' ')}>
       <PlanHeader
         planLabel={planLabel}
         onPlanLabelChange={onPlanLabelChange}
