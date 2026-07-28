@@ -229,6 +229,9 @@ type ChartEntry = {
   status: React.ReactNode;
   rowAction: React.ReactNode;
   userName: string;
+  /** Source plan metadata for rows mirrored from a treatment-plan tab. */
+  planId?: string;
+  phaseId?: string;
 };
 
 const NOTE_TEXT = '011 | ADAS: Adarsh Ash | <Type of exam> Reviewed medical and dental history: - <Reviewed Medical History> . <Blood Pressure>  Stated chief complaint…';
@@ -653,6 +656,7 @@ export default function App() {
     seedTargetPhases(seedPlansById(INITIAL_TX_TABS.map((t) => t.id))),
   );
   const [pendingProcedureIds, setPendingProcedureIds] = useState<Set<string>>(new Set());
+  const [planHistoryProcedureIds, setPlanHistoryProcedureIds] = useState<string[]>([]);
   const [chartRows, setChartRows] = useState<ChartEntry[]>(INITIAL_CHART_ROWS);
   const [toothStates, setToothStates] = useState<Record<string, ToothState>>({});
   const [pendingSelection, setPendingSelection] = useState<PendingSelection | null>(null);
@@ -667,9 +671,85 @@ export default function App() {
   const codeChangeSnapshotsRef = useRef<Record<string, ChartEntry>>({});
   const [showFeeEstimates, setShowFeeEstimates] = useState(true);
   const [txLogFilter, setTxLogFilter] = useState('all');
+  const planHistoryRows = useMemo(() => {
+    const procedureById = new Map<string, {
+      planId: string;
+      planLabel: string;
+      phaseId: string;
+      phaseLabel: string;
+      procedure: PlanProcedure;
+    }>();
+    Object.entries(plansById).forEach(([planId, plan]) => {
+      const planLabel = txTabs.find(tab => tab.id === planId)?.label ?? planId;
+      plan.phases.forEach(phase => {
+        phase.procedures.forEach(procedure => {
+          procedureById.set(procedure.id, {
+            planId,
+            planLabel,
+            phaseId: phase.id,
+            phaseLabel: phase.name,
+            procedure,
+          });
+        });
+      });
+    });
+
+    return planHistoryProcedureIds.flatMap(id => {
+      const source = procedureById.get(id);
+      if (!source) return [];
+      const { planId, planLabel, phaseId, phaseLabel, procedure } = source;
+      const hasTarget = !!procedure.thArea && procedure.thArea !== '--';
+      const areaLabel = procedure.requires === 'area'
+        ? (AREA_PRESETS.find(area => area.id === procedure.thArea)?.label ?? procedure.thArea)
+        : '';
+      const surfaceLabel = procedure.surface && procedure.surface !== '--'
+        ? ` — ${procedure.surface}`
+        : '';
+      const descriptionText = !hasTarget
+        ? procedure.code
+        : procedure.requires === 'area'
+          ? `${areaLabel} — ${procedure.code}`
+          : `Tooth ${procedure.thArea}${surfaceLabel} — ${procedure.code}`;
+      const completed = procedure.status === 'Completed';
+      const historyRow: ChartEntry = {
+        id: procedure.id,
+        date: procedure.date,
+        descriptionText,
+        codeId: procedure.codeId,
+        requires: procedure.requires,
+        logKind: completed ? 'completed' : 'proposed',
+        thArea: procedure.thArea,
+        surface: procedure.surface,
+        provider: procedure.provider ? codeLink(procedure.provider) : '',
+        location: procedure.location ? codeLink(procedure.location) : '',
+        txPlan: planLabel,
+        phase: phaseLabel,
+        fees: procedure.fee,
+        discount: procedure.discount,
+        patPayable: procedure.patPayable,
+        status: (
+          <Tag variant="fill" color={completed ? 'green' : 'blue'}>
+            {procedure.status}
+          </Tag>
+        ),
+        rowAction: '',
+        userName: 'Mr. John Doe',
+        planId,
+        phaseId,
+      };
+      return [historyRow];
+    });
+  }, [planHistoryProcedureIds, plansById, txTabs]);
   const filteredChartRows = useMemo(
-    () => chartRows.filter(row => matchesTxLogFilter(row, txLogFilter)),
-    [chartRows, txLogFilter],
+    () => [...planHistoryRows, ...chartRows].filter(row => matchesTxLogFilter(row, txLogFilter)),
+    [chartRows, planHistoryRows, txLogFilter],
+  );
+  const isPendingChartEntry = (row: ChartEntry) => (
+    row.planId ? pendingProcedureIds.has(row.id) : pendingRowIds.has(row.id)
+  );
+  const findChartEntry = (rowId: string) => (
+    planHistoryRows.find(row => row.id === rowId)
+    ?? chartRows.find(row => row.id === rowId)
   );
   const [editingCell, setEditingCell] = useState<{ rowId: string; field: 'thArea' | 'surface' } | null>(null);
   const [successRowIds, setSuccessRowIds] = useState<Set<string>>(new Set());
@@ -838,6 +918,7 @@ export default function App() {
         ?? (plansById[activePlan.id] ? firstPhaseId(plansById[activePlan.id]) : 'phase-1');
       const procedure = chipToPlanProcedure(id, chip, meta, surface, false);
       prependPlanProcedure(activePlan.id, phaseId, procedure);
+      setPlanHistoryProcedureIds(prev => [id, ...prev]);
       if (meta) applyToothMark(chip, meta.id, surface);
       persistProcedure(chipCodeId(chip), meta?.id ?? '', surface ? SURFACE_LABEL[surface] : '', context.txType);
       return;
@@ -932,15 +1013,15 @@ export default function App() {
         // Area-scoped codes are driven solely by the Tooth/Area dropdown —
         // chart clicks on a pending area row are a deliberate no-op.
         if (findPlanProcedure(activePlan.id, oldest)?.requires === 'area') return;
-        finalizePendingPlanProcedure(oldest, meta, surface); return;
+        finalizePlanProcedure(activePlan.id, oldest, meta, surface); return;
       }
     }
-    if (pendingRowIds.size > 0) {
-      const oldest = [...chartRows].reverse().find(r => pendingRowIds.has(r.id));
-      if (oldest) {
-        if (oldest.requires === 'area') return;
-        finalizePendingRow(oldest.id, meta, surface); return;
-      }
+    const oldestChartEntry = [...planHistoryRows, ...chartRows]
+      .reverse()
+      .find(isPendingChartEntry);
+    if (oldestChartEntry) {
+      if (oldestChartEntry.requires === 'area') return;
+      finalizePendingRow(oldestChartEntry.id, meta, surface); return;
     }
     toggleToothSelection({ meta, surface });
   };
@@ -950,15 +1031,15 @@ export default function App() {
       const oldest = findOldestPendingPlanProcedureId();
       if (oldest) {
         if (findPlanProcedure(activePlan.id, oldest)?.requires === 'area') return;
-        finalizePendingPlanProcedure(oldest, meta); return;
+        finalizePlanProcedure(activePlan.id, oldest, meta); return;
       }
     }
-    if (pendingRowIds.size > 0) {
-      const oldest = [...chartRows].reverse().find(r => pendingRowIds.has(r.id));
-      if (oldest) {
-        if (oldest.requires === 'area') return;
-        finalizePendingRow(oldest.id, meta); return;
-      }
+    const oldestChartEntry = [...planHistoryRows, ...chartRows]
+      .reverse()
+      .find(isPendingChartEntry);
+    if (oldestChartEntry) {
+      if (oldestChartEntry.requires === 'area') return;
+      finalizePendingRow(oldestChartEntry.id, meta); return;
     }
     toggleToothSelection({ meta });
   };
@@ -986,10 +1067,9 @@ export default function App() {
         ?? (plansById[activePlan.id] ? firstPhaseId(plansById[activePlan.id]) : 'phase-1');
       const procedure = chipToPlanProcedure(id, chip, undefined, undefined, true);
       prependPlanProcedure(activePlan.id, phaseId, procedure);
+      setPlanHistoryProcedureIds(prev => [id, ...prev]);
       setPendingProcedureIds((prev) => new Set(prev).add(id));
-      if (chip.requires !== 'area') {
-        requestAnimationFrame(() => setEditingCell({ rowId: id, field: 'thArea' }));
-      }
+      // Match Chart: pending Th/Area stays on the warning until click.
       return;
     }
 
@@ -1046,11 +1126,10 @@ export default function App() {
       const pending = code.requires !== 'none';
       const procedure = chipToPlanProcedure(id, chip, undefined, undefined, pending);
       prependPlanProcedure(activePlan.id, phaseId, procedure);
+      setPlanHistoryProcedureIds(prev => [id, ...prev]);
       if (pending) {
         setPendingProcedureIds((prev) => new Set(prev).add(id));
-        if (code.requires !== 'area') {
-          requestAnimationFrame(() => setEditingCell({ rowId: id, field: 'thArea' }));
-        }
+        // Match Chart: pending Th/Area stays on the warning until click.
       } else {
         persistProcedure(code.code, '', '', context.txType);
       }
@@ -1088,8 +1167,12 @@ export default function App() {
 
   // Finalize a pending row when the user clicks a tooth/surface on the odontogram.
   const finalizePendingRow = (rowId: string, meta: ToothMeta, surface?: SurfaceName) => {
-    const row = chartRows.find(r => r.id === rowId);
+    const row = findChartEntry(rowId);
     if (!row) return;
+    if (row.planId) {
+      finalizePlanProcedure(row.planId, rowId, meta, surface);
+      return;
+    }
     const chip = resolveRowChip(row, dentalCodes);
     if (!chip) return;
     const useSurface = chip.requires === 'surface' ? surface : undefined;
@@ -1104,9 +1187,8 @@ export default function App() {
     persistProcedure(chipCodeId(chip), meta.id, useSurface ? SURFACE_LABEL[useSurface] : '', 'Proposed');
   };
 
-  const finalizePendingPlanProcedure = (procedureId: string, meta: ToothMeta, surface?: SurfaceName) => {
-    if (!activePlan) return;
-    const proc = findPlanProcedure(activePlan.id, procedureId);
+  const finalizePlanProcedure = (planId: string, procedureId: string, meta: ToothMeta, surface?: SurfaceName) => {
+    const proc = findPlanProcedure(planId, procedureId);
     if (!proc) return;
     const requires = proc.requires ?? 'tooth';
     const chip: ChipDef = {
@@ -1116,7 +1198,7 @@ export default function App() {
       requires,
     };
     const useSurface = requires === 'surface' ? surface : undefined;
-    updatePlanProcedure(activePlan.id, procedureId, {
+    updatePlanProcedure(planId, procedureId, {
       thArea: meta.id,
       surface: useSurface ? SURFACE_LABEL[useSurface] : '--',
     });
@@ -1135,8 +1217,12 @@ export default function App() {
   // Area-scoped codes are driven by the Tooth/Area dropdown, not an odontogram
   // click — this is the dropdown's onValueChange target.
   const finalizeAreaSelection = (rowId: string, areaId: string) => {
-    const row = chartRows.find(r => r.id === rowId);
+    const row = findChartEntry(rowId);
     if (!row) return;
+    if (row.planId) {
+      finalizePlanAreaSelection(row.planId, rowId, areaId);
+      return;
+    }
     const chip = resolveRowChip(row, dentalCodes);
     if (!chip) return;
     const areaLabel = AREA_PRESETS.find(a => a.id === areaId)?.label ?? areaId;
@@ -1151,9 +1237,8 @@ export default function App() {
     persistProcedure(chipCodeId(chip), areaId, '', 'Proposed');
   };
 
-  const finalizeAreaPlanSelection = (procedureId: string, areaId: string) => {
-    if (!activePlan) return;
-    const proc = findPlanProcedure(activePlan.id, procedureId);
+  const finalizePlanAreaSelection = (planId: string, procedureId: string, areaId: string) => {
+    const proc = findPlanProcedure(planId, procedureId);
     if (!proc) return;
     const chip: ChipDef = {
       id: proc.codeId ? `code-${proc.codeId}` : proc.id,
@@ -1161,7 +1246,7 @@ export default function App() {
       kind: 'procedure',
       requires: 'area',
     };
-    updatePlanProcedure(activePlan.id, procedureId, { thArea: areaId, surface: '--' });
+    updatePlanProcedure(planId, procedureId, { thArea: areaId, surface: '--' });
     applyAreaMark(chip, areaId);
     clearPendingProcedure(procedureId);
     setEditingCell(null);
@@ -1236,13 +1321,12 @@ export default function App() {
   };
 
   const handleCellEditCommit = (rowId: string, field: 'thArea' | 'surface', value: string) => {
-    if (activePlan && pendingProcedureIds.has(rowId)) {
-      handlePlanCellEditCommit(rowId, field, value);
+    const row = findChartEntry(rowId);
+    if (!row) return;
+    if (row.planId) {
+      handlePlanCellEditCommit(row.planId, rowId, field, value);
       return;
     }
-
-    const row = chartRows.find(r => r.id === rowId);
-    if (!row) return;
     const chip = resolveRowChip(row, dentalCodes);
     if (!chip) return;
 
@@ -1258,37 +1342,35 @@ export default function App() {
     } else {
       const err = isValidSurface(value);
       if (err) return;
-      const updatedRow = chartRows.find(r => r.id === rowId);
+      const updatedRow = findChartEntry(rowId);
       completeEditedRow(rowId, updatedRow?.thArea as string || '', value.toUpperCase());
     }
   };
 
-  const handlePlanCellEditCommit = (procedureId: string, field: 'thArea' | 'surface', value: string) => {
-    if (!activePlan) return;
-    const proc = findPlanProcedure(activePlan.id, procedureId);
+  const handlePlanCellEditCommit = (planId: string, procedureId: string, field: 'thArea' | 'surface', value: string) => {
+    const proc = findPlanProcedure(planId, procedureId);
     if (!proc) return;
     const requires = proc.requires ?? 'tooth';
 
     if (field === 'thArea') {
       const err = isValidTooth(value);
       if (err) return;
-      updatePlanProcedure(activePlan.id, procedureId, { thArea: value });
+      updatePlanProcedure(planId, procedureId, { thArea: value });
       if (requires === 'surface') {
         setEditingCell({ rowId: procedureId, field: 'surface' });
         return;
       }
-      completeEditedPlanProcedure(procedureId, value, '');
+      completeEditedPlanProcedure(planId, procedureId, value, '');
     } else {
       const err = isValidSurface(value);
       if (err) return;
-      const latest = findPlanProcedure(activePlan.id, procedureId);
-      completeEditedPlanProcedure(procedureId, latest?.thArea || '', value.toUpperCase());
+      const latest = findPlanProcedure(planId, procedureId);
+      completeEditedPlanProcedure(planId, procedureId, latest?.thArea || '', value.toUpperCase());
     }
   };
 
-  const completeEditedPlanProcedure = (procedureId: string, thArea: string, surfaceCode: string) => {
-    if (!activePlan) return;
-    const proc = findPlanProcedure(activePlan.id, procedureId);
+  const completeEditedPlanProcedure = (planId: string, procedureId: string, thArea: string, surfaceCode: string) => {
+    const proc = findPlanProcedure(planId, procedureId);
     if (!proc) return;
     const requires = proc.requires ?? 'tooth';
     const chip: ChipDef = {
@@ -1300,7 +1382,7 @@ export default function App() {
     const surfaceName = surfaceCode ? SURFACE_CODE_TO_NAME[surfaceCode.charAt(0)] : undefined;
     const surfaceLabel = surfaceCode || '--';
 
-    updatePlanProcedure(activePlan.id, procedureId, {
+    updatePlanProcedure(planId, procedureId, {
       thArea,
       surface: surfaceLabel,
     });
@@ -1312,7 +1394,7 @@ export default function App() {
     clearPendingProcedure(procedureId);
     persistProcedure(proc.codeId, thArea, surfaceCode || '', 'Proposed');
 
-    const plan = plansById[activePlan.id];
+    const plan = plansById[planId];
     const flat = plan?.phases.flatMap((p) => p.procedures) ?? [];
     const currentIdx = flat.findIndex((p) => p.id === procedureId);
     const nextBelow = flat.find((p, i) =>
@@ -1329,7 +1411,7 @@ export default function App() {
   };
 
   const completeEditedRow = (rowId: string, thArea: string, surfaceCode: string) => {
-    const row = chartRows.find(r => r.id === rowId);
+    const row = findChartEntry(rowId);
     if (!row) return;
     const chip = resolveRowChip(row, dentalCodes);
     if (!chip) return;
@@ -1374,12 +1456,19 @@ export default function App() {
 
   const handleDeletePendingRow = (rowId: string) => {
     if (deletingRowIds.has(rowId)) return;
+    const row = findChartEntry(rowId);
     if (editingCell?.rowId === rowId) setEditingCell(null);
     setDeletingRowIds(prev => new Set(prev).add(rowId));
 
     const removeRow = () => {
-      setChartRows(prev => prev.filter(r => r.id !== rowId));
-      clearPendingRow(rowId);
+      if (row?.planId) {
+        removePlanProcedure(row.planId, rowId);
+        clearPendingProcedure(rowId);
+        setPlanHistoryProcedureIds(prev => prev.filter(id => id !== rowId));
+      } else {
+        setChartRows(prev => prev.filter(r => r.id !== rowId));
+        clearPendingRow(rowId);
+      }
       setDeletingRowIds(prev => {
         const next = new Set(prev);
         next.delete(rowId);
@@ -1395,6 +1484,7 @@ export default function App() {
     if (!activePlan) return;
     removePlanProcedure(activePlan.id, procedureId);
     clearPendingProcedure(procedureId);
+    setPlanHistoryProcedureIds(prev => prev.filter(id => id !== procedureId));
   };
 
   const armedTeeth: ArmedTooth[] = pendingSelection
@@ -1417,7 +1507,7 @@ export default function App() {
           />
         );
       }
-      if (pendingRowIds.has(row.id)) {
+      if (isPendingChartEntry(row)) {
         return (
           <span style={{ ...truncateCell, color: 'var(--orange-100)', fontWeight: 500 }}>
             {row.descriptionText} — select {row.requires === 'surface' ? 'a surface' : row.requires === 'area' ? 'an area' : 'a tooth'}
@@ -1432,7 +1522,7 @@ export default function App() {
       return <DescLink text={text} withPreview={false} />;
     }},
     { key: 'thArea',      header: 'Th/Area',         width: 100,  render: (_v, row) => {
-      if (!pendingRowIds.has(row.id)) return (row.thArea as string) || '--';
+      if (!isPendingChartEntry(row)) return (row.thArea as string) || '--';
       if (!row.requires || row.requires === 'none') return (row.thArea as string) || '--';
       if (row.requires === 'area') {
         if (editingCell?.rowId === row.id && editingCell.field === 'thArea') {
@@ -1504,7 +1594,7 @@ export default function App() {
       );
     }},
     { key: 'surface',     header: 'Surface',         width: 90,  render: (_v, row) => {
-      if (!pendingRowIds.has(row.id)) return (row.surface as string) || '--';
+      if (!isPendingChartEntry(row)) return (row.surface as string) || '--';
       if (row.requires !== 'surface') return (row.surface as string) || '--';
       if (editingCell?.rowId === row.id && editingCell.field === 'surface') {
         return (
@@ -1545,7 +1635,7 @@ export default function App() {
       // Delete (✕) is only for newly-added pending rows — re-coding an
       // existing row has an original to preserve, so no delete affordance. It
       // lives inside User Name because pending rows must not add a new column.
-      const canDelete = pendingRowIds.has(row.id) && !changingRowIds.has(row.id);
+      const canDelete = isPendingChartEntry(row) && !changingRowIds.has(row.id);
       return (
         <div className={appStyles.UserNameCell}>
           <span className={appStyles.UserNameValue}>{v}</span>
@@ -1562,7 +1652,7 @@ export default function App() {
         </div>
       );
     }},
-  ], [editingRowId, pendingRowIds, deletingRowIds, changingRowIds, editingCell, successRowIds, dentalCodes, dentition, showFeeEstimates]);
+  ], [editingRowId, pendingRowIds, pendingProcedureIds, deletingRowIds, changingRowIds, editingCell, successRowIds, dentalCodes, dentition, showFeeEstimates]);
 
   const handleWorkspaceTabChange = (value: string) => {
     if (value !== 'chart' && value !== 'planner') return;
@@ -1604,12 +1694,16 @@ export default function App() {
         editingCell && pendingProcedureIds.has(editingCell.rowId) ? editingCell : null
       }
       onStartEditCell={(rowId, field) => setEditingCell({ rowId, field })}
-      onCommitCell={handlePlanCellEditCommit}
+      onCommitCell={(procedureId, field, value) =>
+        handlePlanCellEditCommit(activePlan.id, procedureId, field, value)
+      }
       onCancelEditCell={() => setEditingCell(null)}
       onDeletePendingProcedure={handleDeletePendingProcedure}
       isValidTooth={isValidTooth}
       isValidSurface={isValidSurface}
-      onSelectArea={finalizeAreaPlanSelection}
+      onSelectArea={(procedureId, areaId) =>
+        finalizePlanAreaSelection(activePlan.id, procedureId, areaId)
+      }
     />
   ) : null;
 
@@ -1735,7 +1829,7 @@ export default function App() {
             selectable
             rowClassName={(row: ChartEntry) => {
               if (successRowIds.has(row.id)) return appStyles.SuccessRow;
-              if (pendingRowIds.has(row.id)) {
+              if (isPendingChartEntry(row)) {
                 return [
                   appStyles.PendingRow,
                   deletingRowIds.has(row.id) ? appStyles.DeletingRow : '',
