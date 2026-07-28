@@ -183,6 +183,12 @@
   min-width: 120rem;
 }
 
+.Compact .Grid {
+  --col-code: 17rem;
+  --col-th: 7.2rem;
+  min-width: 102rem;
+}
+
 .HeaderRow {
   display: grid;
   grid-template-columns: var(--grid-cols);
