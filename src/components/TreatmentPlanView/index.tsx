@@ -48,9 +48,15 @@ export interface TreatmentPlanViewProps {
   onSelectTargetPhase: (phaseId: string) => void;
   pendingProcedureIds: Set<string>;
   editingCell: PlanEditingCell | null;
-  onStartEditCell: (rowId: string, field: 'thArea' | 'surface') => void;
+  /** anchorEl is passed for the tooth/surface cells (not the area Select) —
+      its presence tells the caller whether to open the Tooth and Surface
+      Selector popover. */
+  onStartEditCell: (rowId: string, field: 'thArea' | 'surface', anchorEl?: HTMLElement) => void;
   onCommitCell: (rowId: string, field: 'thArea' | 'surface', value: string) => void;
   onCancelEditCell: () => void;
+  /** Live-writes a tooth/surface draft as the user types — the same field
+      the Tooth and Surface Selector popover reads and writes. */
+  onDraftChange: (procedureId: string, field: 'thArea' | 'surface', value: string) => void;
   onDeletePendingProcedure: (id: string) => void;
   isValidTooth: (value: string) => string | null;
   isValidSurface: (value: string) => string | null;
@@ -65,16 +71,21 @@ const STATUS_COLOR = {
 
 function PlanInlineEditCell({
   field,
+  value,
+  onChange,
   validate,
   onCommit,
   onCancel,
 }: {
   field: 'thArea' | 'surface';
+  /** Controlled — the same draft value the Tooth and Surface Selector
+      popover shows, so either UI stays in sync with the other. */
+  value: string;
+  onChange: (v: string) => void;
   validate: (v: string) => string | null;
   onCommit: (value: string) => void;
   onCancel: () => void;
 }) {
-  const [value, setValue] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [shake, setShake] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -108,14 +119,19 @@ function PlanInlineEditCell({
           value={value}
           placeholder={field === 'thArea' ? 'e.g. 11' : 'e.g. MOD'}
           onChange={(e) => {
-            setValue(e.target.value);
+            onChange(field === 'surface' ? e.target.value.toUpperCase() : e.target.value);
             setError(null);
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') commit();
             if (e.key === 'Escape') onCancel();
           }}
-          onBlur={commit}
+          onBlur={(e) => {
+            // Focus moving into the Tooth and Surface Selector popover isn't
+            // "clicking away" — the popover is still editing this same cell.
+            if (e.relatedTarget instanceof Element && e.relatedTarget.closest('[data-tooth-selector-popup]')) return;
+            if (!value.trim()) onCancel();
+          }}
           onAnimationEnd={() => setShake(false)}
         />
       </Tooltip>
@@ -242,6 +258,7 @@ function ProcedureRow({
   onStartEditCell,
   onCommitCell,
   onCancelEditCell,
+  onDraftChange,
   onDeletePending,
   isValidTooth,
   isValidSurface,
@@ -252,9 +269,10 @@ function ProcedureRow({
   onToggle: (id: string, checked: boolean) => void;
   pending: boolean;
   editingCell: PlanEditingCell | null;
-  onStartEditCell: (rowId: string, field: 'thArea' | 'surface') => void;
+  onStartEditCell: (rowId: string, field: 'thArea' | 'surface', anchorEl?: HTMLElement) => void;
   onCommitCell: (rowId: string, field: 'thArea' | 'surface', value: string) => void;
   onCancelEditCell: () => void;
+  onDraftChange: (procedureId: string, field: 'thArea' | 'surface', value: string) => void;
   onDeletePending: (id: string) => void;
   isValidTooth: (value: string) => string | null;
   isValidSurface: (value: string) => string | null;
@@ -317,6 +335,8 @@ function ProcedureRow({
       return (
         <PlanInlineEditCell
           field="thArea"
+          value={procedure.thArea || ''}
+          onChange={(val) => onDraftChange(procedure.id, 'thArea', val)}
           validate={isValidTooth}
           onCommit={(val) => onCommitCell(procedure.id, 'thArea', val)}
           onCancel={onCancelEditCell}
@@ -328,11 +348,11 @@ function ProcedureRow({
       return (
         <span
           style={{ cursor: 'pointer' }}
-          onClick={() => onStartEditCell(procedure.id, 'thArea')}
+          onClick={(e) => onStartEditCell(procedure.id, 'thArea', e.currentTarget.closest<HTMLElement>('[data-row-id]') ?? e.currentTarget)}
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') onStartEditCell(procedure.id, 'thArea');
+            if (e.key === 'Enter' || e.key === ' ') onStartEditCell(procedure.id, 'thArea', e.currentTarget.closest<HTMLElement>('[data-row-id]') ?? e.currentTarget);
           }}
         >
           {procedure.thArea}
@@ -342,11 +362,11 @@ function ProcedureRow({
     return (
       <span
         className={appStyles.PendingCell}
-        onClick={() => onStartEditCell(procedure.id, 'thArea')}
+        onClick={(e) => onStartEditCell(procedure.id, 'thArea', e.currentTarget.closest<HTMLElement>('[data-row-id]') ?? e.currentTarget)}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') onStartEditCell(procedure.id, 'thArea');
+          if (e.key === 'Enter' || e.key === ' ') onStartEditCell(procedure.id, 'thArea', e.currentTarget.closest<HTMLElement>('[data-row-id]') ?? e.currentTarget);
         }}
       >
         <WarningIcon />
@@ -360,6 +380,8 @@ function ProcedureRow({
       return (
         <PlanInlineEditCell
           field="surface"
+          value={(() => { const s = procedure.surface || ''; return s && s !== '--' ? s : ''; })()}
+          onChange={(val) => onDraftChange(procedure.id, 'surface', val)}
           validate={isValidSurface}
           onCommit={(val) => onCommitCell(procedure.id, 'surface', val)}
           onCancel={onCancelEditCell}
@@ -370,11 +392,11 @@ function ProcedureRow({
       return (
         <span
           className={appStyles.PendingCell}
-          onClick={() => onStartEditCell(procedure.id, 'surface')}
+          onClick={(e) => onStartEditCell(procedure.id, 'surface', e.currentTarget.closest<HTMLElement>('[data-row-id]') ?? e.currentTarget)}
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') onStartEditCell(procedure.id, 'surface');
+            if (e.key === 'Enter' || e.key === ' ') onStartEditCell(procedure.id, 'surface', e.currentTarget.closest<HTMLElement>('[data-row-id]') ?? e.currentTarget);
           }}
         >
           <WarningIcon />
@@ -389,7 +411,7 @@ function ProcedureRow({
   })();
 
   return (
-    <div className={[styles.Row, pending ? styles.PendingRow : ''].filter(Boolean).join(' ')} role="row">
+    <div className={[styles.Row, pending ? styles.PendingRow : ''].filter(Boolean).join(' ')} role="row" data-row-id={procedure.id}>
       <div className={styles.TdCenter} role="cell" />
       <div className={styles.TdCenter} role="cell">
         <Checkbox
@@ -460,6 +482,7 @@ function PhaseSection({
   onStartEditCell,
   onCommitCell,
   onCancelEditCell,
+  onDraftChange,
   onDeletePendingProcedure,
   isValidTooth,
   isValidSurface,
@@ -480,9 +503,10 @@ function PhaseSection({
   onDurationChange: (value: DurationValue) => void;
   pendingProcedureIds: Set<string>;
   editingCell: PlanEditingCell | null;
-  onStartEditCell: (rowId: string, field: 'thArea' | 'surface') => void;
+  onStartEditCell: (rowId: string, field: 'thArea' | 'surface', anchorEl?: HTMLElement) => void;
   onCommitCell: (rowId: string, field: 'thArea' | 'surface', value: string) => void;
   onCancelEditCell: () => void;
+  onDraftChange: (procedureId: string, field: 'thArea' | 'surface', value: string) => void;
   onDeletePendingProcedure: (id: string) => void;
   isValidTooth: (value: string) => string | null;
   isValidSurface: (value: string) => string | null;
@@ -588,6 +612,7 @@ function PhaseSection({
               onStartEditCell={onStartEditCell}
               onCommitCell={onCommitCell}
               onCancelEditCell={onCancelEditCell}
+              onDraftChange={onDraftChange}
               onDeletePending={onDeletePendingProcedure}
               isValidTooth={isValidTooth}
               isValidSurface={isValidSurface}
@@ -670,6 +695,7 @@ export function TreatmentPlanView({
   onStartEditCell,
   onCommitCell,
   onCancelEditCell,
+  onDraftChange,
   onDeletePendingProcedure,
   isValidTooth,
   isValidSurface,
@@ -784,6 +810,7 @@ export function TreatmentPlanView({
                         onStartEditCell={onStartEditCell}
                         onCommitCell={onCommitCell}
                         onCancelEditCell={onCancelEditCell}
+                        onDraftChange={onDraftChange}
                         onDeletePendingProcedure={onDeletePendingProcedure}
                         isValidTooth={isValidTooth}
                         isValidSurface={isValidSurface}

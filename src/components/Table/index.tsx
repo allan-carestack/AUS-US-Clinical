@@ -322,6 +322,7 @@ function Table<T extends Record<string, unknown>>({
                 return (
                   <tr
                     key={rowId}
+                    data-row-id={rowId}
                     className={[styles.Tr, rowClassName?.(row)].filter(Boolean).join(' ')}
                     {...(isSelected && { 'data-selected': '' })}
                   >
