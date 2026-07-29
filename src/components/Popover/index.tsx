@@ -20,6 +20,8 @@ interface PopoverContentProps extends React.ComponentPropsWithoutRef<typeof Base
   align?: React.ComponentPropsWithoutRef<typeof BasePopover.Positioner>['align'];
   sideOffset?: number;
   showArrow?: boolean;
+  /** Position against a specific element instead of the `<PopoverTrigger>` — for popovers opened imperatively (e.g. from a list-item click) rather than from a rendered trigger. */
+  anchor?: React.ComponentPropsWithoutRef<typeof BasePopover.Positioner>['anchor'];
 }
 
 export function PopoverContent({
@@ -28,6 +30,7 @@ export function PopoverContent({
   align = 'center',
   sideOffset = 8,
   showArrow = false,
+  anchor,
   className,
   ...props
 }: PopoverContentProps) {
@@ -38,6 +41,7 @@ export function PopoverContent({
         align={align}
         sideOffset={sideOffset}
         arrowPadding={8}
+        anchor={anchor}
         className={styles.Positioner}
       >
         <BasePopover.Popup

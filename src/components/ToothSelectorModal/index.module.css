@@ -1,0 +1,211 @@
+/* ── Popup — override Popover's default width for this wider layout ── */
+.Popup {
+  width: 70rem !important;
+  max-width: 70rem !important;
+  overflow: hidden;
+}
+
+/* ── Body ── */
+.Body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-12);
+  padding: var(--spacing-4) var(--spacing-12) var(--spacing-12);
+  background-color: var(--white);
+}
+
+.Warning {
+  width: 100%;
+}
+
+.SelectorRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-12);
+  width: 100%;
+}
+
+/* ── Surface column (radio + diagram) ── */
+.SurfaceColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-12);
+  padding-top: var(--spacing-8);
+  flex-shrink: 0;
+}
+
+.ClassGroup {
+  flex-direction: row;
+  gap: var(--spacing-12);
+}
+
+/* ── Surface diagram ── */
+.Diagram {
+  position: relative;
+  width: 16rem;
+  height: 16rem;
+  flex-shrink: 0;
+}
+
+.DiagramRegion {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 1px solid var(--grey-20);
+  background-color: var(--white);
+  cursor: pointer;
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      background-color: var(--hover-default);
+    }
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.DiagramRegionSelected {
+  background-color: var(--interactive-20);
+}
+
+.DiagramLabel {
+  composes: text-base weight-400 from global;
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  padding: 0 var(--spacing-2);
+  background-color: var(--white);
+  border: 1px solid var(--grey-20);
+  border-radius: var(--radius-4);
+  color: var(--grey-100);
+  pointer-events: none;
+}
+
+.labelBuccal {
+  top: 0.8rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.labelLingual {
+  bottom: 0.8rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.labelMesial {
+  top: 50%;
+  left: 0.8rem;
+  transform: translateY(-50%);
+}
+
+.labelDistal {
+  top: 50%;
+  right: 0.8rem;
+  transform: translateY(-50%);
+}
+
+.labelOcclusal {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ── Tooth grid panel ── */
+.ToothPanel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 0;
+  min-width: 0;
+  border: 1px solid var(--grey-20);
+  border-radius: var(--radius-4);
+  overflow: hidden;
+}
+
+.GridTabList {
+  padding: 0 var(--spacing-12);
+  background-color: var(--white);
+}
+
+.GridPanel {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.Grid {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--grey-20);
+}
+
+.GridRow {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+}
+
+.GridRowPrimary {
+  background-color: var(--grey-10);
+}
+
+.ToothCell {
+  composes: text-base weight-400 from global;
+  box-sizing: border-box;
+  padding: var(--spacing-8) var(--spacing-2);
+  border: 1px solid var(--grey-20);
+  background-color: var(--white);
+  color: var(--grey-100);
+  text-align: center;
+  cursor: pointer;
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--hover-default);
+    }
+  }
+}
+
+.GridRowPrimary .ToothCell {
+  background-color: var(--grey-10);
+  color: var(--grey-60);
+}
+
+.ToothCellSelected {
+  background-color: var(--interactive-20) !important;
+  color: var(--grey-100) !important;
+}
+
+.ToothCellEmpty {
+  border: 1px solid var(--grey-20);
+  background-color: var(--grey-10);
+}
+
+/* ── Surface quicklinks ── */
+.Quicklinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-12);
+  padding: var(--spacing-8) var(--spacing-12);
+}
+
+.QuicklinkActive {
+  color: var(--interactive-100);
+  font-weight: var(--weight-700);
+}
+
+/* ── Supernumerary empty state ── */
+.EmptyState {
+  composes: text-base weight-400 from global;
+  padding: var(--spacing-24) var(--spacing-12);
+  text-align: center;
+  color: var(--grey-60);
+}
+

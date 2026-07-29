@@ -38,4 +38,5 @@ export * from './Tag';
 export * from './Toast';
 export * from './Toggle';
 export * from './Tooltip';
+export * from './ToothSelectorModal';
 export * from './TreatmentPlanView';

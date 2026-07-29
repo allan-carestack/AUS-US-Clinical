@@ -8,6 +8,7 @@ import {
   type ArmedTooth, type ToothState, type ToothMark, type ToothMeta, type SurfaceName, type Dentition,
 } from './components/Odontogram';
 import { CarePanel, type ChipDef, type CarePanelSelectionContext, type DentalCode } from './components/CarePanel';
+import { ToothSelectorPopover } from './components/ToothSelectorModal';
 import { ClinicalSidebar } from './components/ClinicalSidebar';
 import { GlobalHeader } from './components/GlobalHeader';
 import { PatientHeader } from './components/PatientHeader';
@@ -69,6 +70,11 @@ const INITIAL_TX_TABS: TxPlanTab[] = [
 type ToothSelection = { meta: ToothMeta; surface?: SurfaceName };
 
 type PendingSelection = { source: 'tooth'; selections: ToothSelection[] };
+
+// A chip/code awaiting tooth (+surface) input via the Tooth and Surface
+// Selector popover — rowId is the same id space `findChartEntry` searches
+// (chart rows and plan-mirrored rows alike; row.planId decides how to finalize).
+type ToothSelectorRequest = { chip: ChipDef; rowId: string; anchorEl: HTMLElement };
 
 const ALL_CHIPS: ChipDef[] = [
   ...PROCEDURE_CHIPS,
@@ -154,7 +160,7 @@ function chipToPlanProcedure(
 ): PlanProcedure {
   return {
     id,
-    date: new Date().toLocaleDateString('en-GB'),
+    date: new Date().toLocaleDateString('en-US'),
     code: chip.label,
     codeId: chipCodeId(chip),
     requires: chip.requires,
@@ -579,15 +585,18 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
-function InlineEditCell({ field, validate, onCommit, onCancel, onEscape }: {
+function InlineEditCell({ field, value, onChange, validate, onCommit, onCancel, onEscape }: {
   field: 'thArea' | 'surface';
+  /** Controlled — reads/writes the same draft value the Tooth and Surface
+      Selector popover shows, so either UI stays in sync with the other. */
+  value: string;
+  onChange: (v: string) => void;
   validate: (v: string) => string | null;
   onCommit: (value: string) => void;
   onCancel: () => void;
   /** When set, Escape calls this instead of onCancel (e.g. discard a code change). */
   onEscape?: () => void;
 }) {
-  const [value, setValue] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [shake, setShake] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -619,7 +628,7 @@ function InlineEditCell({ field, validate, onCommit, onCancel, onEscape }: {
           className={[appStyles.InlineInput, error ? appStyles.hasError : '', shake ? appStyles.shake : ''].filter(Boolean).join(' ')}
           value={value}
           placeholder={field === 'thArea' ? 'e.g. 11' : 'e.g. MOD'}
-          onChange={e => { setValue(e.target.value); setError(null); }}
+          onChange={e => { onChange(field === 'surface' ? e.target.value.toUpperCase() : e.target.value); setError(null); }}
           onKeyDown={e => {
             if (e.key === 'Enter') commit();
             if (e.key === 'Escape') {
@@ -628,7 +637,12 @@ function InlineEditCell({ field, validate, onCommit, onCancel, onEscape }: {
               (onEscape ?? onCancel)();
             }
           }}
-          onBlur={commit}
+          onBlur={e => {
+            // Focus moving into the Tooth and Surface Selector popover isn't
+            // "clicking away" — the popover is still editing this same cell.
+            if (e.relatedTarget instanceof Element && e.relatedTarget.closest('[data-tooth-selector-popup]')) return;
+            if (!value.trim()) onCancel();
+          }}
           onAnimationEnd={() => setShake(false)}
         />
       </Tooltip>
@@ -660,6 +674,9 @@ export default function App() {
   const [chartRows, setChartRows] = useState<ChartEntry[]>(INITIAL_CHART_ROWS);
   const [toothStates, setToothStates] = useState<Record<string, ToothState>>({});
   const [pendingSelection, setPendingSelection] = useState<PendingSelection | null>(null);
+  // Chip/code picks that require tooth (+surface) input open the Tooth and
+  // Surface Selector modal instead of arming the odontogram for a click.
+  const [toothSelectorRequest, setToothSelectorRequest] = useState<ToothSelectorRequest | null>(null);
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [pendingRowIds, setPendingRowIds] = useState<Set<string>>(new Set());
   const [deletingRowIds, setDeletingRowIds] = useState<Set<string>>(new Set());
@@ -740,10 +757,21 @@ export default function App() {
       return [historyRow];
     });
   }, [planHistoryProcedureIds, plansById, txTabs]);
-  const filteredChartRows = useMemo(
-    () => [...planHistoryRows, ...chartRows].filter(row => matchesTxLogFilter(row, txLogFilter)),
-    [chartRows, planHistoryRows, txLogFilter],
-  );
+  const filteredChartRows = useMemo(() => {
+    // Newly-added rows always carry an `entry-<n>` id off the same shared
+    // counter, whether they came from a plan (planHistoryRows) or the plain
+    // chart (chartRows) — sorting by that counter interleaves both sources
+    // in true insertion order so the newest addition is always at the top,
+    // regardless of which branch created it. Pre-existing/seed rows (no
+    // `entry-` id) sort after all of those, keeping their given relative order.
+    const insertionOrder = (row: ChartEntry): number => {
+      const match = /^entry-(\d+)$/.exec(row.id);
+      return match ? Number(match[1]) : -1;
+    };
+    return [...planHistoryRows, ...chartRows]
+      .sort((a, b) => insertionOrder(b) - insertionOrder(a))
+      .filter(row => matchesTxLogFilter(row, txLogFilter));
+  }, [chartRows, planHistoryRows, txLogFilter]);
   const isPendingChartEntry = (row: ChartEntry) => (
     row.planId ? pendingProcedureIds.has(row.id) : pendingRowIds.has(row.id)
   );
@@ -992,7 +1020,10 @@ export default function App() {
     setChangingRowIds(prev => new Set(prev).add(rowId));
     // Area cells stay on the warning icon until click — don't auto-open the Select.
     if (code.requires !== 'area') {
-      requestAnimationFrame(() => setEditingCell({ rowId, field: 'thArea' }));
+      requestAnimationFrame(() => {
+        setEditingCell({ rowId, field: 'thArea' });
+        openToothSelectorForRowId(rowId);
+      });
     }
   };
 
@@ -1207,6 +1238,78 @@ export default function App() {
     persistProcedure(proc.codeId, meta.id, useSurface ? SURFACE_LABEL[useSurface] : '', 'Proposed');
   };
 
+  // Opens the Tooth and Surface Selector popover above a pending row's
+  // Th/Area or Surface cell — triggered by clicking into that cell, same as
+  // the existing inline-edit entry point.
+  const openToothSelectorForRow = (row: ChartEntry, anchorEl: HTMLElement) => {
+    const chip = resolveRowChip(row, dentalCodes);
+    if (!chip) return;
+    setToothSelectorRequest({ chip, rowId: row.id, anchorEl });
+  };
+
+  // Same as openToothSelectorForRow, but looks the row and its <tr> up by id —
+  // for auto-focus flows (advancing to the next pending row, a code change
+  // resetting a row to pending) that don't have a click event to anchor from.
+  const openToothSelectorForRowId = (rowId: string) => {
+    const row = findChartEntry(rowId);
+    if (!row) return;
+    // Chart tab rows are <tr data-row-id>; Treatment Planner rows are <div data-row-id>.
+    const anchorEl = document.querySelector<HTMLElement>(`[data-row-id="${rowId}"]`);
+    if (!anchorEl) return;
+    openToothSelectorForRow(row, anchorEl);
+  };
+
+  // Live-writes a tooth/surface draft value as the user interacts with the
+  // Tooth and Surface Selector popover — the same row/procedure fields the
+  // inline cell editors read and write, so either UI reflects the other
+  // immediately. Mirrors the row.planId dispatch handleCellEditCommit uses.
+  const updateDraftField = (id: string, field: 'thArea' | 'surface', value: string) => {
+    const row = findChartEntry(id);
+    if (row?.planId) {
+      updatePlanProcedure(row.planId, id, { [field]: value } as Partial<PlanProcedure>);
+    } else {
+      setChartRows(prev => prev.map(r => (r.id === id ? { ...r, [field]: value } : r)));
+    }
+  };
+
+  // Finalizes the row/procedure the Tooth and Surface Selector is open for —
+  // the same finalize path as pressing Enter in the inline cell editors.
+  // `overrides` lets a just-clicked value be used immediately, without
+  // waiting for the setChartRows/updatePlanProcedure update it triggers to
+  // actually land (state updates are async, so re-reading the row here could
+  // still see the pre-click value).
+  const handleToothSelectorApply = (overrides?: { thArea?: string; surface?: string }) => {
+    if (!toothSelectorRequest) return;
+    const row = findChartEntry(toothSelectorRequest.rowId);
+    if (!row) return;
+    const toothId = overrides?.thArea ?? (row.thArea as string) ?? '';
+    const rawSurface = overrides?.surface ?? (row.surface as string) ?? '';
+    const surface = rawSurface && rawSurface !== '--' ? rawSurface : '';
+    if (row.planId) {
+      completeEditedPlanProcedure(row.planId, toothSelectorRequest.rowId, toothId, surface);
+    } else {
+      completeEditedRow(toothSelectorRequest.rowId, toothId, surface);
+    }
+  };
+
+  // Picking a tooth/surface in the popover (grid tap, diagram region,
+  // quicklink) is an atomic, complete action — apply immediately once it
+  // satisfies the requirement. Typing in the inline Th/Area or Surface cell
+  // does NOT go through this: it only writes the draft (see
+  // updateDraftField), and is accepted only on Enter (handleCellEditCommit) —
+  // otherwise every keystroke of a multi-character value like "MOD" would
+  // trigger an apply after the very first letter.
+  const tryAutoApplyToothSelector = (overrides: { thArea?: string; surface?: string }) => {
+    if (!toothSelectorRequest) return;
+    const row = findChartEntry(toothSelectorRequest.rowId);
+    if (!row) return;
+    const toothId = overrides.thArea ?? (row.thArea as string) ?? '';
+    const rawSurface = overrides.surface ?? (row.surface as string) ?? '';
+    const surface = rawSurface && rawSurface !== '--' ? rawSurface : '';
+    const complete = !!toothId && (toothSelectorRequest.chip.requires !== 'surface' || !!surface);
+    if (complete) handleToothSelectorApply(overrides);
+  };
+
   // Batch-mark every tooth in an area preset — reuses the same per-tooth
   // odontogram state `applyToothMark` already writes, just looped over the
   // preset's tooth list instead of a single tooth.
@@ -1393,6 +1496,7 @@ export default function App() {
 
     clearPendingProcedure(procedureId);
     persistProcedure(proc.codeId, thArea, surfaceCode || '', 'Proposed');
+    setToothSelectorRequest(prev => (prev && prev.rowId === procedureId ? null : prev));
 
     const plan = plansById[planId];
     const flat = plan?.phases.flatMap((p) => p.procedures) ?? [];
@@ -1404,7 +1508,10 @@ export default function App() {
       && p.requires !== 'area',
     );
     if (nextBelow) {
-      requestAnimationFrame(() => setEditingCell({ rowId: nextBelow.id, field: 'thArea' }));
+      requestAnimationFrame(() => {
+        setEditingCell({ rowId: nextBelow.id, field: 'thArea' });
+        openToothSelectorForRowId(nextBelow.id);
+      });
     } else {
       setEditingCell(null);
     }
@@ -1430,6 +1537,7 @@ export default function App() {
 
     clearPendingRow(rowId);
     persistProcedure(chipCodeId(chip), thArea, surfaceLabel, 'Proposed');
+    setToothSelectorRequest(prev => (prev && prev.rowId === rowId ? null : prev));
 
     setSuccessRowIds(prev => new Set(prev).add(rowId));
     setTimeout(() => {
@@ -1448,7 +1556,10 @@ export default function App() {
       && r.requires !== 'area',
     );
     if (nextBelow) {
-      requestAnimationFrame(() => setEditingCell({ rowId: nextBelow.id, field: 'thArea' }));
+      requestAnimationFrame(() => {
+        setEditingCell({ rowId: nextBelow.id, field: 'thArea' });
+        openToothSelectorForRowId(nextBelow.id);
+      });
     } else {
       setEditingCell(null);
     }
@@ -1569,6 +1680,8 @@ export default function App() {
         return (
           <InlineEditCell
             field="thArea"
+            value={(row.thArea as string) || ''}
+            onChange={val => updateDraftField(row.id, 'thArea', val)}
             validate={isValidTooth}
             onCommit={val => handleCellEditCommit(row.id, 'thArea', val)}
             onCancel={() => setEditingCell(null)}
@@ -1581,14 +1694,17 @@ export default function App() {
         return (
           <span
             style={{ cursor: 'pointer' }}
-            onClick={() => setEditingCell({ rowId: row.id, field: 'thArea' })}
+            onClick={(e) => { setEditingCell({ rowId: row.id, field: 'thArea' }); openToothSelectorForRow(row, e.currentTarget.closest('tr') ?? e.currentTarget); }}
           >
             {row.thArea}
           </span>
         );
       }
       return (
-        <span className={appStyles.PendingCell} onClick={() => setEditingCell({ rowId: row.id, field: 'thArea' })}>
+        <span
+          className={appStyles.PendingCell}
+          onClick={(e) => { setEditingCell({ rowId: row.id, field: 'thArea' }); openToothSelectorForRow(row, e.currentTarget.closest('tr') ?? e.currentTarget); }}
+        >
           <WarningIcon />
         </span>
       );
@@ -1600,6 +1716,8 @@ export default function App() {
         return (
           <InlineEditCell
             field="surface"
+            value={(() => { const s = row.surface as string; return s && s !== '--' ? s : ''; })()}
+            onChange={val => updateDraftField(row.id, 'surface', val)}
             validate={isValidSurface}
             onCommit={val => handleCellEditCommit(row.id, 'surface', val)}
             onCancel={() => setEditingCell(null)}
@@ -1609,13 +1727,19 @@ export default function App() {
       }
       if (row.thArea) {
         return (
-          <span className={appStyles.PendingCell} onClick={() => setEditingCell({ rowId: row.id, field: 'surface' })}>
+          <span
+            className={appStyles.PendingCell}
+            onClick={(e) => { setEditingCell({ rowId: row.id, field: 'surface' }); openToothSelectorForRow(row, e.currentTarget.closest('tr') ?? e.currentTarget); }}
+          >
             <WarningIcon />
           </span>
         );
       }
       return (
-        <span className={appStyles.PendingCell}>
+        <span
+          className={appStyles.PendingCell}
+          onClick={(e) => openToothSelectorForRow(row, e.currentTarget.closest('tr') ?? e.currentTarget)}
+        >
           <WarningIcon />
         </span>
       );
@@ -1693,11 +1817,18 @@ export default function App() {
       editingCell={
         editingCell && pendingProcedureIds.has(editingCell.rowId) ? editingCell : null
       }
-      onStartEditCell={(rowId, field) => setEditingCell({ rowId, field })}
+      onStartEditCell={(rowId, field, anchorEl) => {
+        setEditingCell({ rowId, field });
+        if (anchorEl) {
+          const row = findChartEntry(rowId);
+          if (row) openToothSelectorForRow(row, anchorEl);
+        }
+      }}
       onCommitCell={(procedureId, field, value) =>
         handlePlanCellEditCommit(activePlan.id, procedureId, field, value)
       }
       onCancelEditCell={() => setEditingCell(null)}
+      onDraftChange={(procedureId, field, value) => updateDraftField(procedureId, field, value)}
       onDeletePendingProcedure={handleDeletePendingProcedure}
       isValidTooth={isValidTooth}
       isValidSurface={isValidSurface}
@@ -1779,6 +1910,32 @@ export default function App() {
           <CarePanel codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} />
         </div>
       </div>
+
+      {toothSelectorRequest && (() => {
+        const draftRow = findChartEntry(toothSelectorRequest.rowId);
+        const toothId = (draftRow?.thArea as string) || '';
+        const rawSurface = draftRow?.surface as string;
+        const surfaceLetters = rawSurface && rawSurface !== '--' ? rawSurface : '';
+        return (
+          <ToothSelectorPopover
+            open
+            onOpenChange={(next) => { if (!next) { setToothSelectorRequest(null); setEditingCell(null); } }}
+            anchor={toothSelectorRequest.anchorEl}
+            title={toothSelectorRequest.chip.label}
+            requiresSurface={toothSelectorRequest.chip.requires === 'surface'}
+            toothId={toothId}
+            onToothChange={(id) => {
+              updateDraftField(toothSelectorRequest.rowId, 'thArea', id);
+              tryAutoApplyToothSelector({ thArea: id });
+            }}
+            surfaceLetters={surfaceLetters}
+            onSurfaceLettersChange={(letters) => {
+              updateDraftField(toothSelectorRequest.rowId, 'surface', letters);
+              tryAutoApplyToothSelector({ surface: letters });
+            }}
+          />
+        );
+      })()}
 
       {workspaceTab === 'chart' ? (
       <>
