@@ -1890,7 +1890,7 @@ export default function App() {
             )}
           </div>
           {workspaceTab === 'chart' && (
-            <div style={{ position: 'relative', flexShrink: 0 }}>
+            <div style={{ position: 'relative', flex: '1 1 auto', minHeight: 0 }}>
               <Odontogram
                 toothStates={toothStates}
                 armedTeeth={armedTeeth}
