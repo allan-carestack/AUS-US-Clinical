@@ -45,6 +45,7 @@ export function PhaseDuration({
   const hoursFieldRef = useRef<HTMLDivElement>(null);
   const minutesFieldRef = useRef<HTMLDivElement>(null);
   const draftDurationRef = useRef<DurationValue>(value);
+  const focusFieldRef = useRef<'name' | 'hours'>('name');
   const chipId = useId();
   const hoursTriggerId = useId();
   const minutesTriggerId = useId();
@@ -54,6 +55,7 @@ export function PhaseDuration({
   const open = isControlled ? openProp : uncontrolledOpen;
 
   const setOpen = (next: boolean) => {
+    if (!next) focusFieldRef.current = 'name';
     onOpenChange?.(next);
     if (!isControlled) setUncontrolledOpen(next);
   };
@@ -80,19 +82,26 @@ export function PhaseDuration({
     setMinutesListOpen(false);
   };
 
-  const openEditor = () => {
+  const openEditor = (field: 'name' | 'hours' = 'name') => {
+    focusFieldRef.current = field;
     seedDrafts();
     setOpen(true);
+  };
+
+  const focusOpenField = () => {
+    if (focusFieldRef.current === 'hours') {
+      focusTrigger(hoursFieldRef.current);
+      return;
+    }
+    nameInputRef.current?.focus();
+    nameInputRef.current?.select();
   };
 
   // Seed drafts when opened externally (e.g. Rename phase menu).
   useEffect(() => {
     if (!open) return;
     seedDrafts();
-    const timer = window.setTimeout(() => {
-      nameInputRef.current?.focus();
-      nameInputRef.current?.select();
-    }, 0);
+    const timer = window.setTimeout(focusOpenField, 0);
     return () => window.clearTimeout(timer);
     // Only re-seed when the editor opens, not when name/value change mid-edit.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional open-only sync
@@ -196,7 +205,11 @@ export function PhaseDuration({
                 onMouseDown={(event) => {
                   event.preventDefault();
                 }}
-                onClick={openEditor}
+                onClick={(event) => {
+                  const target = event.target as Element | null;
+                  const focusHours = Boolean(target?.closest(`.${styles.DurationGroup}`));
+                  openEditor(focusHours ? 'hours' : 'name');
+                }}
               >
                 {renderCollapsedInner()}
               </button>

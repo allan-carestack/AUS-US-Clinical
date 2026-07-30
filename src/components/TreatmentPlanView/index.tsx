@@ -599,38 +599,44 @@ function PhaseSection({
         </div>
       </div>
 
-      {expanded && (
-        <>
-          {phase.procedures.map((procedure) => (
-            <ProcedureRow
-              key={procedure.id}
-              procedure={procedure}
-              selected={selectedIds.has(procedure.id)}
-              onToggle={onToggleRow}
-              pending={pendingProcedureIds.has(procedure.id)}
-              editingCell={editingCell}
-              onStartEditCell={onStartEditCell}
-              onCommitCell={onCommitCell}
-              onCancelEditCell={onCancelEditCell}
-              onDraftChange={onDraftChange}
-              onDeletePending={onDeletePendingProcedure}
-              isValidTooth={isValidTooth}
-              isValidSurface={isValidSurface}
-              onSelectArea={onSelectArea}
-            />
-          ))}
-          {phase.estimate && (
-            <div className={styles.EstimateRow} role="row">
-              <div className={styles.EstimateSpacer} />
-              <div className={styles.EstimateValue} role="cell">{phase.estimate.fee}</div>
-              <div className={styles.EstimateValue} role="cell">{phase.estimate.discount}</div>
-              <div className={styles.EstimateValue} role="cell">{phase.estimate.patPayable}</div>
-              <div className={styles.EstimateLabel} role="cell" />
-              <div className={styles.EstimateLabel} role="cell" />
-            </div>
+      <div className={[styles.PhaseBody, expanded ? styles.PhaseBodyOpen : ''].join(' ')}>
+        <div className={styles.PhaseBodyInner}>
+          {phase.procedures.length === 0 ? (
+            <div className={styles.EmptyPhase}>No codes added to this phase yet</div>
+          ) : (
+            <>
+              {phase.procedures.map((procedure) => (
+                <ProcedureRow
+                  key={procedure.id}
+                  procedure={procedure}
+                  selected={selectedIds.has(procedure.id)}
+                  onToggle={onToggleRow}
+                  pending={pendingProcedureIds.has(procedure.id)}
+                  editingCell={editingCell}
+                  onStartEditCell={onStartEditCell}
+                  onCommitCell={onCommitCell}
+                  onCancelEditCell={onCancelEditCell}
+                  onDraftChange={onDraftChange}
+                  onDeletePending={onDeletePendingProcedure}
+                  isValidTooth={isValidTooth}
+                  isValidSurface={isValidSurface}
+                  onSelectArea={onSelectArea}
+                />
+              ))}
+              {phase.estimate && (
+                <div className={styles.EstimateRow} role="row">
+                  <div className={styles.EstimateSpacer} />
+                  <div className={styles.EstimateValue} role="cell">{phase.estimate.fee}</div>
+                  <div className={styles.EstimateValue} role="cell">{phase.estimate.discount}</div>
+                  <div className={styles.EstimateValue} role="cell">{phase.estimate.patPayable}</div>
+                  <div className={styles.EstimateLabel} role="cell" />
+                  <div className={styles.EstimateLabel} role="cell" />
+                </div>
+              )}
+            </>
           )}
-        </>
-      )}
+        </div>
+      </div>
     </section>
   );
 }
