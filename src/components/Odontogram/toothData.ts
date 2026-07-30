@@ -1,4 +1,7 @@
-export type Dentition = 'permanent' | 'primary';
+export type Dentition = 'permanent' | 'primary' | 'mixed';
+// Dentitions that map to a single, uniform arch layout — 'mixed' overlays
+// both and is handled separately by `getMixedArchRows`.
+type SingleDentition = Exclude<Dentition, 'mixed'>;
 export type Arch = 'upper' | 'lower';
 export type Side = 'right' | 'left'; // patient's own right/left, not viewer's
 
@@ -42,7 +45,7 @@ function buildQuadrant(quadrantDigit: number, arch: Arch, side: Side, count: num
 //   lower row:  48 47 ... 41 | 31 32 ... 38
 // Each row runs from the back of the mouth (highest position) inward to the
 // midline, then back out again on the other side.
-export function getArchRows(dentition: Dentition): { upper: ToothMeta[]; lower: ToothMeta[] } {
+export function getArchRows(dentition: SingleDentition): { upper: ToothMeta[]; lower: ToothMeta[] } {
   const count = dentition === 'permanent' ? PERMANENT_TEETH_PER_QUADRANT : PRIMARY_TEETH_PER_QUADRANT;
   const [q1, q2, q3, q4] = dentition === 'permanent' ? [1, 2, 3, 4] : [5, 6, 7, 8];
 
@@ -55,6 +58,30 @@ export function getArchRows(dentition: Dentition): { upper: ToothMeta[]; lower: 
     ...buildQuadrant(q3, 'lower', 'left', count),
   ];
   return { upper, lower };
+}
+
+// Mixed dentition: every permanent tooth, plus a primary tooth aligned above
+// (upper) or below (lower) each permanent position that has a primary
+// predecessor (positions 1-5 — primary molars don't extend to positions 6-8).
+// `null` marks a gap so the primary row's columns still line up with the
+// permanent row beneath/above it.
+export function getMixedArchRows(): {
+  upper: ToothMeta[];
+  lower: ToothMeta[];
+  upperPrimary: (ToothMeta | null)[];
+  lowerPrimary: (ToothMeta | null)[];
+} {
+  const permanent = getArchRows('permanent');
+  const primary = getArchRows('primary');
+  const gap = PERMANENT_TEETH_PER_QUADRANT - PRIMARY_TEETH_PER_QUADRANT;
+  const pad = Array.from({ length: gap }, () => null);
+
+  return {
+    upper: permanent.upper,
+    lower: permanent.lower,
+    upperPrimary: [...pad, ...primary.upper, ...pad],
+    lowerPrimary: [...pad, ...primary.lower, ...pad],
+  };
 }
 
 // Mesial always faces the midline; which screen edge that is depends only on

@@ -22,6 +22,10 @@ interface ToothProps {
   armedWhole?: boolean;
   /** Surfaces of this tooth in the pending multi-select. */
   armedSurfaces?: SurfaceName[];
+  /** Overrides the default arch-based number placement — used for the
+      mixed-dentition primary rows, which sit outside the main arches and so
+      want their numbers at the chart's outer edge instead of at the bite line. */
+  numberPosition?: 'above' | 'below';
   onSurfaceClick: (meta: ToothMeta, surface: SurfaceName) => void;
   onWholeToothClick: (meta: ToothMeta) => void;
 }
@@ -38,7 +42,7 @@ const EDGES: { edge: SurfaceEdge; points: string }[] = [
   { edge: 'center', points: '14,14 30,14 30,30 14,30' },
 ];
 
-export default function Tooth({ meta, state, armedWhole, armedSurfaces = [], onSurfaceClick, onWholeToothClick }: ToothProps) {
+export default function Tooth({ meta, state, armedWhole, armedSurfaces = [], numberPosition, onSurfaceClick, onWholeToothClick }: ToothProps) {
   const wholeMark = state?.whole;
 
   const toothSvg = (
@@ -105,9 +109,12 @@ export default function Tooth({ meta, state, armedWhole, armedSurfaces = [], onS
   // Numbers sit at the bite line (the two arches' number rows face each
   // other), with crowns pointing outward — so the upper arch shows the tooth
   // above its number, and the lower arch shows the number above its tooth.
+  // `numberPosition` overrides this for rows that aren't at the bite line.
+  const position = numberPosition ?? (meta.arch === 'upper' ? 'below' : 'above');
+
   return (
     <div className={styles.ToothCell}>
-      {meta.arch === 'upper' ? <>{toothSvg}{numberLabel}</> : <>{numberLabel}{toothSvg}</>}
+      {position === 'above' ? <>{numberLabel}{toothSvg}</> : <>{toothSvg}{numberLabel}</>}
     </div>
   );
 }

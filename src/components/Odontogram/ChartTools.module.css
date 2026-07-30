@@ -11,7 +11,7 @@
   padding: var(--spacing-4);
   background: var(--white);
   border: 1px solid var(--grey-20);
-  border-radius: var(--radius-4);
+  border-radius: var(--radius-6);
   box-shadow: 0 4px 4px rgba(0, 0, 0, 0.08), 0 8px 12px -4px rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
 }
@@ -24,9 +24,9 @@
   height: 2rem;
   padding: 0;
   border: none;
-  border-radius: var(--radius-2, 2px);
+  border-radius: var(--radius-4, 4px);
   background: transparent;
-  color: var(--grey-100);
+  color: var(--interactive-80);
   cursor: pointer;
   transition: background-color 100ms ease-out, color 100ms ease-out;
 }
@@ -34,7 +34,7 @@
 @media (hover: hover) {
   .Tool:not([data-active]):not(:disabled):hover {
     background: var(--hover-default);
-    color: var(--grey-100);
+    color: var(--interactive-80);
   }
 }
 
@@ -57,4 +57,9 @@
   width: 1.2rem;
   height: 1.2rem;
   flex-shrink: 0;
+}
+
+.DentitionLabel {
+  composes: text-sm weight-700 from global;
+  line-height: 1;
 }

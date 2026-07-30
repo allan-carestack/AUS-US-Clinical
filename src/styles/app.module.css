@@ -5,9 +5,9 @@
 .WorkspaceTopBand {
   --care-panel-width: 47.2rem;
   position: relative;
-  flex: 0 0 34rem;
+  flex: 0 0 32rem;
   min-width: 0;
-  height: 34rem;
+  height: 32rem;
   overflow: hidden;
   background: var(--white);
   opacity: 1;

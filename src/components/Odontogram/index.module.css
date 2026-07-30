@@ -5,7 +5,7 @@
   align-items: stretch;
   justify-content: center;
   gap: var(--spacing-8);
-  height: 30rem;
+  height: 100%;
   padding: var(--spacing-12);
   padding-left: 4.6rem;
   background: var(--white);
@@ -36,7 +36,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-16);
+  gap: var(--spacing-2);
   width: max-content;
   transform-origin: top left;
 }
@@ -55,6 +55,13 @@
   gap: var(--spacing-4);
 }
 
+/* Keeps a mixed-dentition primary row's columns aligned with the permanent
+   row above/below it, at positions with no primary predecessor. */
+.ToothCellPlaceholder {
+  width: 48px;
+  flex-shrink: 0;
+}
+
 .ToothSvg {
   display: block;
   overflow: visible;
@@ -67,14 +74,14 @@
 
 .ToothSurface {
   fill: var(--white);
-  stroke: var(--grey-20);
+  stroke: var(--grey-40);
   stroke-width: 1;
   cursor: pointer;
-  outline: none;
+  border-radius: var(--radius-4);
 }
 
 .ToothSurface:hover {
-  fill: var(--hover-default);
+  fill: var(--hover-darker);
 }
 
 .ToothSurface:focus,
@@ -111,12 +118,12 @@
 }
 
 .ToothNumber {
-  composes: text-sm weight-500 from global;
+  composes: text-sm weight-400 from global;
   border: none;
   background: transparent;
-  color: var(--grey-60);
+  color: var(--grey-80);
   cursor: pointer;
-  padding: var(--spacing-2) var(--spacing-4);
+  padding: 0 var(--spacing-4);
   border-radius: var(--radius-default);
 }
 
@@ -126,7 +133,7 @@
 }
 
 .ToothNumber:focus-visible {
-  outline: 2px solid var(--interactive-80);
+  outline: 2px solid var(--blue-80);
   outline-offset: 1px;
 }
 

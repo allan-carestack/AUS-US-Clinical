@@ -2,7 +2,7 @@ import { useState, useRef, useLayoutEffect } from 'react';
 import styles from './index.module.css';
 import Tooth, { type ToothState } from './Tooth';
 import { ChartTools } from './ChartTools';
-import { getArchRows, SURFACE_LABEL, type Dentition, type ToothMeta, type SurfaceName } from './toothData';
+import { getArchRows, getMixedArchRows, SURFACE_LABEL, type Dentition, type ToothMeta, type SurfaceName } from './toothData';
 
 export type { ToothState, ToothMark } from './Tooth';
 export type { Dentition, ToothMeta, SurfaceName } from './toothData';
@@ -29,16 +29,18 @@ export interface OdontogramProps {
   onWholeToothClick?: (meta: ToothMeta) => void;
 }
 
-function ArchRow({ teeth, states, armedTeeth, onSurfaceClick, onWholeToothClick }: {
-  teeth: ToothMeta[];
+function ArchRow({ teeth, states, armedTeeth, numberPosition, onSurfaceClick, onWholeToothClick }: {
+  teeth: (ToothMeta | null)[];
   states: Record<string, ToothState>;
   armedTeeth: ArmedTooth[];
+  numberPosition?: 'above' | 'below';
   onSurfaceClick: (meta: ToothMeta, surface: SurfaceName) => void;
   onWholeToothClick: (meta: ToothMeta) => void;
 }) {
   return (
     <div className={styles.ArchRow}>
-      {teeth.map(meta => {
+      {teeth.map((meta, i) => {
+        if (!meta) return <div key={`gap-${i}`} className={styles.ToothCellPlaceholder} aria-hidden="true" />;
         const forTooth = armedTeeth.filter(a => a.toothId === meta.id);
         return (
           <Tooth
@@ -47,6 +49,7 @@ function ArchRow({ teeth, states, armedTeeth, onSurfaceClick, onWholeToothClick 
             state={states[meta.id]}
             armedWhole={forTooth.some(a => !a.surface)}
             armedSurfaces={forTooth.filter(a => a.surface).map(a => a.surface!)}
+            numberPosition={numberPosition}
             onSurfaceClick={onSurfaceClick}
             onWholeToothClick={onWholeToothClick}
           />
@@ -66,7 +69,10 @@ export function Odontogram({ toothStates = {}, armedTeeth = [], dentition: denti
     if (dentitionProp === undefined) setInternalDentition(d);
     onDentitionChange?.(d);
   };
-  const { upper, lower } = getArchRows(dentition);
+  const { upper, lower, upperPrimary, lowerPrimary } =
+    dentition === 'mixed'
+      ? getMixedArchRows()
+      : { ...getArchRows(dentition), upperPrimary: null, lowerPrimary: null };
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
@@ -82,10 +88,13 @@ export function Odontogram({ toothStates = {}, armedTeeth = [], dentition: denti
     if (!viewport || !chart) return;
 
     const update = () => {
-      const available = viewport.clientWidth;
+      const availableW = viewport.clientWidth;
+      const availableH = viewport.clientHeight;
       const naturalW = chart.offsetWidth;
       const naturalH = chart.offsetHeight;
-      const scale = available > 0 && naturalW > 0 ? Math.min(1, available / naturalW) : 1;
+      const scaleW = availableW > 0 && naturalW > 0 ? availableW / naturalW : 1;
+      const scaleH = availableH > 0 && naturalH > 0 ? availableH / naturalH : 1;
+      const scale = Math.min(1, scaleW, scaleH);
       const width = naturalW * scale;
       const height = naturalH * scale;
       setFit(prev => (
@@ -119,9 +128,15 @@ export function Odontogram({ toothStates = {}, armedTeeth = [], dentition: denti
             ref={chartRef}
             style={{ transform: `scale(${fit.scale})` }}
           >
+            {upperPrimary && (
+              <ArchRow teeth={upperPrimary} states={toothStates} armedTeeth={armedTeeth} numberPosition="above" onSurfaceClick={handleSurfaceClick} onWholeToothClick={handleWholeToothClick} />
+            )}
             <ArchRow teeth={upper} states={toothStates} armedTeeth={armedTeeth} onSurfaceClick={handleSurfaceClick} onWholeToothClick={handleWholeToothClick} />
             <div className={styles.BiteLine} aria-hidden="true" />
             <ArchRow teeth={lower} states={toothStates} armedTeeth={armedTeeth} onSurfaceClick={handleSurfaceClick} onWholeToothClick={handleWholeToothClick} />
+            {lowerPrimary && (
+              <ArchRow teeth={lowerPrimary} states={toothStates} armedTeeth={armedTeeth} numberPosition="below" onSurfaceClick={handleSurfaceClick} onWholeToothClick={handleWholeToothClick} />
+            )}
           </div>
         </div>
       </div>
