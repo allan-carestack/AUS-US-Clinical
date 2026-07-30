@@ -512,10 +512,8 @@ function PhaseSection({
   isValidSurface: (value: string) => string | null;
   onSelectArea: (procedureId: string, areaId: string) => void;
 }) {
-  const active = expanded && phase.procedures.length > 0;
-
   return (
-    <section className={[styles.PhaseCard, active ? styles.PhaseCardActive : ''].filter(Boolean).join(' ')}>
+    <section className={[styles.PhaseCard, isTarget ? styles.PhaseCardActive : ''].filter(Boolean).join(' ')}>
       <div
         className={styles.PhaseHeader}
         onClick={onSelectTarget}
@@ -738,6 +736,26 @@ export function TreatmentPlanView({
       return next;
     });
   }, [targetPhaseId]);
+
+  // If the user collapses the still-selected target then adds a code, reopen
+  // so the new row is visible (pending or completed insert).
+  const targetProcedureCount =
+    plan.phases.find((phase) => phase.id === targetPhaseId)?.procedures.length ?? 0;
+  const prevTargetCountRef = useRef(targetProcedureCount);
+  useEffect(() => {
+    prevTargetCountRef.current = targetProcedureCount;
+  }, [planId]);
+  useEffect(() => {
+    const prevCount = prevTargetCountRef.current;
+    prevTargetCountRef.current = targetProcedureCount;
+    if (!targetPhaseId || targetProcedureCount <= prevCount) return;
+    setExpandedPhases((prev) => {
+      if (prev.has(targetPhaseId)) return prev;
+      const next = new Set(prev);
+      next.add(targetPhaseId);
+      return next;
+    });
+  }, [targetProcedureCount, targetPhaseId]);
 
   const togglePhase = (phaseId: string) => {
     setExpandedPhases((prev) => {
