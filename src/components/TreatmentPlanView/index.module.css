@@ -224,12 +224,14 @@
   border-bottom: 1px solid var(--grey-20);
 }
 
-.PhaseCard:last-child {
+.PhaseCard:last-child:not(.PhaseCardActive) {
   border-bottom: none;
 }
 
 .PhaseCardActive {
+  border: 2px solid var(--blue-80);
   background: var(--white);
+  overflow: hidden;
 }
 
 .PhaseHeader {
