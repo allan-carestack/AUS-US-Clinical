@@ -84,13 +84,6 @@ export const PROCEDURE_CHIPS: ChipDef[] = [
   { id: 'partial-den', label: 'Partial Denture',   kind: 'procedure', requires: 'none' },
   { id: 'relines',     label: 'Relines/Rebase',    kind: 'procedure', requires: 'none' },
   { id: 'dent-part-o', label: 'Dent/Part O...',    kind: 'procedure', requires: 'none' },
-
-  { id: 'nightguards', label: 'Nightguards',       kind: 'procedure', requires: 'none' },
-  { id: 'products',    label: 'Products',          kind: 'procedure', requires: 'none' },
-  { id: 'implant',     label: 'Implant',           kind: 'procedure', requires: 'tooth' },
-  { id: 'sedation',    label: 'Sedation',          kind: 'procedure', requires: 'none' },
-  { id: 'rct',         label: 'RCT',               kind: 'procedure', requires: 'tooth' },
-  { id: 'veneer',      label: 'Veneer',            kind: 'procedure', requires: 'surface' },
 ];
 
 // Shown only under New Treatment — not applicable to already-completed/
