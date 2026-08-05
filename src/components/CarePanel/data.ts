@@ -96,6 +96,13 @@ export const PLAN_AND_EXPLOSION_CHIPS: ChipDef[] = [
   { id: '6mo-hygiene',   label: '6 Month Hygiene',  kind: 'explosion', requires: 'none' },
   { id: 'all-on-4',      label: 'All on 4',         kind: 'explosion', requires: 'none' },
   { id: 'crown-fix',     label: 'Crown Fix',        kind: 'explosion', requires: 'none' },
+
+  { id: 'nightguards', label: 'Nightguards',       kind: 'procedure', requires: 'none' },
+  { id: 'products',    label: 'Products',          kind: 'procedure', requires: 'none' },
+  { id: 'implant',     label: 'Implant',           kind: 'procedure', requires: 'tooth' },
+  { id: 'sedation',    label: 'Sedation',          kind: 'procedure', requires: 'none' },
+  { id: 'rct',         label: 'RCT',               kind: 'procedure', requires: 'tooth' },
+  { id: 'veneer',      label: 'Veneer',            kind: 'procedure', requires: 'surface' },
 ];
 
 export const CONDITION_CHIPS: ChipDef[] = [
