@@ -1,7 +1,8 @@
 /* ── Popup — override Popover's default width for this wider layout ── */
 .Popup {
-  width: 70rem !important;
-  max-width: 70rem !important;
+  width: 65rem !important;
+  max-width: 65rem !important;
+  padding-top: 0 !important;
   overflow: hidden;
 }
 
@@ -209,3 +210,179 @@
   color: var(--grey-60);
 }
 
+
+/* ── Tooth column (field + grid) ── */
+.ToothColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+  flex: 1;
+  min-width: 0;
+}
+
+/* Stacked under the Tooth field: size to content instead of the row's flex-basis 0. */
+.ToothColumn > .ToothPanel {
+  flex: 0 0 auto;
+}
+
+/* ── Keyboard entry — each field sits directly above the selector it drives ── */
+.TypedField {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+}
+
+.TypedLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+}
+
+.TypedInput {
+  width: 9rem;
+  padding: var(--spacing-4) var(--spacing-8);
+  border: 1px solid var(--grey-300, #c9ced6);
+  border-radius: 4px;
+  font: inherit;
+}
+
+.TypedInput[aria-invalid='true'] {
+  border-color: var(--red-500, #d92d20);
+}
+
+.TypedError {
+  color: var(--red-500, #d92d20);
+}
+
+/* ── New keyboard-first design ── */
+.DarkHeader {
+  padding: var(--spacing-8) var(--spacing-8) var(--spacing-8) var(--spacing-12);
+  background: linear-gradient(90deg, var(--grey-80), var(--grey-60));
+}
+
+.DarkHeader h2 {
+  color: var(--white);
+  font-weight: var(--weight-700);
+}
+
+.QuickBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-12);
+  padding: var(--spacing-12);
+}
+
+.QuickMain {
+  display: flex;
+  gap: var(--spacing-16);
+  align-items: flex-start;
+}
+
+.QuickCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+  flex: 1;
+  min-width: 0;
+}
+
+.QuickColSurface {
+  composes: QuickCol;
+  flex: 0 0 16rem;
+}
+
+.QuickColSurface .QuickFrame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-8);
+  padding: var(--spacing-8) 0;
+}
+
+.QuickColSurface .Diagram {
+  width: 14.4rem;
+  height: 14.4rem;
+}
+
+.QuickLabel {
+  composes: text-lg weight-700 from global;
+}
+
+.Req {
+  color: var(--red-80);
+}
+
+/* Focus ring follows keyboard focus anywhere inside the frame. */
+.QuickFrame {
+  border-radius: var(--radius-8);
+  outline: none;
+
+  &:focus-within {
+    box-shadow: 0 0 0 2px var(--blue-80), 0 0 0 6px rgb(from var(--blue-80) r g b / 20%);
+  }
+
+  &[aria-invalid='true'] {
+    box-shadow: 0 0 0 2px var(--red-80), 0 0 0 6px var(--red-10);
+  }
+}
+
+.QuickPanel {
+  border: 1px solid var(--grey-20);
+  border-radius: var(--radius-8);
+  background: var(--white);
+  overflow: hidden;
+}
+
+.QuickTabs {
+  padding: var(--spacing-8);
+}
+
+.CircleRegion {
+  fill: var(--white);
+  stroke: var(--grey-20);
+  cursor: pointer;
+
+  &:hover {
+    fill: var(--hover-default);
+  }
+}
+
+.CircleRegionSelected {
+  fill: var(--interactive-20);
+}
+
+.IcdRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  color: var(--grey-60);
+}
+
+.IcdBox {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4) var(--spacing-8);
+  border: 1px solid var(--grey-20);
+  border-radius: var(--radius-4);
+}
+
+.IcdChip {
+  padding: 0 var(--spacing-6);
+  border: 1px solid var(--grey-20);
+  border-radius: var(--radius-4);
+  background: var(--grey-5);
+  color: var(--grey-100);
+}
+
+.IcdBox > svg {
+  margin-left: auto;
+}
+
+.QuickFooter {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--spacing-8) var(--spacing-12);
+  border-top: 1px solid var(--grey-20);
+}
