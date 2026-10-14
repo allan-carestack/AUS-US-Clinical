@@ -337,10 +337,6 @@
   padding: var(--spacing-8);
 }
 
-.ToothCellMatch {
-  background-color: var(--interactive-10) !important;
-}
-
 .CircleRegion {
   fill: var(--white);
   stroke: var(--grey-20);

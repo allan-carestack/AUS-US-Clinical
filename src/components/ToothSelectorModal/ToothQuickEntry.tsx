@@ -113,7 +113,6 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, s
       className={[
         styles.ToothCell,
         shown === id ? styles.ToothCellSelected : '',
-        typedId && id.startsWith(typedId) ? styles.ToothCellMatch : '',
       ].filter(Boolean).join(' ')}
       onClick={() => advance(id)}
     >
