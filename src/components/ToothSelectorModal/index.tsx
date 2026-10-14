@@ -8,8 +8,8 @@ export interface ToothSelectorPopoverProps {
   onOpenChange: (open: boolean) => void;
   /** Element to anchor the popover against. */
   anchor: Element;
-  /** Which side of the anchor to open on. */
-  side?: 'top' | 'left';
+  /** 'top' opens above the anchor; 'overlay' covers it, so the header sits exactly where the anchor item was. */
+  side?: 'top' | 'overlay';
   /** e.g. "121 - Topical application of remineralisation and/or cariostatic agents, one treatment" */
   title: string;
   /** Whether this treatment needs a surface in addition to a tooth. */
@@ -38,9 +38,9 @@ export function ToothSelectorPopover({
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverContent
         anchor={anchor}
-        side={side}
-        align={side === 'left' ? 'center' : 'start'}
-        sideOffset={8}
+        side={side === 'overlay' ? 'bottom' : 'top'}
+        align={side === 'overlay' ? 'end' : 'start'}
+        sideOffset={side === 'overlay' ? -anchor.getBoundingClientRect().height : 8}
         initialFocus={() => document.querySelector<HTMLElement>('[data-tooth-selector-popup] [data-first-focus]')}
         finalFocus={finalFocus}
         className={styles.Popup}

@@ -590,7 +590,7 @@ function CodeSearch({
             open
             onOpenChange={dismiss}
             anchor={anchor}
-            side="left"
+            side="overlay"
             finalFocus={focusSearch}
             onCommit={(t, sf) => submit({ thArea: t, surface: sf })}
             title={label}
