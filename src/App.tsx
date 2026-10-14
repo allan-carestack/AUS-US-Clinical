@@ -7,7 +7,7 @@ import {
   Odontogram, SURFACE_LABEL,
   type ArmedTooth, type ToothState, type ToothMark, type ToothMeta, type SurfaceName, type Dentition,
 } from './components/Odontogram';
-import { CarePanel, type ChipDef, type CarePanelSelectionContext, type DentalCode } from './components/CarePanel';
+import { CarePanel, type ChipDef, type CarePanelSelectionContext, type DentalCode, type CodeInput } from './components/CarePanel';
 import { ToothSelectorPopover } from './components/ToothSelectorModal';
 import { ClinicalSidebar } from './components/ClinicalSidebar';
 import { GlobalHeader } from './components/GlobalHeader';
@@ -85,9 +85,9 @@ const ALL_CHIPS: ChipDef[] = [
 const sameSelection = (a: ToothSelection, b: ToothSelection) =>
   a.meta.id === b.meta.id && a.surface === b.surface;
 
-function buildDescription(chip: ChipDef, toothId?: string, surface?: SurfaceName): string {
+function buildDescription(chip: ChipDef, toothId?: string, surface?: SurfaceName, surfaceText?: string): string {
   if (!toothId) return chip.label;
-  if (surface) return `Tooth ${toothId} — ${SURFACE_LABEL[surface]} — ${chip.label}`;
+  if (surface) return `Tooth ${toothId} — ${surfaceText ?? SURFACE_LABEL[surface]} — ${chip.label}`;
   return `Tooth ${toothId} — ${chip.label}`;
 }
 
@@ -937,30 +937,32 @@ export default function App() {
     });
   };
 
-  const applyEntry = (chip: ChipDef, context: CarePanelSelectionContext, meta?: ToothMeta, surface?: SurfaceName) => {
+  // `surfaceText` overrides the label when several surfaces were entered (e.g. "MOD").
+  const applyEntry = (chip: ChipDef, context: CarePanelSelectionContext, meta?: ToothMeta, surface?: SurfaceName, surfaceText?: string) => {
     const id = `entry-${++entryCounterRef.current}`;
+    const surfaceLabel = surfaceText ?? (surface ? SURFACE_LABEL[surface] : '');
 
     // Active tx plan tab: land in the selected phase only (not Chart Details).
     if (activePlan) {
       const phaseId = targetPhaseByPlan[activePlan.id]
         ?? (plansById[activePlan.id] ? firstPhaseId(plansById[activePlan.id]) : 'phase-1');
-      const procedure = chipToPlanProcedure(id, chip, meta, surface, false);
+      const procedure = { ...chipToPlanProcedure(id, chip, meta, surface, false), ...(surface && { surface: surfaceLabel }) };
       prependPlanProcedure(activePlan.id, phaseId, procedure);
       setPlanHistoryProcedureIds(prev => [id, ...prev]);
       if (meta) applyToothMark(chip, meta.id, surface);
-      persistProcedure(chipCodeId(chip), meta?.id ?? '', surface ? SURFACE_LABEL[surface] : '', context.txType);
+      persistProcedure(chipCodeId(chip), meta?.id ?? '', surfaceLabel, context.txType);
       return;
     }
 
     const newRow: ChartEntry = {
       id,
       date: new Date().toLocaleDateString('en-US'),
-      descriptionText: buildDescription(chip, meta?.id, surface),
+      descriptionText: buildDescription(chip, meta?.id, surface, surfaceText),
       codeId: chipCodeId(chip),
       requires: chip.requires,
       logKind: logKindFor(chip, context),
       thArea: meta?.id ?? '',
-      surface: surface ? SURFACE_LABEL[surface] : '',
+      surface: surfaceLabel,
       provider: '',
       location: '',
       txPlan: '',
@@ -976,7 +978,7 @@ export default function App() {
 
     if (meta) applyToothMark(chip, meta.id, surface);
 
-    persistProcedure(newRow.codeId, meta?.id ?? '', surface ? SURFACE_LABEL[surface] : '', context.txType);
+    persistProcedure(newRow.codeId, meta?.id ?? '', surfaceLabel, context.txType);
   };
 
   // Restore a row that was mid code-change (Esc before tooth/area is entered).
@@ -1128,18 +1130,75 @@ export default function App() {
     setPendingRowIds(prev => new Set(prev).add(id));
   };
 
+  // Adds a row for a +Code pick whose tooth/surface/area came from the popover,
+  // so it never lands in the pending state.
+  const addCompletedCodeRow = (chip: ChipDef, context: CarePanelSelectionContext, input: CodeInput) => {
+    const { thArea, surface: letters } = input;
+    if (chip.requires === 'area') {
+      const id = `entry-${++entryCounterRef.current}`;
+      const areaLabel = AREA_PRESETS.find(a => a.id === thArea)?.label ?? thArea;
+      if (activePlan) {
+        const phaseId = targetPhaseByPlan[activePlan.id]
+          ?? (plansById[activePlan.id] ? firstPhaseId(plansById[activePlan.id]) : 'phase-1');
+        prependPlanProcedure(activePlan.id, phaseId, { ...chipToPlanProcedure(id, chip), thArea });
+        setPlanHistoryProcedureIds(prev => [id, ...prev]);
+      } else {
+        setChartRows(prev => [{
+          id,
+          date: new Date().toLocaleDateString('en-US'),
+          descriptionText: buildAreaDescription(chip, areaLabel),
+          codeId: chipCodeId(chip),
+          requires: chip.requires,
+          logKind: logKindFor(chip, context),
+          thArea,
+          surface: '',
+          provider: '',
+          location: '',
+          txPlan: '',
+          phase: '',
+          fees: '',
+          discount: '',
+          patPayable: '',
+          status: statusTagFor(chip, context),
+          rowAction: '',
+          userName: 'Mr. John Doe',
+        }, ...prev]);
+      }
+      applyAreaMark(chip, thArea);
+      persistProcedure(chipCodeId(chip), thArea, '', context.txType);
+      return;
+    }
+    const surfaceName = chip.requires === 'surface' && letters
+      ? SURFACE_CODE_TO_NAME[letters.charAt(0)]
+      : undefined;
+    applyEntry(chip, context, { id: thArea } as ToothMeta, surfaceName, surfaceName ? letters : undefined);
+  };
+
+  // Tooth/surface armed on the odontogram fills a +Code pick directly, so the
+  // required-fields popover is skipped — unless it can't (area code, or a
+  // surface code with a whole-tooth-only selection).
+  const codeUsesArmedSelection = (code: DentalCode) =>
+    pendingSelection?.source === 'tooth'
+    && (code.requires === 'tooth'
+      || (code.requires === 'surface' && pendingSelection.selections.every(sel => sel.surface)));
+
   // +Code combobox: selecting a code adds a row immediately. If the code
   // requires tooth/surface input the row is inserted in a pending state
   // (highlighted) — the combobox stays open so the user can keep adding.
   // Tooth-first: if a tooth/surface is already armed from the odontogram,
   // it applies to the new row directly — no pending input needed.
-  const handleCodeSearchSelect = (code: DentalCode, context: CarePanelSelectionContext) => {
+  const handleCodeSearchSelect = (code: DentalCode, context: CarePanelSelectionContext, input?: CodeInput) => {
     const chip: ChipDef = {
       id: `code-${code.code}`,
       label: `${code.code} - ${code.description}`,
       kind: 'procedure',
       requires: code.requires,
     };
+    // Required fields were collected in the +Code popover — add a finished row.
+    if (input) {
+      addCompletedCodeRow(chip, context, input);
+      return;
+    }
     if (pendingSelection?.source === 'tooth' && code.requires !== 'none') {
       // Multi-select: one row per armed tooth/surface.
       pendingSelection.selections.forEach(sel =>
@@ -1290,24 +1349,6 @@ export default function App() {
     } else {
       completeEditedRow(toothSelectorRequest.rowId, toothId, surface);
     }
-  };
-
-  // Picking a tooth/surface in the popover (grid tap, diagram region,
-  // quicklink) is an atomic, complete action — apply immediately once it
-  // satisfies the requirement. Typing in the inline Th/Area or Surface cell
-  // does NOT go through this: it only writes the draft (see
-  // updateDraftField), and is accepted only on Enter (handleCellEditCommit) —
-  // otherwise every keystroke of a multi-character value like "MOD" would
-  // trigger an apply after the very first letter.
-  const tryAutoApplyToothSelector = (overrides: { thArea?: string; surface?: string }) => {
-    if (!toothSelectorRequest) return;
-    const row = findChartEntry(toothSelectorRequest.rowId);
-    if (!row) return;
-    const toothId = overrides.thArea ?? (row.thArea as string) ?? '';
-    const rawSurface = overrides.surface ?? (row.surface as string) ?? '';
-    const surface = rawSurface && rawSurface !== '--' ? rawSurface : '';
-    const complete = !!toothId && (toothSelectorRequest.chip.requires !== 'surface' || !!surface);
-    if (complete) handleToothSelectorApply(overrides);
   };
 
   // Batch-mark every tooth in an area preset — reuses the same per-tooth
@@ -1907,7 +1948,7 @@ export default function App() {
           aria-hidden={workspaceTab === 'planner'}
           inert={workspaceTab === 'planner'}
         >
-          <CarePanel codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} />
+          <CarePanel codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} usesArmedSelection={codeUsesArmedSelection} />
         </div>
       </div>
 
@@ -1924,15 +1965,8 @@ export default function App() {
             title={toothSelectorRequest.chip.label}
             requiresSurface={toothSelectorRequest.chip.requires === 'surface'}
             toothId={toothId}
-            onToothChange={(id) => {
-              updateDraftField(toothSelectorRequest.rowId, 'thArea', id);
-              tryAutoApplyToothSelector({ thArea: id });
-            }}
             surfaceLetters={surfaceLetters}
-            onSurfaceLettersChange={(letters) => {
-              updateDraftField(toothSelectorRequest.rowId, 'surface', letters);
-              tryAutoApplyToothSelector({ surface: letters });
-            }}
+            onCommit={(t, sf) => handleToothSelectorApply({ thArea: t, surface: sf })}
           />
         );
       })()}

@@ -9,12 +9,13 @@ import { Combobox, ComboboxInput, ComboboxItem, ComboboxEmpty } from '../Combobo
 import { Combobox as BaseCombobox } from '@base-ui/react/combobox';
 import { ScrollArea, ScrollAreaViewport, ScrollAreaContent, ScrollAreaScrollbar, ScrollAreaThumb } from '../ScrollArea';
 import scrollAreaStyles from '../ScrollArea/index.module.css';
-import { Popover, PopoverTrigger, PopoverContent } from '../Popover';
+import { Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverTitle, PopoverClose, PopoverBody } from '../Popover';
+import { ToothSelectorPopover } from '../ToothSelectorModal';
 import { Tag } from '../Tag';
 import { PlusIcon, InfoOutlineIcon, InfoSolidIcon, EditIcon } from '../Icon';
 import { DatePicker } from '../DatePicker';
 import { Select as BaseSelect } from '@base-ui/react/select';
-import { PROCEDURE_CHIPS, PLAN_AND_EXPLOSION_CHIPS, CONDITION_CHIPS, CARE_PANELS, CHIP_LEGEND, type ChipDef } from './data';
+import { PROCEDURE_CHIPS, PLAN_AND_EXPLOSION_CHIPS, CONDITION_CHIPS, CARE_PANELS, CHIP_LEGEND, AREA_PRESETS, type ChipDef } from './data';
 import { DENTAL_CODES, type DentalCode } from './dentalCodes';
 import aiScribeIcon from '../../assets/ai-scribe-icon.svg';
 
@@ -56,10 +57,20 @@ export interface CarePanelProps {
   /** Procedure-code catalog for the +Code search. Defaults to the bundled list. */
   codes?: DentalCode[];
   onChipSelect: (chip: ChipDef, context: CarePanelSelectionContext) => void;
-  onCodeSelect?: (code: DentalCode, context: CarePanelSelectionContext) => void;
+  onCodeSelect?: (code: DentalCode, context: CarePanelSelectionContext, input?: CodeInput) => void;
+  /** True when the tooth/surface already picked on the odontogram can fill this code's required fields, so +Code skips its popover. */
+  usesArmedSelection?: (code: DentalCode) => boolean;
 }
 
 export type { DentalCode } from './dentalCodes';
+
+/** Required-field input collected in the popover next to a +Code list item. */
+export interface CodeInput {
+  /** Tooth id, or area preset id for `requires: 'area'` codes. */
+  thArea: string;
+  /** Surface letters (e.g. "MOD"); empty unless the code requires a surface. */
+  surface: string;
+}
 
 interface Appointment {
   id: string;
@@ -384,15 +395,19 @@ function CodeSearch({
   codes = DENTAL_CODES,
   active,
   onSelect,
+  usesArmedSelection,
   onClose,
 }: {
   codes?: DentalCode[];
   /** When false, close the results popup immediately (reverse morph). */
   active: boolean;
-  onSelect: (code: DentalCode) => void;
+  onSelect: (code: DentalCode, input?: CodeInput) => void;
+  usesArmedSelection?: (code: DentalCode) => boolean;
   onClose: () => void;
 }) {
   const [inputValue, setInputValue] = useState('');
+  // Code awaiting its required fields, with the list item the popover anchors to.
+  const [pending, setPending] = useState<{ code: DentalCode; anchor: Element } | null>(null);
   // Start closed so Base UI can apply data-starting-style; open after the
   // button→field morph begins so the list feels anchored to the growing field.
   const [popupOpen, setPopupOpen] = useState(false);
@@ -414,7 +429,7 @@ function CodeSearch({
     const handleMouseDown = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (wrapperRef.current?.contains(target)) return;
-      if (target.closest('[role="listbox"]')) return;
+      if (target.closest('[role="listbox"], [data-code-input-popup], [data-tooth-selector-popup]')) return;
       onClose();
     };
     document.addEventListener('mousedown', handleMouseDown);
@@ -453,21 +468,31 @@ function CodeSearch({
             skipInputUpdateRef.current = false;
             return;
           }
+          // Picking an item makes Base UI write its label into the input; keep the
+          // search text instead so the list (and the popover's anchor item) stays put.
+          if (codeLabels.includes(val)) return;
           setInputValue(val);
         }}
         items={codeLabels}
         filter={null}
+        autoHighlight
         value={null}
         onValueChange={(val) => {
           if (typeof val !== 'string' || processingRef.current) return;
           processingRef.current = true;
           queueMicrotask(() => { processingRef.current = false; });
           const code = codes.find(c => `${c.code} - ${c.description}` === val);
-          if (code) {
+          if (!code) return;
+          if (code.requires === 'none' || usesArmedSelection?.(code)) {
             skipInputUpdateRef.current = true;
             setInputValue('');
             onSelect(code);
+            return;
           }
+          // Required fields: ask in a popover beside the item instead of adding a row.
+          const anchor = document.querySelector('[role="option"][data-highlighted]');
+          if (!anchor) return;
+          setPending({ code, anchor });
         }}
       >
         <ComboboxInput
@@ -504,11 +529,82 @@ function CodeSearch({
           </BaseCombobox.Positioner>
         </BaseCombobox.Portal>
       </Combobox>
+      {pending && (() => {
+        const { code, anchor } = pending;
+        const label = `${code.code} - ${code.description}`;
+        const submit = (input: CodeInput) => {
+          setPending(null);
+          setInputValue('');
+          onSelect(code, input);
+        };
+        const focusSearch = () => document.querySelector<HTMLElement>('input[aria-label="Search dental codes"]');
+        const dismiss = (open: boolean) => { if (!open) setPending(null); };
+        if (code.requires === 'area') {
+          return (
+            <Popover open onOpenChange={dismiss}>
+              <PopoverContent
+                anchor={anchor}
+                side="left"
+                align="center"
+                sideOffset={8}
+                data-code-input-popup
+                initialFocus={() => document.querySelector<HTMLElement>('[data-code-input-popup] [data-first-focus]')}
+                finalFocus={focusSearch}
+              >
+                <PopoverHeader>
+                  <PopoverTitle>{label}</PopoverTitle>
+                  <PopoverClose />
+                </PopoverHeader>
+                <PopoverBody>
+                  <div
+                    role="listbox"
+                    aria-label="Area"
+                    onKeyDown={e => {
+                      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+                      e.preventDefault();
+                      const btns = Array.from(e.currentTarget.querySelectorAll('button'));
+                      const i = btns.indexOf(document.activeElement as HTMLButtonElement);
+                      btns[(i + (e.key === 'ArrowDown' ? 1 : -1) + btns.length) % btns.length]?.focus();
+                    }}
+                  >
+                    {AREA_PRESETS.map((a, i) => (
+                      <Button
+                        key={a.id}
+                        variant="ghost"
+                        role="option"
+                        data-first-focus={i === 0 || undefined}
+                        onClick={() => submit({ thArea: a.id, surface: '' })}
+                      >
+                        {a.label}
+                      </Button>
+                    ))}
+                  </div>
+                </PopoverBody>
+              </PopoverContent>
+            </Popover>
+          );
+        }
+        const needsSurface = code.requires === 'surface';
+        return (
+          <ToothSelectorPopover
+            open
+            onOpenChange={dismiss}
+            anchor={anchor}
+            side="left"
+            finalFocus={focusSearch}
+            onCommit={(t, sf) => submit({ thArea: t, surface: sf })}
+            title={label}
+            requiresSurface={needsSurface}
+            toothId=""
+            surfaceLetters=""
+          />
+        );
+      })()}
     </div>
   );
 }
 
-export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: CarePanelProps) {
+export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect, usesArmedSelection }: CarePanelProps) {
   const [tab, setTab] = useState<CarePanelTab>('new');
   /** Enter direction for ChipGridArea on tab change — null skips (initial mount). */
   const [gridSlide, setGridSlide] = useState<'fromLeft' | 'fromRight' | null>(null);
@@ -623,7 +719,7 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
 
   const handleSelect = (chip: ChipDef) => onChipSelect(chip, { tab, txType });
 
-  const handleCodeSelect = (code: DentalCode) => {
+  const handleCodeSelect = (code: DentalCode, input?: CodeInput) => {
     const chip: ChipDef = {
       id: `code-${code.code}`,
       label: `${code.code} - ${code.description}`,
@@ -631,7 +727,7 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
       requires: code.requires,
     };
     if (onCodeSelect) {
-      onCodeSelect(code, { tab, txType });
+      onCodeSelect(code, { tab, txType }, input);
     } else {
       onChipSelect(chip, { tab, txType });
     }
@@ -855,6 +951,7 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect }: Ca
                         codes={codes}
                         active={codeSearchMorphOpen}
                         onSelect={handleCodeSelect}
+                        usesArmedSelection={usesArmedSelection}
                         onClose={closeCodeSearch}
                       />
                     ) : null}
