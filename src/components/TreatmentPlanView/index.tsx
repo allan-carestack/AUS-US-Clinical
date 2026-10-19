@@ -73,6 +73,8 @@ export interface TreatmentPlanViewProps {
 /** Drag-and-drop state and handlers for reordering whole phases. */
 interface PhaseDnd {
   dragPhaseId: string | null;
+  /** True once the carried phase has been folded away from its original spot. */
+  dragPhaseHidden: boolean;
   dropIndex: number | null;
   onDragStart: (id: string, height: number) => void;
   onDragEnd: () => void;
@@ -89,6 +91,8 @@ interface PlanDnd {
   dragIds: string[];
   /** True once the carried rows have been folded away from their original spot. */
   dragHidden: boolean;
+  /** Rows that were just dropped together, in order; they animate open. */
+  spreadIds: string[];
   drop: { phaseId: string; index: number } | null;
   onDragStart: (id: string, rowHeight: number) => string[];
   /** Dragging over a phase header: drops at the end of that phase, and opens it if collapsed. */
@@ -455,10 +459,12 @@ function ProcedureRow({
         pending ? styles.PendingRow : '',
         selected ? styles.RowSelected : '',
         dnd.dragHidden && dnd.dragIds.includes(procedure.id) ? styles.RowDragging : '',
+        dnd.spreadIds.includes(procedure.id) ? styles.RowSpread : '',
         dnd.dragId && dnd.drop?.phaseId === phaseId && dnd.drop.index === index ? styles.GapBefore : '',
       ].filter(Boolean).join(' ')}
       role="row"
       data-row-id={procedure.id}
+      style={dnd.spreadIds.includes(procedure.id) ? { animationDelay: `${dnd.spreadIds.indexOf(procedure.id) * 70}ms` } : undefined}
       onDragOver={(e) => dnd.onDragOver(e, phaseId, index)}
       onDrop={dnd.onDrop}
     >
@@ -477,7 +483,7 @@ function ProcedureRow({
             if (row) {
               const ghost = document.createElement('div');
               if (ids.length > 1) {
-                // Several rows: a small card with a stack behind it and a count badge.
+                // Several rows: a small "Moving N codes" card with a stack behind it.
                 ghost.className = styles.DragStack;
                 for (let i = Math.min(ids.length, 3) - 1; i >= 1; i -= 1) {
                   const layer = document.createElement('div');
@@ -487,18 +493,10 @@ function ProcedureRow({
                 }
                 const front = document.createElement('div');
                 front.className = [styles.DragStackCard, styles.DragStackFront].join(' ');
-                const title = document.createElement('strong');
-                title.textContent = `${ids.length} codes`;
-                const sub = document.createElement('span');
-                sub.textContent = procedure.code;
-                front.append(title, sub);
+                front.textContent = `Moving ${ids.length} codes`;
                 ghost.appendChild(front);
-                const badge = document.createElement('span');
-                badge.className = styles.DragStackBadge;
-                badge.textContent = String(ids.length);
-                ghost.appendChild(badge);
                 row.parentElement?.appendChild(ghost);
-                e.dataTransfer.setDragImage(ghost, 24, 32);
+                e.dataTransfer.setDragImage(ghost, 24, 28);
               } else {
                 // One row: a lifted copy of it, opaque, outlined and shadowed.
                 ghost.className = styles.DragGhost;
@@ -632,7 +630,7 @@ function PhaseSection({
       className={[
         styles.PhaseCard,
         isTarget ? styles.PhaseCardActive : '',
-        phaseDnd.dragPhaseId === phase.id ? styles.PhaseCardDragging : '',
+        phaseDnd.dragPhaseHidden && phaseDnd.dragPhaseId === phase.id ? styles.PhaseCardDragging : '',
       ].filter(Boolean).join(' ')}
       data-phase-id={phase.id}
       onDragOver={(e) => phaseDnd.onDragOver(e, phaseIndex)}
@@ -709,7 +707,7 @@ function PhaseSection({
               aria-label={`${phaseName} details`}
             />
           </div>
-          {expanded && isTarget && (
+          {isTarget && (
             <span className={styles.InfoChip}>
               <InfoSolidIcon />
               Codes will be added here
@@ -885,6 +883,9 @@ export function TreatmentPlanView({
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragIds, setDragIds] = useState<string[]>([]);
   const [dragHidden, setDragHidden] = useState(false);
+  // Codes just dropped as a group: they open out from the single drop row, one after another.
+  const [spreadIds, setSpreadIds] = useState<string[]>([]);
+  const spreadTimer = useRef<number | null>(null);
   // A drop event bubbles through row → body → table; only the first one may commit.
   const dropHandled = useRef(false);
 
@@ -924,10 +925,12 @@ export function TreatmentPlanView({
     if (prev) setExpandedPhases(prev);
   };
   const [dragPhaseId, setDragPhaseId] = useState<string | null>(null);
+  const [dragPhaseHidden, setDragPhaseHidden] = useState(false);
   const [dragPhaseHeight, setDragPhaseHeight] = useState(36);
   const [dropPhaseIndex, setDropPhaseIndex] = useState<number | null>(null);
   const phaseDnd: PhaseDnd = {
     dragPhaseId,
+    dragPhaseHidden,
     dropIndex: dropPhaseIndex,
     onDragStart: (id, height) => {
       dropHandled.current = false;
@@ -936,8 +939,11 @@ export function TreatmentPlanView({
       // Fold every phase down to its header so they're easy to reorder; restored afterwards.
       expandedBeforePhaseDrag.current = new Set(expandedPhases);
       requestAnimationFrame(() => setExpandedPhases(new Set()));
+      // Then fold the carried phase itself away, once the drag is under way (hiding the source
+      // inside dragstart can cancel the drag in some browsers).
+      window.setTimeout(() => setDragPhaseHidden(true), 0);
     },
-    onDragEnd: () => { stopAutoScroll(); setDragPhaseId(null); setDropPhaseIndex(null); restoreExpanded(); },
+    onDragEnd: () => { stopAutoScroll(); setDragPhaseId(null); setDragPhaseHidden(false); setDropPhaseIndex(null); restoreExpanded(); },
     onDragOver: (e, index) => {
       if (!dragPhaseId) return;
       e.preventDefault();
@@ -955,6 +961,7 @@ export function TreatmentPlanView({
       if (dropPhaseIndex !== null) onMovePhase(dragPhaseId, dropPhaseIndex);
       const droppedId = dragPhaseId;
       setDragPhaseId(null);
+      setDragPhaseHidden(false);
       setDropPhaseIndex(null);
       restoreExpanded();
       revealPhase(droppedId); // keep the moved phase on screen, wherever it landed
@@ -980,6 +987,7 @@ export function TreatmentPlanView({
     dragId,
     dragIds,
     dragHidden,
+    spreadIds,
     drop,
     onDragStart: (id, rowHeight) => {
       // Dragging a checked row carries every checked row, in plan order.
@@ -1035,7 +1043,14 @@ export function TreatmentPlanView({
       dropHandled.current = true;
       stopAutoScroll();
       clearExpandTimer();
-      if (dragId && drop) onMoveProcedure(dragIds, drop.phaseId, drop.index);
+      if (dragId && drop) {
+        onMoveProcedure(dragIds, drop.phaseId, drop.index);
+        if (dragIds.length > 1) {
+          setSpreadIds(dragIds);
+          if (spreadTimer.current) window.clearTimeout(spreadTimer.current);
+          spreadTimer.current = window.setTimeout(() => setSpreadIds([]), 900);
+        }
+      }
       setDragId(null);
       setDragIds([]);
       setDragHidden(false);
@@ -1222,7 +1237,7 @@ export function TreatmentPlanView({
                   role="table"
                   aria-label={`${planLabel} procedures`}
                   style={{
-                    '--row-h': `${dragHeight * Math.max(1, dragIds.length)}px`,
+                    '--row-h': `${dragHeight}px`, // one row high however many codes are carried
                     '--gap-label': dragIds.length > 1 ? `"${dragIds.length} codes"` : '""',
                     '--phase-h': `${dragPhaseHeight}px`,
                   } as React.CSSProperties}
