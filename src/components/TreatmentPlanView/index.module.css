@@ -155,7 +155,7 @@
   border: 1px solid var(--grey-20);
   border-radius: var(--radius-8);
   overflow: hidden;
-  background: var(--white);
+  background: var(--grey-20); /* shows between the phase cards */
 }
 
 .Scroll {
@@ -164,29 +164,24 @@
 }
 
 .Grid {
-  --col-drag: 3.2rem;
-  --col-check: 3.2rem;
-  --col-date: 10rem;
-  --col-code: minmax(28rem, 1fr);
-  --col-th: 10rem;
-  --col-surface: 7.2rem;
-  --col-provider: 8rem;
-  --col-loc: 6.4rem;
-  --col-fee: 9.6rem;
-  --col-disc: 7.2rem;
-  --col-pat: 9.6rem;
-  --col-notes: 3.8rem;
-  --col-status: 12.8rem;
+  /* Every column flexes between a minimum that still fits its content and a share of the
+     free width (the code column takes most of it), so the table fits its container. */
+  --col-drag: 2.4rem;
+  --col-check: 2.4rem;
+  --col-date: minmax(7.6rem, 1fr);
+  --col-code: minmax(8rem, 5fr);
+  --col-th: minmax(5.6rem, 1fr);
+  --col-surface: minmax(5.6rem, 1fr);
+  --col-provider: minmax(5.6rem, 1fr);
+  --col-loc: minmax(5rem, 0.8fr);
+  --col-fee: minmax(7.2rem, 1.2fr);
+  --col-disc: minmax(5.6rem, 0.8fr);
+  --col-pat: minmax(7.2rem, 1.2fr);
+  --col-notes: 3.2rem;
+  --col-status: minmax(9.6rem, 1.4fr);
   --grid-cols: var(--col-drag) var(--col-check) var(--col-date) var(--col-code)
     var(--col-th) var(--col-surface) var(--col-provider) var(--col-loc)
     var(--col-fee) var(--col-disc) var(--col-pat) var(--col-notes) var(--col-status);
-  min-width: 123.2rem;
-}
-
-.Compact .Grid {
-  --col-code: 17rem;
-  --col-th: 7.2rem;
-  min-width: 105.2rem;
 }
 
 .HeaderRow {
@@ -222,6 +217,7 @@
 
 .PhaseCard {
   border-bottom: 1px solid var(--grey-20);
+  background: var(--white);
 }
 
 .PhaseCard:last-child:not(.PhaseCardActive) {
@@ -231,10 +227,14 @@
 .PhaseCardActive {
   border: 2px solid var(--blue-80);
   background: var(--white);
-  overflow: hidden;
+  overflow: clip; /* not hidden: that would make the card a scroll container and break the sticky header */
 }
 
+/* Pins under the column headers while its phase is on screen; the next phase's header takes over. */
 .PhaseHeader {
+  position: sticky;
+  top: calc(3.2rem + 1px);
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -246,9 +246,9 @@
 
   @media (hover: hover) {
     &:hover {
-      background: var(--hover-default);
+      /* The hover tint is translucent; layer it over white so the sticky header stays opaque. */
+      background: linear-gradient(var(--hover-default), var(--hover-default)), var(--white);
     }
-  
   }
 }
 
@@ -399,6 +399,11 @@
   border-right: 1px solid var(--grey-20);
 }
 
+.Td {
+  min-width: 0;
+  overflow: hidden;
+}
+
 .Td:last-child {
   border-right: none;
 }
@@ -519,5 +524,239 @@
 @media (prefers-reduced-motion: reduce) {
   .PhaseToggleIcon {
     transition: none;
+  }
+}
+
+/* ── Drag to reorder ── */
+.DragHandle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--grey-40);
+  cursor: grab;
+
+  &:active { cursor: grabbing; }
+
+  &:focus-visible {
+    outline: 2px solid var(--interactive-80);
+    outline-offset: -2px;
+  }
+}
+
+.Row:hover .DragHandle,
+.DragHandle:focus-visible {
+  color: var(--grey-80);
+}
+
+.Row {
+  position: relative;
+}
+
+.Row {
+  transition: margin-top 150ms ease-out;
+}
+
+/* A checked row. */
+.RowSelected,
+.RowSelected > * {
+  background: var(--interactive-10);
+}
+
+/* The rows being carried fold away from where they were picked up (no ghost left behind).
+   They stay in the flow at zero height so the drop gap's margin still opens in the right place. */
+.RowDragging {
+  height: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The drag image the browser shows under the pointer. */
+.DragGhost {
+  position: fixed;
+  top: -1000px;
+  left: 0;
+  background: var(--white);
+  outline: 2px solid var(--interactive-80);
+  outline-offset: -2px;
+  border-radius: var(--radius-4);
+  box-shadow: 0 8px 16px rgb(0 0 0 / 25%);
+}
+
+/* Drag image for several rows: a card with two more stacked behind it and a count badge. */
+.DragStack {
+  position: fixed;
+  top: -1000px;
+  left: 0;
+  width: 30rem;
+  height: 6.4rem;
+}
+
+.DragStackCard {
+  position: absolute;
+  top: 1.2rem;
+  left: 0;
+  width: 28rem;
+  height: 4rem;
+  box-sizing: border-box;
+  border: 1px solid var(--grey-20);
+  border-radius: var(--radius-8);
+  background: var(--white);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 20%);
+}
+
+.DragStackFront {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  padding: 0 var(--spacing-12);
+  box-shadow: 0 6px 14px rgb(0 0 0 / 25%);
+  font-size: 1.2rem;
+  color: var(--grey-100);
+}
+
+.DragStackFront > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.DragStackFront > span {
+  color: var(--grey-60);
+  font-size: 1.1rem;
+}
+
+.DragStackBadge {
+  position: absolute;
+  top: 0;
+  right: 0.4rem;
+  min-width: 2.4rem;
+  height: 2.4rem;
+  box-sizing: border-box;
+  padding: 0 var(--spacing-4);
+  border-radius: var(--radius-32);
+  background: var(--interactive-80);
+  color: var(--white);
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 2.4rem;
+  text-align: center;
+}
+
+/* A dragged phase header keeps to plain white and grey. */
+.DragGhostPlain {
+  background: var(--white);
+  outline: 1px solid var(--grey-40);
+}
+
+/* Rows make room: the row at the drop point opens a gap above itself. */
+.GapBefore {
+  margin-top: var(--row-h);
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(-1 * var(--row-h));
+    height: var(--row-h);
+    box-sizing: border-box;
+    border: 2px dashed var(--blue-80);
+    border-radius: var(--radius-4);
+    background: var(--blue-10);
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: var(--spacing-16);
+    content: var(--gap-label);
+    color: var(--blue-100);
+    font-size: 1.2rem;
+  }
+}
+
+@keyframes tailIn {
+  from { height: 0; }
+}
+
+/* Same gap when dropping after the last row. */
+.DropTail {
+  position: relative;
+  height: 0;
+  transition: height 150ms ease-out;
+
+  &[data-open] {
+    height: var(--row-h);
+    animation: tailIn 150ms ease-out;
+    border: 2px dashed var(--blue-80);
+    border-radius: var(--radius-4);
+    background: var(--blue-10);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: var(--spacing-16);
+    color: var(--blue-100);
+    font-size: 1.2rem;
+
+    &::after { content: var(--gap-label); }
+  }
+}
+
+.PhaseHeaderDrop {
+  outline: 2px dashed var(--blue-80);
+  outline-offset: -2px;
+}
+
+.EmptyPhaseDrop {
+  outline: 2px dashed var(--blue-80);
+  outline-offset: -2px;
+}
+
+/* ── Drag to reorder phases ── */
+.PhaseHeader[draggable='true'] {
+  cursor: grab;
+
+  &:active { cursor: grabbing; }
+}
+
+.PhaseCard {
+  position: relative;
+  transition: margin-top 150ms ease-out;
+  scroll-margin-top: calc(3.3rem + 4px); /* clear the sticky column header when scrolled into view */
+}
+
+/* 4px between phases (first-of-type, so the drag gap elements between cards don't matter). */
+.PhaseCard:not(:first-of-type) {
+  margin-top: 4px;
+}
+
+.PhaseCardDragging {
+  opacity: 0.6;
+}
+
+.PhaseCardDragging .PhaseHeader {
+  background: var(--white);
+}
+
+/* Gap elements between phases: only the one at the drop point opens up. */
+.PhaseGap {
+  height: 0;
+  box-sizing: border-box;
+  transition: height 150ms ease-out;
+
+  &[data-open] {
+    height: var(--phase-h);
+    border: 2px dashed var(--blue-80);
+    border-radius: var(--radius-4);
+    background: var(--blue-10);
   }
 }

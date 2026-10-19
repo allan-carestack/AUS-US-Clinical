@@ -34,6 +34,7 @@ import {
   getTreatmentPlanMock,
   seedPlansById,
   type PlanProcedure,
+  type PlanPhase,
   type TreatmentPlanMock,
 } from './components/TreatmentPlanView/mockData';
 import {
@@ -858,6 +859,60 @@ export default function App() {
           ),
         },
       };
+    });
+  };
+
+  // Drag-to-reorder: move codes to `index` in `toPhaseId` (index counts the target list as
+  // it is now; the moved codes keep their current relative order).
+  const moveProcedures = (planId: string, procedureIds: string[], toPhaseId: string, index: number) => {
+    setPlansById((prev) => {
+      const plan = prev[planId];
+      if (!plan || !procedureIds.length) return prev;
+      const ids = new Set(procedureIds);
+      const moving = plan.phases.flatMap((ph) => ph.procedures).filter((p) => ids.has(p.id));
+      const target = plan.phases.find((ph) => ph.id === toPhaseId);
+      if (!moving.length || !target) return prev;
+      // Codes leaving the target list ahead of the drop point shift it up.
+      const at = index - target.procedures.slice(0, index).filter((p) => ids.has(p.id)).length;
+      const phases = plan.phases.map((ph) => {
+        const rest = ph.procedures.filter((p) => !ids.has(p.id));
+        if (ph.id !== toPhaseId) return { ...ph, procedures: rest };
+        const next = [...rest];
+        next.splice(Math.min(Math.max(at, 0), next.length), 0, ...moving);
+        return { ...ph, procedures: next };
+      });
+      // Nothing actually changed position — keep the same object so React skips the render.
+      const same = phases.every((ph, i) =>
+        ph.procedures.length === plan.phases[i].procedures.length
+        && ph.procedures.every((p, j) => p === plan.phases[i].procedures[j]));
+      return same ? prev : { ...prev, [planId]: { ...plan, phases } };
+    });
+  };
+
+  // New Phase: insert an empty phase directly after `afterPhaseId` (append when null).
+  const addPhase = (planId: string, afterPhaseId: string | null, phase: PlanPhase) => {
+    setPlansById((prev) => {
+      const plan = prev[planId];
+      if (!plan) return prev;
+      const at = afterPhaseId ? plan.phases.findIndex((ph) => ph.id === afterPhaseId) : -1;
+      const phases = [...plan.phases];
+      phases.splice(at < 0 ? phases.length : at + 1, 0, phase);
+      return { ...prev, [planId]: { ...plan, phases, phasesTotal: phases.length } };
+    });
+  };
+
+  // Drag-to-reorder phases: `index` counts the current list, so moving down accounts for the removal.
+  const movePhase = (planId: string, phaseId: string, index: number) => {
+    setPlansById((prev) => {
+      const plan = prev[planId];
+      const fromIdx = plan?.phases.findIndex((ph) => ph.id === phaseId) ?? -1;
+      if (!plan || fromIdx < 0) return prev;
+      const at = fromIdx < index ? index - 1 : index;
+      if (at === fromIdx) return prev;
+      const phases = [...plan.phases];
+      const [moving] = phases.splice(fromIdx, 1);
+      phases.splice(at, 0, moving);
+      return { ...prev, [planId]: { ...plan, phases } };
     });
   };
 
@@ -1863,6 +1918,9 @@ export default function App() {
         );
       }}
       targetPhaseId={targetPhaseId}
+      onMoveProcedure={(procedureIds, phaseId, index) => moveProcedures(activePlan.id, procedureIds, phaseId, index)}
+      onMovePhase={(phaseId, index) => movePhase(activePlan.id, phaseId, index)}
+      onAddPhase={(afterPhaseId, phase) => addPhase(activePlan.id, afterPhaseId, phase)}
       onSelectTargetPhase={(phaseId) => {
         setTargetPhaseByPlan((prev) => ({ ...prev, [activePlan.id]: phaseId }));
       }}
