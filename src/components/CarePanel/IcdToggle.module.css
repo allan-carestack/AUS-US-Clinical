@@ -1,0 +1,12 @@
+/* Prototype control, deliberately outside the popover. */
+.Root {
+  position: fixed;
+  left: var(--spacing-12);
+  bottom: var(--spacing-12);
+  z-index: 20000;
+  padding: var(--spacing-6) var(--spacing-12);
+  border: 1px solid var(--grey-20);
+  border-radius: var(--radius-8);
+  background: var(--white);
+  box-shadow: var(--shadow);
+}

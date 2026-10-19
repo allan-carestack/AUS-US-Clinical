@@ -27,6 +27,7 @@ import { Combobox as BaseCombobox } from '@base-ui/react/combobox';
 import { ComboboxInput, ComboboxItem, ComboboxEmpty, Combobox } from './components/Combobox';
 import { DENTAL_CODES } from './components/CarePanel/dentalCodes';
 import { TreatmentPlanView } from './components/TreatmentPlanView';
+import { IcdToggle } from './components/CarePanel/IcdToggle';
 import {
   cloneTreatmentPlanMock,
   firstPhaseId,
@@ -938,6 +939,18 @@ export default function App() {
   };
 
   // `surfaceText` overrides the label when several surfaces were entered (e.g. "MOD").
+  // Green flash across a row that was just added or completed (cleared after the animation).
+  const flashRow = (rowId: string) => {
+    setSuccessRowIds(prev => new Set(prev).add(rowId));
+    setTimeout(() => {
+      setSuccessRowIds(prev => {
+        const next = new Set(prev);
+        next.delete(rowId);
+        return next;
+      });
+    }, 1200);
+  };
+
   const applyEntry = (chip: ChipDef, context: CarePanelSelectionContext, meta?: ToothMeta, surface?: SurfaceName, surfaceText?: string) => {
     const id = `entry-${++entryCounterRef.current}`;
     const surfaceLabel = surfaceText ?? (surface ? SURFACE_LABEL[surface] : '');
@@ -951,6 +964,7 @@ export default function App() {
       setPlanHistoryProcedureIds(prev => [id, ...prev]);
       if (meta) applyToothMark(chip, meta.id, surface);
       persistProcedure(chipCodeId(chip), meta?.id ?? '', surfaceLabel, context.txType);
+      flashRow(id);
       return;
     }
 
@@ -975,6 +989,7 @@ export default function App() {
       userName: 'Mr. John Doe',
     };
     setChartRows(prev => [newRow, ...prev]);
+    flashRow(id);
 
     if (meta) applyToothMark(chip, meta.id, surface);
 
@@ -1166,6 +1181,7 @@ export default function App() {
       }
       applyAreaMark(chip, thArea);
       persistProcedure(chipCodeId(chip), thArea, '', context.txType);
+      flashRow(id);
       return;
     }
     const surfaceName = chip.requires === 'surface' && letters
@@ -1538,6 +1554,7 @@ export default function App() {
     clearPendingProcedure(procedureId);
     persistProcedure(proc.codeId, thArea, surfaceCode || '', 'Proposed');
     setToothSelectorRequest(prev => (prev && prev.rowId === procedureId ? null : prev));
+    flashRow(procedureId);
 
     const plan = plansById[planId];
     const flat = plan?.phases.flatMap((p) => p.procedures) ?? [];
@@ -1580,14 +1597,7 @@ export default function App() {
     persistProcedure(chipCodeId(chip), thArea, surfaceLabel, 'Proposed');
     setToothSelectorRequest(prev => (prev && prev.rowId === rowId ? null : prev));
 
-    setSuccessRowIds(prev => new Set(prev).add(rowId));
-    setTimeout(() => {
-      setSuccessRowIds(prev => {
-        const next = new Set(prev);
-        next.delete(rowId);
-        return next;
-      });
-    }, 1200);
+    flashRow(rowId);
 
     const currentIdx = chartRows.findIndex(r => r.id === rowId);
     const nextBelow = chartRows.find((r, i) =>
@@ -1951,6 +1961,8 @@ export default function App() {
           <CarePanel codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} usesArmedSelection={codeUsesArmedSelection} />
         </div>
       </div>
+
+      <IcdToggle />
 
       {toothSelectorRequest && (() => {
         const draftRow = findChartEntry(toothSelectorRequest.rowId);

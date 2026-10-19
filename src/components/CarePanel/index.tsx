@@ -11,6 +11,7 @@ import { ScrollArea, ScrollAreaViewport, ScrollAreaContent, ScrollAreaScrollbar,
 import scrollAreaStyles from '../ScrollArea/index.module.css';
 import { Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverTitle, PopoverClose, PopoverBody } from '../Popover';
 import { ToothSelectorPopover } from '../ToothSelectorModal';
+import { icdConfigFor } from './icd';
 import { Tag } from '../Tag';
 import { PlusIcon, InfoOutlineIcon, InfoSolidIcon, EditIcon } from '../Icon';
 import { DatePicker } from '../DatePicker';
@@ -70,6 +71,8 @@ export interface CodeInput {
   thArea: string;
   /** Surface letters (e.g. "MOD"); empty unless the code requires a surface. */
   surface: string;
+  /** ICD codes entered in the popover (not stored on the row yet). */
+  icd?: string[];
 }
 
 interface Appointment {
@@ -532,9 +535,11 @@ function CodeSearch({
       {pending && (() => {
         const { code, anchor } = pending;
         const label = `${code.code} - ${code.description}`;
-        const submit = (input: CodeInput) => {
-          setPending(null);
-          setInputValue('');
+        const submit = (input: CodeInput, more = false) => {
+          if (!more) {
+            setPending(null);
+            setInputValue('');
+          }
           onSelect(code, input);
         };
         const focusSearch = () => document.querySelector<HTMLElement>('input[aria-label="Search dental codes"]');
@@ -592,7 +597,9 @@ function CodeSearch({
             anchor={anchor}
             side="overlay"
             finalFocus={focusSearch}
-            onCommit={(t, sf) => submit({ thArea: t, surface: sf })}
+            allowMore
+            icd={icdConfigFor(code)}
+            onCommit={(t, sf, more, icd) => submit({ thArea: t, surface: sf, icd }, more)}
             title={label}
             requiresSurface={needsSurface}
             toothId=""

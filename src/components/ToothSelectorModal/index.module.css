@@ -1,9 +1,47 @@
 /* ── Popup — override Popover's default width for this wider layout ── */
 .Popup {
-  width: 65rem !important;
-  max-width: 65rem !important;
+  width: 70rem !important;
+  max-width: 70rem !important;
   padding-top: 0 !important;
   overflow: hidden;
+  box-shadow: 0 8px 8px 0 rgb(0 0 0 / 20%), 0 20px 20px -12px rgb(0 0 0 / 20%) !important;
+}
+
+/* Overlay mode: the popup grows out of the +Code list item it replaces (size comes in as
+   --morph-w / --morph-h; the popup is aligned to the item's top-right corner), then the
+   tooth, surface and ICD sections fade up one after the other. The popover mounts already
+   open, so this is a keyframe animation rather than a Base UI starting-style transition. */
+@keyframes morphIn {
+  0% {
+    clip-path: inset(0 0 calc(100% - var(--morph-h)) calc(100% - var(--morph-w)) round var(--radius-8));
+    opacity: 0;
+  }
+  20% { opacity: 1; }
+  100% {
+    clip-path: inset(-4rem round var(--radius-8)); /* negative inset keeps the box-shadow visible */
+    opacity: 1;
+  }
+}
+
+@keyframes itemIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.PopupMorph {
+  animation: morphIn 300ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+.PopupMorph .QuickMain > :first-child { animation: itemIn 200ms ease-out 120ms both; }
+.PopupMorph .QuickMain > :nth-child(2) { animation: itemIn 200ms ease-out 200ms both; }
+.PopupMorph .IcdBlock,
+.PopupMorph .QuickFooter { animation: itemIn 200ms ease-out 280ms both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .PopupMorph,
+  .PopupMorph .QuickMain > *,
+  .PopupMorph .IcdBlock,
+  .PopupMorph .QuickFooter { animation: none; }
 }
 
 /* ── Body ── */
@@ -184,6 +222,7 @@
 }
 
 .ToothCellEmpty {
+  min-height: 3.4rem; /* same height as a tooth cell, so rows with only empty cells don't collapse */
   border: 1px solid var(--grey-20);
   background-color: var(--grey-10);
 }
@@ -191,10 +230,11 @@
 /* ── Surface quicklinks ── */
 .Quicklinks {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: var(--spacing-12);
-  padding: var(--spacing-8) var(--spacing-12);
+  justify-content: center;
+  gap: var(--spacing-8);
+  padding: var(--spacing-8) 0;
 }
 
 .QuicklinkActive {
@@ -260,6 +300,13 @@
   background: linear-gradient(90deg, var(--grey-80), var(--grey-60));
 }
 
+.HeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  min-width: 0;
+}
+
 .DarkHeader h2 {
   color: var(--white);
   font-weight: var(--weight-700);
@@ -288,7 +335,7 @@
 
 .QuickColSurface {
   composes: QuickCol;
-  flex: 0 0 16rem;
+  flex: 0 0 21rem;
 }
 
 .QuickColSurface .QuickFrame {
@@ -296,7 +343,7 @@
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-8);
-  padding: var(--spacing-8) 0;
+  padding: var(--spacing-8) 0 0;
 }
 
 .QuickColSurface .Diagram {
@@ -306,6 +353,17 @@
 
 .QuickLabel {
   composes: text-lg weight-700 from global;
+}
+
+.KeyCombo {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  vertical-align: middle;
+}
+
+.QuickLabel + .Hint {
+  margin-top: calc(-1 * var(--spacing-6)); /* sit closer to the label than to the frame */
 }
 
 .Req {
@@ -337,6 +395,14 @@
   padding: var(--spacing-8);
 }
 
+.ToothCellQueued {
+  background-color: var(--interactive-20) !important;
+}
+
+.ToothCellStaged {
+  background-color: var(--orange-20) !important;
+}
+
 .CircleRegion {
   fill: var(--white);
   stroke: var(--grey-20);
@@ -358,16 +424,6 @@
   color: var(--grey-60);
 }
 
-.IcdBox {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  gap: var(--spacing-4);
-  padding: var(--spacing-4) var(--spacing-8);
-  border: 1px solid var(--grey-20);
-  border-radius: var(--radius-4);
-}
-
 .IcdChip {
   padding: 0 var(--spacing-6);
   border: 1px solid var(--grey-20);
@@ -376,13 +432,250 @@
   color: var(--grey-100);
 }
 
-.IcdBox > svg {
-  margin-left: auto;
-}
-
 .QuickFooter {
   display: flex;
   justify-content: flex-end;
+  gap: var(--spacing-8);
   padding: var(--spacing-8) var(--spacing-12);
   border-top: 1px solid var(--grey-20);
+}
+
+/* Regular / Supernumerary panes share one cell, so the popover keeps its height
+   and the swap is a quick slide + fade instead of a jump. */
+.GridStack {
+  display: grid;
+}
+
+.GridPane {
+  grid-area: 1 / 1;
+  align-self: start;
+  transition: opacity 180ms ease-out, transform 180ms ease-out, visibility 180ms;
+}
+
+.PaneLeft,
+.PaneRight {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.PaneLeft { transform: translateX(-12px); }
+.PaneRight { transform: translateX(12px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .GridPane {
+    transition: none;
+  }
+}
+
+.ToothCell:disabled {
+  cursor: default;
+  background-color: var(--grey-10);
+
+  &:hover {
+    background-color: var(--grey-10);
+  }
+}
+
+/* ── Hints, echo, summary, ICD, footer ── */
+.Kbd {
+  composes: text-base weight-400 from global;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 1px var(--spacing-2) 0;
+  border-bottom: 1px solid rgb(0 0 0 / 16%);
+  border-radius: 3px;
+  background: var(--grey-10);
+  color: var(--grey-80);
+  font-family: inherit;
+  line-height: 1;
+}
+
+/* Keycap inside the active segment of the Regular / Supernumerary switch. */
+:global([data-pressed]) > .Kbd {
+  background: rgb(2 102 120 / 80%);
+  border-bottom-color: rgb(0 0 0 / 20%);
+  color: var(--white);
+}
+
+.Hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-4) var(--spacing-6);
+  color: var(--grey-60);
+  composes: text-base weight-400 from global;
+}
+
+.QuickTabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+}
+
+.TypedEcho,
+.TypedErr {
+  composes: text-base weight-400 from global;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  color: var(--grey-60);
+}
+
+.TypedErr {
+  color: var(--red-100);
+}
+
+.SummaryWrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-top: calc(-1 * var(--spacing-12)); /* cancels the body's flex gap while collapsed */
+  opacity: 0;
+  transition: grid-template-rows 180ms ease-out, margin-top 180ms ease-out, opacity 180ms ease-out;
+
+  &[data-open] {
+    grid-template-rows: 1fr;
+    margin-top: 0;
+    opacity: 1;
+  }
+
+  & > div {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.Summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-6);
+  composes: text-base weight-400 from global;
+}
+
+.SummaryLabel {
+  color: var(--grey-60);
+}
+
+.ChipCurrent {
+  border-color: var(--orange-60);
+  background: var(--orange-10);
+}
+
+.ChipX {
+  margin-left: var(--spacing-4);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--grey-60);
+  cursor: pointer;
+  font: inherit;
+
+  &:hover {
+    color: var(--grey-100);
+  }
+}
+
+.QuickPicks {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--grey-60);
+  composes: text-base weight-400 from global;
+}
+
+.IcdBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.IcdRow label {
+  white-space: nowrap;
+}
+
+.IcdField {
+  flex: 1;
+  min-width: 0;
+}
+
+.IcdGroup {
+  flex-wrap: wrap;
+  height: auto;
+  min-height: 2.4rem;
+  padding-block: var(--spacing-2);
+}
+
+.IcdGroup input {
+  flex: 1;
+  min-width: 8rem;
+}
+
+.IcdGroup > button:last-child {
+  margin-left: auto;
+}
+
+.IcdFieldInvalid > * {
+  border-color: var(--red-80);
+}
+
+.IcdBlock > :not(.IcdRow) {
+  padding-left: 7rem;
+}
+
+.QuickFooter {
+  align-items: center;
+}
+
+.FooterLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-12);
+  margin-right: auto;
+  color: var(--grey-60);
+  composes: text-base weight-400 from global;
+}
+
+.CollapseX {
+  display: inline-grid;
+  grid-template-columns: 0fr;
+  opacity: 0;
+  transition: grid-template-columns 200ms ease-out, opacity 200ms ease-out;
+
+  &[data-open] {
+    grid-template-columns: 1fr;
+    opacity: 1;
+  }
+
+  & > * {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.LegendItem {
+  animation: itemIn 200ms ease-out both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.FooterLegend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
 }

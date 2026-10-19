@@ -31,6 +31,7 @@ export function SurfaceQuicklinks({ surfaceLetters, disabled, onSelect }: {
           variant="link"
           className={sameLetters(surfaceLetters, link.letters) ? styles.QuicklinkActive : ''}
           disabled={disabled}
+          tabIndex={-1} // mouse shortcuts; keyboard users type the letters
           onClick={() => onSelect(link.letters)}
         >
           {link.label}

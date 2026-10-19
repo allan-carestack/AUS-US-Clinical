@@ -17,6 +17,8 @@ interface ComboboxInputProps {
   id?: string;
   autoFocus?: boolean;
   onKeyDown?: (e: React.KeyboardEvent) => void;
+  /** Rendered inside the field, before the text input (e.g. selected-value chips). */
+  children?: React.ReactNode;
   'aria-label'?: string;
   'aria-labelledby'?: string;
 }
@@ -29,6 +31,7 @@ export function ComboboxInput({
   id,
   autoFocus,
   onKeyDown,
+  children,
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledby,
 }: ComboboxInputProps) {
@@ -38,6 +41,7 @@ export function ComboboxInput({
       {badgeLabel !== null && (
         <span className={styles.SelectedBadge}>{badgeLabel}</span>
       )}
+      {children}
       <BaseCombobox.Input
         placeholder={value.length === 0 ? placeholder : ''}
         className={styles.Input}
