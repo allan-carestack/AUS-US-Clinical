@@ -216,18 +216,24 @@
 }
 
 .PhaseCard {
-  border-bottom: 1px solid var(--grey-20);
+  /* Every card reserves the same 2px edge (transparent unless selected), so selecting a phase
+     changes colours only and nothing moves. The top edge is drawn by the header. */
+  border: 2px solid transparent;
+  border-top: 0;
   background: var(--white);
-}
-
-.PhaseCard:last-child:not(.PhaseCardActive) {
-  border-bottom: none;
 }
 
 .PhaseCardActive {
-  border: 2px solid var(--blue-80);
+  border-color: var(--blue-80);
+  border-top: 0; /* drawn by the header instead, so it travels with the sticky header */
   background: var(--white);
   overflow: clip; /* not hidden: that would make the card a scroll container and break the sticky header */
+}
+
+/* The selected phase's top border lives on its header: the card's own top edge scrolls away,
+   while the pinned header keeps its blue edge. */
+.PhaseCardActive .PhaseHeader {
+  border-top-color: var(--blue-80);
 }
 
 /* Pins under the column headers while its phase is on screen; the next phase's header takes over. */
@@ -242,6 +248,7 @@
   height: 3.6rem;
   padding: 0 var(--spacing-8) 0 var(--spacing-4);
   background: var(--white);
+  border-top: 2px solid transparent;
   border-bottom: 1px solid var(--grey-20);
 
   @media (hover: hover) {
@@ -590,21 +597,21 @@
   box-shadow: 0 8px 16px rgb(0 0 0 / 25%);
 }
 
-/* Drag image for several rows: a card with two more stacked behind it and a count badge. */
+/* Drag image for several rows: a "Moving N codes" card with two more stacked behind it. */
 .DragStack {
   position: fixed;
   top: -1000px;
   left: 0;
-  width: 30rem;
-  height: 6.4rem;
+  width: 24rem;
+  height: 5.2rem;
 }
 
 .DragStackCard {
   position: absolute;
-  top: 1.2rem;
+  top: 0;
   left: 0;
-  width: 28rem;
-  height: 4rem;
+  width: 22rem;
+  height: 3.6rem;
   box-sizing: border-box;
   border: 1px solid var(--grey-20);
   border-radius: var(--radius-8);
@@ -614,47 +621,28 @@
 
 .DragStackFront {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 1px;
+  align-items: center;
   padding: 0 var(--spacing-12);
   box-shadow: 0 6px 14px rgb(0 0 0 / 25%);
   font-size: 1.2rem;
+  font-weight: 500;
   color: var(--grey-100);
-}
-
-.DragStackFront > * {
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.DragStackFront > span {
-  color: var(--grey-60);
-  font-size: 1.1rem;
+/* Codes dropped together as a group open out one after another from the single drop row. */
+@keyframes rowSpread {
+  from { max-height: 0; opacity: 0; }
+  to { max-height: 5rem; opacity: 1; }
 }
 
-.DragStackBadge {
-  position: absolute;
-  top: 0;
-  right: 0.4rem;
-  min-width: 2.4rem;
-  height: 2.4rem;
-  box-sizing: border-box;
-  padding: 0 var(--spacing-4);
-  border-radius: var(--radius-32);
-  background: var(--interactive-80);
-  color: var(--white);
-  font-size: 1.2rem;
-  font-weight: 700;
-  line-height: 2.4rem;
-  text-align: center;
-}
+.RowSpread {
+  overflow: hidden;
+  animation: rowSpread 260ms ease-out both;
 
-/* A dragged phase header keeps to plain white and grey. */
-.DragGhostPlain {
-  background: var(--white);
-  outline: 1px solid var(--grey-40);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 /* Rows make room: the row at the drop point opens a gap above itself. */
@@ -739,12 +727,14 @@
   margin-top: 4px;
 }
 
+/* The phase being carried folds away from where it was picked up (no ghost left behind). */
 .PhaseCardDragging {
-  opacity: 0.6;
-}
-
-.PhaseCardDragging .PhaseHeader {
-  background: var(--white);
+  height: 0;
+  margin: 0 !important;
+  overflow: hidden;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Gap elements between phases: only the one at the drop point opens up. */
