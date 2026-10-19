@@ -22,6 +22,7 @@
 }
 
 .Scrollbar {
+  z-index: 10; /* above sticky headers inside the viewport, which would otherwise cut the thumb */
   display: flex;
   touch-action: none;
   user-select: none;

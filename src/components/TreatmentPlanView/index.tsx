@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import Button from '../Button';
 import Checkbox from '../Checkbox';
 import { Tag } from '../Tag';
@@ -14,6 +14,7 @@ import {
   AngleDownIcon,
   WarningIcon,
   CloseIcon,
+  DragHandleIcon,
   EditIcon,
   InfoSolidIcon,
   KebabMenuIcon,
@@ -61,6 +62,44 @@ export interface TreatmentPlanViewProps {
   isValidTooth: (value: string) => string | null;
   isValidSurface: (value: string) => string | null;
   onSelectArea: (procedureId: string, areaId: string) => void;
+  /** Reorder / move one or more codes (kept in their current relative order). `index` is the insertion point in the target phase's current list (before the codes are removed from it). */
+  onMoveProcedure: (procedureIds: string[], toPhaseId: string, index: number) => void;
+  /** Reorder a whole phase. `index` is the insertion point in the current phase list (before the phase is removed from it). */
+  onMovePhase: (phaseId: string, index: number) => void;
+  /** Insert a new, empty phase right after `afterPhaseId` (append when null). */
+  onAddPhase: (afterPhaseId: string | null, phase: PlanPhase) => void;
+}
+
+/** Drag-and-drop state and handlers for reordering whole phases. */
+interface PhaseDnd {
+  dragPhaseId: string | null;
+  dropIndex: number | null;
+  onDragStart: (id: string, height: number) => void;
+  onDragEnd: () => void;
+  onDragOver: (e: React.DragEvent, index: number) => void;
+  onDrop: (e: React.DragEvent) => void;
+  /** Alt+Up / Alt+Down on a focused phase header. */
+  onNudge: (id: string, index: number, dir: -1 | 1) => void;
+}
+
+/** Drag-and-drop state and handlers shared by every phase's rows. */
+interface PlanDnd {
+  dragId: string | null;
+  /** Everything being carried: the whole checked selection when the dragged row is checked, else just the row. */
+  dragIds: string[];
+  /** True once the carried rows have been folded away from their original spot. */
+  dragHidden: boolean;
+  drop: { phaseId: string; index: number } | null;
+  onDragStart: (id: string, rowHeight: number) => string[];
+  /** Dragging over a phase header: drops at the end of that phase, and opens it if collapsed. */
+  onHeaderDragOver: (e: React.DragEvent, phaseId: string, count: number, expanded: boolean) => void;
+  /** Dragging over the empty space of a phase body (below its last row). */
+  onBodyDragOver: (e: React.DragEvent, phaseId: string, count: number) => void;
+  onDragEnd: () => void;
+  onDragOver: (e: React.DragEvent, phaseId: string, index: number) => void;
+  onDrop: (e: React.DragEvent) => void;
+  /** Keyboard reorder from the drag handle: -1 up, +1 down within the phase. */
+  onNudge: (id: string, phaseId: string, index: number, count: number, dir: -1 | 1) => void;
 }
 
 const STATUS_COLOR = {
@@ -143,7 +182,6 @@ function PlanHeader({
   planLabel,
   onPlanLabelChange,
   status,
-  linkedConditions,
   phasesCompleted,
   phasesTotal,
   showInsBreakdown,
@@ -152,7 +190,6 @@ function PlanHeader({
   planLabel: string;
   onPlanLabelChange: (label: string) => void;
   status: string;
-  linkedConditions: number;
   phasesCompleted: number;
   phasesTotal: number;
   showInsBreakdown: boolean;
@@ -189,13 +226,6 @@ function PlanHeader({
             <Tag variant="fill" color="grey">{status}</Tag>
           </div>
         </div>
-
-        <div className={styles.MetaGroup}>
-          <span className={styles.CountBadge}>{linkedConditions}</span>
-          <Button variant="link">Linked Conditions</Button>
-        </div>
-
-        <div className={styles.Divider} aria-hidden="true" />
 
         <div className={styles.ProgressInfo}>
           <span className={styles.ProgressRing} aria-hidden="true" />
@@ -263,8 +293,16 @@ function ProcedureRow({
   isValidTooth,
   isValidSurface,
   onSelectArea,
+  dnd,
+  phaseId,
+  index,
+  count,
 }: {
   procedure: PlanProcedure;
+  dnd: PlanDnd;
+  phaseId: string;
+  index: number;
+  count: number;
   selected: boolean;
   onToggle: (id: string, checked: boolean) => void;
   pending: boolean;
@@ -411,8 +449,79 @@ function ProcedureRow({
   })();
 
   return (
-    <div className={[styles.Row, pending ? styles.PendingRow : ''].filter(Boolean).join(' ')} role="row" data-row-id={procedure.id}>
-      <div className={styles.TdCenter} role="cell" />
+    <div
+      className={[
+        styles.Row,
+        pending ? styles.PendingRow : '',
+        selected ? styles.RowSelected : '',
+        dnd.dragHidden && dnd.dragIds.includes(procedure.id) ? styles.RowDragging : '',
+        dnd.dragId && dnd.drop?.phaseId === phaseId && dnd.drop.index === index ? styles.GapBefore : '',
+      ].filter(Boolean).join(' ')}
+      role="row"
+      data-row-id={procedure.id}
+      onDragOver={(e) => dnd.onDragOver(e, phaseId, index)}
+      onDrop={dnd.onDrop}
+    >
+      <div className={styles.TdCenter} role="cell">
+        <button
+          type="button"
+          draggable
+          className={styles.DragHandle}
+          data-drag-handle
+          aria-label={`Reorder ${procedure.code}. Drag, or use the up and down arrow keys.`}
+          onDragStart={(e) => {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', procedure.id);
+            const row = e.currentTarget.closest<HTMLElement>('[role="row"]');
+            const ids = dnd.onDragStart(procedure.id, row?.offsetHeight ?? 33);
+            if (row) {
+              const ghost = document.createElement('div');
+              if (ids.length > 1) {
+                // Several rows: a small card with a stack behind it and a count badge.
+                ghost.className = styles.DragStack;
+                for (let i = Math.min(ids.length, 3) - 1; i >= 1; i -= 1) {
+                  const layer = document.createElement('div');
+                  layer.className = styles.DragStackCard;
+                  layer.style.transform = `translate(${i * 4}px, ${i * 4}px)`;
+                  ghost.appendChild(layer);
+                }
+                const front = document.createElement('div');
+                front.className = [styles.DragStackCard, styles.DragStackFront].join(' ');
+                const title = document.createElement('strong');
+                title.textContent = `${ids.length} codes`;
+                const sub = document.createElement('span');
+                sub.textContent = procedure.code;
+                front.append(title, sub);
+                ghost.appendChild(front);
+                const badge = document.createElement('span');
+                badge.className = styles.DragStackBadge;
+                badge.textContent = String(ids.length);
+                ghost.appendChild(badge);
+                row.parentElement?.appendChild(ghost);
+                e.dataTransfer.setDragImage(ghost, 24, 32);
+              } else {
+                // One row: a lifted copy of it, opaque, outlined and shadowed.
+                ghost.className = styles.DragGhost;
+                ghost.style.width = `${row.offsetWidth}px`;
+                const clone = row.cloneNode(true) as HTMLElement;
+                clone.removeAttribute('data-row-id');
+                ghost.appendChild(clone);
+                row.parentElement?.appendChild(ghost);
+                e.dataTransfer.setDragImage(ghost, 16, 16);
+              }
+              setTimeout(() => ghost.remove(), 0);
+            }
+          }}
+          onDragEnd={dnd.onDragEnd}
+          onKeyDown={(e) => {
+            if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+            e.preventDefault();
+            dnd.onNudge(procedure.id, phaseId, index, count, e.key === 'ArrowUp' ? -1 : 1);
+          }}
+        >
+          <DragHandleIcon />
+        </button>
+      </div>
       <div className={styles.TdCenter} role="cell">
         <Checkbox
           checked={selected}
@@ -487,7 +596,13 @@ function PhaseSection({
   isValidTooth,
   isValidSurface,
   onSelectArea,
+  dnd,
+  phaseDnd,
+  phaseIndex,
 }: {
+  dnd: PlanDnd;
+  phaseDnd: PhaseDnd;
+  phaseIndex: number;
   phase: PlanPhase;
   phaseName: string;
   onPhaseNameChange: (name: string) => void;
@@ -513,19 +628,50 @@ function PhaseSection({
   onSelectArea: (procedureId: string, areaId: string) => void;
 }) {
   return (
-    <section className={[styles.PhaseCard, isTarget ? styles.PhaseCardActive : ''].filter(Boolean).join(' ')}>
+    <section
+      className={[
+        styles.PhaseCard,
+        isTarget ? styles.PhaseCardActive : '',
+        phaseDnd.dragPhaseId === phase.id ? styles.PhaseCardDragging : '',
+      ].filter(Boolean).join(' ')}
+      data-phase-id={phase.id}
+      onDragOver={(e) => phaseDnd.onDragOver(e, phaseIndex)}
+      onDrop={phaseDnd.onDrop}
+    >
       <div
-        className={styles.PhaseHeader}
+        draggable={!renaming}
+        onDragStart={(e) => {
+          if (e.target !== e.currentTarget) return; // inner controls don't start a phase drag
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', phase.id);
+          const header = e.currentTarget;
+          const ghost = header.cloneNode(true) as HTMLElement;
+          ghost.className = [header.className, styles.DragGhost, styles.DragGhostPlain].join(' ');
+          ghost.style.width = `${header.offsetWidth}px`;
+          header.parentElement?.appendChild(ghost);
+          e.dataTransfer.setDragImage(ghost, 24, 18);
+          setTimeout(() => ghost.remove(), 0);
+          phaseDnd.onDragStart(phase.id, header.offsetHeight);
+        }}
+        onDragEnd={phaseDnd.onDragEnd}
+        className={[styles.PhaseHeader, dnd.dragId && dnd.drop?.phaseId === phase.id && !expanded ? styles.PhaseHeaderDrop : ''].filter(Boolean).join(' ')}
+        onDragOver={(e) => dnd.onHeaderDragOver(e, phase.id, phase.procedures.length, expanded)}
+        onDrop={dnd.onDrop}
         onClick={onSelectTarget}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
+          if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.target === e.currentTarget) {
+            e.preventDefault();
+            phaseDnd.onNudge(phase.id, phaseIndex, e.key === 'ArrowUp' ? -1 : 1);
+            return;
+          }
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             onSelectTarget();
           }
         }}
-        aria-label={`Add codes to ${phaseName}`}
+        aria-label={`Add codes to ${phaseName}. Drag, or press Alt and the up or down arrow, to reorder phases.`}
       >
         <div className={styles.PhaseLeft}>
           <Button
@@ -598,14 +744,24 @@ function PhaseSection({
       </div>
 
       <div className={[styles.PhaseBody, expanded ? styles.PhaseBodyOpen : ''].join(' ')}>
-        <div className={styles.PhaseBodyInner}>
+        <div className={styles.PhaseBodyInner} onDragOver={(e) => dnd.onBodyDragOver(e, phase.id, phase.procedures.length)} onDrop={dnd.onDrop}>
           {phase.procedures.length === 0 ? (
-            <div className={styles.EmptyPhase}>No codes added to this phase yet</div>
+            <div
+              className={[styles.EmptyPhase, dnd.drop?.phaseId === phase.id ? styles.EmptyPhaseDrop : ''].filter(Boolean).join(' ')}
+              onDragOver={(e) => dnd.onDragOver(e, phase.id, 0)}
+              onDrop={dnd.onDrop}
+            >
+              No codes added to this phase yet
+            </div>
           ) : (
             <>
-              {phase.procedures.map((procedure) => (
+              {phase.procedures.map((procedure, index) => (
                 <ProcedureRow
                   key={procedure.id}
+                  dnd={dnd}
+                  phaseId={phase.id}
+                  index={index}
+                  count={phase.procedures.length}
                   procedure={procedure}
                   selected={selectedIds.has(procedure.id)}
                   onToggle={onToggleRow}
@@ -621,6 +777,12 @@ function PhaseSection({
                   onSelectArea={onSelectArea}
                 />
               ))}
+              {dnd.dragId && (
+                <div
+                  className={styles.DropTail}
+                  data-open={(dnd.drop?.phaseId === phase.id && dnd.drop.index === phase.procedures.length) || undefined}
+                />
+              )}
               {phase.estimate && (
                 <div className={styles.EstimateRow} role="row">
                   <div className={styles.EstimateSpacer} />
@@ -704,6 +866,9 @@ export function TreatmentPlanView({
   isValidTooth,
   isValidSurface,
   onSelectArea,
+  onMoveProcedure,
+  onMovePhase,
+  onAddPhase,
 }: TreatmentPlanViewProps) {
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(() => {
     const first = plan.phases[0]?.id;
@@ -716,6 +881,175 @@ export function TreatmentPlanView({
     Object.fromEntries(plan.phases.map((phase) => [phase.id, phase.name])),
   );
   const [renamingPhaseId, setRenamingPhaseId] = useState<string | null>(null);
+
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragIds, setDragIds] = useState<string[]>([]);
+  const [dragHidden, setDragHidden] = useState(false);
+  // A drop event bubbles through row → body → table; only the first one may commit.
+  const dropHandled = useRef(false);
+
+  // Native drag-and-drop doesn't scroll this custom scroll area, so while a code or phase is being
+  // dragged near its top or bottom edge we scroll it ourselves (faster the closer to the edge).
+  const autoScroll = useRef<{ el: HTMLElement | null; speed: number; timer: number | null }>({ el: null, speed: 0, timer: null });
+  const stopAutoScroll = () => {
+    const a = autoScroll.current;
+    if (a.timer !== null) window.clearInterval(a.timer);
+    a.timer = null;
+    a.speed = 0;
+  };
+  const updateAutoScroll = (e: React.DragEvent) => {
+    const table = e.currentTarget.querySelector<HTMLElement>('[role="table"]');
+    let el: HTMLElement | null = table;
+    while (el && !/(auto|scroll)/.test(getComputedStyle(el).overflowY)) el = el.parentElement;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const ZONE = 60; // px from the top / bottom edge where scrolling kicks in
+    const top = rect.top + ZONE + 33; // the sticky column header sits at the very top
+    const bottom = rect.bottom - ZONE;
+    const ramp = (depth: number) => Math.min(1, Math.max(0.15, depth / ZONE)) * 18;
+    const speed = e.clientY < top ? -ramp(top - e.clientY) : e.clientY > bottom ? ramp(e.clientY - bottom) : 0;
+    const a = autoScroll.current;
+    a.el = el;
+    a.speed = speed;
+    if (speed === 0) { stopAutoScroll(); return; }
+    if (a.timer === null) {
+      a.timer = window.setInterval(() => { if (a.el) a.el.scrollTop += a.speed; }, 16);
+    }
+  };
+  useEffect(() => stopAutoScroll, []);
+  const expandedBeforePhaseDrag = useRef<Set<string> | null>(null);
+  const restoreExpanded = () => {
+    const prev = expandedBeforePhaseDrag.current;
+    expandedBeforePhaseDrag.current = null;
+    if (prev) setExpandedPhases(prev);
+  };
+  const [dragPhaseId, setDragPhaseId] = useState<string | null>(null);
+  const [dragPhaseHeight, setDragPhaseHeight] = useState(36);
+  const [dropPhaseIndex, setDropPhaseIndex] = useState<number | null>(null);
+  const phaseDnd: PhaseDnd = {
+    dragPhaseId,
+    dropIndex: dropPhaseIndex,
+    onDragStart: (id, height) => {
+      dropHandled.current = false;
+      setDragPhaseId(id);
+      setDragPhaseHeight(height);
+      // Fold every phase down to its header so they're easy to reorder; restored afterwards.
+      expandedBeforePhaseDrag.current = new Set(expandedPhases);
+      requestAnimationFrame(() => setExpandedPhases(new Set()));
+    },
+    onDragEnd: () => { stopAutoScroll(); setDragPhaseId(null); setDropPhaseIndex(null); restoreExpanded(); },
+    onDragOver: (e, index) => {
+      if (!dragPhaseId) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const rect = e.currentTarget.getBoundingClientRect();
+      const next = index + (e.clientY > rect.top + rect.height / 2 ? 1 : 0);
+      setDropPhaseIndex((prev) => (prev === next ? prev : next));
+    },
+    onDrop: (e) => {
+      if (!dragPhaseId) return;
+      e.preventDefault();
+      if (dropHandled.current) return;
+      dropHandled.current = true;
+      stopAutoScroll();
+      if (dropPhaseIndex !== null) onMovePhase(dragPhaseId, dropPhaseIndex);
+      const droppedId = dragPhaseId;
+      setDragPhaseId(null);
+      setDropPhaseIndex(null);
+      restoreExpanded();
+      revealPhase(droppedId); // keep the moved phase on screen, wherever it landed
+    },
+    onNudge: (id, index, dir) => {
+      const to = dir < 0 ? index - 1 : index + 2;
+      if (to < 0 || to > plan.phases.length) return;
+      onMovePhase(id, to);
+      requestAnimationFrame(() =>
+        document.querySelector<HTMLElement>(`[data-phase-id="${id}"] [role="button"][aria-label^="Add codes to"]`)?.focus());
+    },
+  };
+  const [dragHeight, setDragHeight] = useState(33);
+  const [drop, setDrop] = useState<{ phaseId: string; index: number } | null>(null);
+  const expandTimer = useRef<{ phaseId: string; t: number } | null>(null);
+  const clearExpandTimer = () => {
+    if (expandTimer.current) window.clearTimeout(expandTimer.current.t);
+    expandTimer.current = null;
+  };
+  const setDropAt = (phaseId: string, index: number) =>
+    setDrop((prev) => (prev?.phaseId === phaseId && prev.index === index ? prev : { phaseId, index }));
+  const dnd: PlanDnd = {
+    dragId,
+    dragIds,
+    dragHidden,
+    drop,
+    onDragStart: (id, rowHeight) => {
+      // Dragging a checked row carries every checked row, in plan order.
+      const ids = selectedIds.has(id) && selectedIds.size > 1
+        ? plan.phases.flatMap((ph) => ph.procedures).map((p) => p.id).filter((pid) => selectedIds.has(pid))
+        : [id];
+      dropHandled.current = false;
+      setDragId(id);
+      setDragIds(ids);
+      setDragHeight(rowHeight);
+      // Fold the original rows away once the drag is under way (hiding the source inside the
+      // dragstart event itself can cancel the drag in some browsers).
+      window.setTimeout(() => setDragHidden(true), 0);
+      return ids;
+    },
+    onDragEnd: () => { stopAutoScroll(); clearExpandTimer(); setDragId(null); setDragIds([]); setDragHidden(false); setDrop(null); },
+    onHeaderDragOver: (e, phaseId, count, expanded) => {
+      if (!dragId) return;
+      e.preventDefault();
+      setDropAt(phaseId, count);
+      // Hovering a collapsed phase opens it, so the code can be placed inside.
+      if (!expanded && expandTimer.current?.phaseId !== phaseId) {
+        clearExpandTimer();
+        expandTimer.current = {
+          phaseId,
+          t: window.setTimeout(() => setExpandedPhases((prev) => new Set(prev).add(phaseId)), 450),
+        };
+      }
+    },
+    onBodyDragOver: (e, phaseId, count) => {
+      if (!dragId) return;
+      e.preventDefault(); // the gap between rows is not a row, but still a valid drop spot
+      if ((e.target as HTMLElement).closest('[data-row-id]')) return;
+      const rows = e.currentTarget.querySelectorAll('[data-row-id]');
+      const last = rows[rows.length - 1];
+      if (last && e.clientY > last.getBoundingClientRect().bottom) setDropAt(phaseId, count);
+    },
+    onDragOver: (e, phaseId, index) => {
+      if (!dragId) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const rect = e.currentTarget.getBoundingClientRect();
+      const after = e.clientY > rect.top + rect.height / 2;
+      const next = { phaseId, index: index + (after ? 1 : 0) };
+      setDrop((prev) => (prev?.phaseId === next.phaseId && prev.index === next.index ? prev : next));
+    },
+    onDrop: (e) => {
+      // Code drops only: a phase being dropped bubbles through the same headers and bodies and
+      // must reach the phase handler untouched.
+      if (!dragId) return;
+      e.preventDefault();
+      if (dropHandled.current) return;
+      dropHandled.current = true;
+      stopAutoScroll();
+      clearExpandTimer();
+      if (dragId && drop) onMoveProcedure(dragIds, drop.phaseId, drop.index);
+      setDragId(null);
+      setDragIds([]);
+      setDragHidden(false);
+      setDrop(null);
+    },
+    onNudge: (id, phaseId, index, count, dir) => {
+      const to = dir < 0 ? index - 1 : index + 2;
+      if (to < 0 || to > count) return;
+      onMoveProcedure([id], phaseId, to);
+      // The row re-renders in a new spot; keep the keyboard on its handle.
+      requestAnimationFrame(() =>
+        document.querySelector<HTMLElement>(`[data-row-id="${id}"] [data-drag-handle]`)?.focus());
+    },
+  };
 
   useEffect(() => {
     const first = plan.phases[0]?.id;
@@ -766,6 +1100,66 @@ export function TreatmentPlanView({
     });
   };
 
+  // New Phase: lands right below the selected phase and becomes the selected one.
+  // Phases that still carry a default "Phase N" name are renumbered to match their position.
+  const addPhase = () => {
+    const at = plan.phases.findIndex((ph) => ph.id === targetPhaseId);
+    const insertAt = at < 0 ? plan.phases.length : at + 1;
+    const nextNum = plan.phases.reduce((max, ph) => Math.max(max, Number(ph.id.replace(/\D/g, '')) || 0), 0) + 1;
+    const id = `phase-${nextNum}`;
+    const after = plan.phases.slice(insertAt);
+    setPhaseNames((prev) => {
+      const next = { ...prev, [id]: `Phase ${insertAt + 1}` };
+      after.forEach((ph, i) => {
+        if (/^Phase \d+$/.test(next[ph.id] ?? ph.name)) next[ph.id] = `Phase ${insertAt + i + 2}`;
+      });
+      return next;
+    });
+    onAddPhase(at < 0 ? null : targetPhaseId, { id, name: `Phase ${insertAt + 1}`, procedures: [] });
+    selectTargetPhase(id);
+    scrollToPhaseRef.current = id;
+  };
+
+  // Bring a phase into view after it was added or dropped (it can land below the scroll area's
+  // fold). Once as it renders, and again once its body has finished opening.
+  const scrollToPhaseRef = useRef<string | null>(null);
+  const revealPhase = (id: string) => {
+    // Scrolls just enough that the whole phase is on screen, clear of the sticky column header.
+    // Phases are reopening while this runs, so it is re-checked as the layout settles: smooth the
+    // first time, instant corrections afterwards.
+    const reveal = (smooth: boolean) => {
+      const section = document.querySelector<HTMLElement>(`[data-phase-id="${id}"]`);
+      let vp: HTMLElement | null = section;
+      while (vp && !/(auto|scroll)/.test(getComputedStyle(vp).overflowY)) vp = vp.parentElement;
+      if (!section || !vp) return;
+      const v = vp.getBoundingClientRect();
+      const sec = section.getBoundingClientRect();
+      const top = v.top + 33 + 4; // clear of the sticky column header
+      const bottom = v.bottom - 8;
+      let delta = 0;
+      if (sec.height <= bottom - top) {
+        // The whole phase fits: bring all of it (header and body) into view.
+        if (sec.top < top) delta = sec.top - top;
+        else if (sec.bottom > bottom) delta = sec.bottom - bottom;
+      } else {
+        // Taller than the table area: make sure its header is in view. A header already pinned
+        // under the column header (~34px down) counts as visible.
+        const h = (section.firstElementChild as HTMLElement).getBoundingClientRect();
+        if (h.top < v.top + 30) delta = h.top - top;
+        else if (h.bottom > bottom) delta = h.bottom - bottom;
+      }
+      if (delta !== 0) vp.scrollTo({ top: vp.scrollTop + delta, behavior: smooth ? 'smooth' : 'auto' });
+    };
+    requestAnimationFrame(() => reveal(true));
+    [120, 260, 450, 700].forEach((ms) => window.setTimeout(() => reveal(false), ms));
+  };
+  useEffect(() => {
+    const id = scrollToPhaseRef.current;
+    if (!id || !plan.phases.some((ph) => ph.id === id)) return;
+    scrollToPhaseRef.current = null;
+    revealPhase(id);
+  }, [plan.phases]);
+
   const selectTargetPhase = (phaseId: string) => {
     onSelectTargetPhase(phaseId);
     setExpandedPhases((prev) => {
@@ -791,7 +1185,6 @@ export function TreatmentPlanView({
         planLabel={planLabel}
         onPlanLabelChange={onPlanLabelChange}
         status={plan.status}
-        linkedConditions={plan.linkedConditions}
         phasesCompleted={plan.phasesCompleted}
         phasesTotal={plan.phasesTotal}
         showInsBreakdown={showInsBreakdown}
@@ -799,17 +1192,48 @@ export function TreatmentPlanView({
       />
 
       <div className={styles.Body}>
-        <div className={styles.TableShell}>
+        <div
+          className={styles.TableShell}
+          // Anywhere on the table accepts a drop, so releasing over a gap, a header or the empty
+          // space below the last phase still lands the code or phase at its last highlighted spot.
+          onDragOver={(e) => {
+            if (!dragId && !dragPhaseId) return;
+            e.preventDefault();
+            updateAutoScroll(e);
+            if (dragPhaseId && !(e.target as HTMLElement).closest('section')) {
+              const sections = e.currentTarget.querySelectorAll('section');
+              const last = sections[sections.length - 1];
+              if (last && e.clientY > last.getBoundingClientRect().bottom) setDropPhaseIndex(plan.phases.length);
+            }
+          }}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node | null)) stopAutoScroll();
+          }}
+          onDrop={(e) => {
+            if (dragPhaseId) phaseDnd.onDrop(e);
+            else if (dragId) dnd.onDrop(e);
+          }}
+        >
           <ScrollArea className={styles.Scroll}>
             <ScrollAreaViewport>
               <ScrollAreaContent>
-                <div className={styles.Grid} role="table" aria-label={`${planLabel} procedures`}>
+                <div
+                  className={styles.Grid}
+                  role="table"
+                  aria-label={`${planLabel} procedures`}
+                  style={{
+                    '--row-h': `${dragHeight * Math.max(1, dragIds.length)}px`,
+                    '--gap-label': dragIds.length > 1 ? `"${dragIds.length} codes"` : '""',
+                    '--phase-h': `${dragPhaseHeight}px`,
+                  } as React.CSSProperties}
+                >
                   <ColumnHeaders />
-                  {plan.phases.map((phase) => {
+                  {plan.phases.map((phase, phaseIndex) => {
                     const phaseName = phaseNames[phase.id] ?? phase.name;
                     return (
+                      <Fragment key={phase.id}>
+                      {dragPhaseId && <div className={styles.PhaseGap} data-open={dropPhaseIndex === phaseIndex || undefined} />}
                       <PhaseSection
-                        key={phase.id}
                         phase={phase}
                         phaseName={phaseName}
                         onPhaseNameChange={(name) => {
@@ -839,22 +1263,26 @@ export function TreatmentPlanView({
                         isValidTooth={isValidTooth}
                         isValidSurface={isValidSurface}
                         onSelectArea={onSelectArea}
+                        dnd={dnd}
+                        phaseDnd={phaseDnd}
+                        phaseIndex={phaseIndex}
                       />
+                      </Fragment>
                     );
                   })}
+                  {dragPhaseId && (
+                    <div className={styles.PhaseGap} data-open={dropPhaseIndex === plan.phases.length || undefined} />
+                  )}
                 </div>
               </ScrollAreaContent>
             </ScrollAreaViewport>
             <ScrollAreaScrollbar orientation="vertical">
               <ScrollAreaThumb />
             </ScrollAreaScrollbar>
-            <ScrollAreaScrollbar orientation="horizontal">
-              <ScrollAreaThumb />
-            </ScrollAreaScrollbar>
           </ScrollArea>
         </div>
 
-        <Button variant="ghost" leftIcon={<PlusIcon />} className={styles.NewPhase}>
+        <Button variant="ghost" leftIcon={<PlusIcon />} className={styles.NewPhase} onClick={addPhase}>
           New Phase
         </Button>
       </div>
