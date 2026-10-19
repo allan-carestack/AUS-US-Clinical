@@ -25,6 +25,7 @@ export function toDentalCode(code: ProcedureCode): DentalCode {
     code: code.code,
     description: code.description,
     requires: inferRequirement(code),
+    icdRequired: code.isICDCodeMandatory,
   };
 }
 

@@ -29,5 +29,5 @@
 }
 
 .Positioner {
-  z-index: 50;
+  z-index: 10000; /* above Popover (9999), so a select/combobox opened inside a popover isn't hidden behind it */
 }

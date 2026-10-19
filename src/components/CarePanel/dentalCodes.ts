@@ -4,6 +4,8 @@ export interface DentalCode {
   code: string;
   description: string;
   requires: ToothRequirement;
+  /** Backend flag: this code can't be added without an ICD code. */
+  icdRequired?: boolean;
 }
 
 export const DENTAL_CODES: DentalCode[] = [
