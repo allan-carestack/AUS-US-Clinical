@@ -18,6 +18,8 @@ export interface ToothSelectorPopoverProps {
   requiresSurface: boolean;
   /** Draft values the popover starts from. */
   toothId: string;
+  /** Further pre-selected teeth besides `toothId`. */
+  queueIds?: string[];
   surfaceLetters: string;
   /** Final submit — fired once, on the last Enter / Add. */
   onCommit?: (toothId: string, surfaceLetters: string, more: boolean, icd: string[]) => void;
@@ -39,7 +41,7 @@ const VALID_TEETH = new Set(
 
 export function ToothSelectorPopover({
   open, onOpenChange, anchor, side = 'top', title, requiresSurface,
-  toothId, surfaceLetters, onCommit, allowMore, icd, finalFocus,
+  toothId, queueIds, surfaceLetters, onCommit, allowMore, icd, finalFocus,
 }: ToothSelectorPopoverProps) {
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
@@ -59,6 +61,7 @@ export function ToothSelectorPopover({
           requiresSurface={requiresSurface}
           validTeeth={VALID_TEETH}
           toothId={toothId}
+          queueIds={queueIds}
           surfaceLetters={surfaceLetters}
           allowMore={allowMore}
           icd={icd}

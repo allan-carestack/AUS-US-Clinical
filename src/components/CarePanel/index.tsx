@@ -13,6 +13,8 @@ import { Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverTitle, P
 import { ToothSelectorPopover } from '../ToothSelectorModal';
 import { icdConfigFor } from './icd';
 import { Tag } from '../Tag';
+import { Tooltip } from '../Tooltip';
+import { Kbd, KbdGroup } from '../Kbd';
 import { PlusIcon, InfoOutlineIcon, InfoSolidIcon, EditIcon } from '../Icon';
 import { DatePicker } from '../DatePicker';
 import { Select as BaseSelect } from '@base-ui/react/select';
@@ -61,6 +63,8 @@ export interface CarePanelProps {
   onCodeSelect?: (code: DentalCode, context: CarePanelSelectionContext, input?: CodeInput) => void;
   /** True when the tooth/surface already picked on the odontogram can fill this code's required fields, so +Code skips its popover. */
   usesArmedSelection?: (code: DentalCode) => boolean;
+  /** Teeth armed on the odontogram; +Code's popover opens with them already chosen. */
+  armedTeeth?: string[];
 }
 
 export type { DentalCode } from './dentalCodes';
@@ -399,6 +403,7 @@ function CodeSearch({
   active,
   onSelect,
   usesArmedSelection,
+  armedTeeth = [],
   onClose,
 }: {
   codes?: DentalCode[];
@@ -406,6 +411,7 @@ function CodeSearch({
   active: boolean;
   onSelect: (code: DentalCode, input?: CodeInput) => void;
   usesArmedSelection?: (code: DentalCode) => boolean;
+  armedTeeth?: string[];
   onClose: () => void;
 }) {
   const [inputValue, setInputValue] = useState('');
@@ -602,7 +608,8 @@ function CodeSearch({
             onCommit={(t, sf, more, icd) => submit({ thArea: t, surface: sf, icd }, more)}
             title={label}
             requiresSurface={needsSurface}
-            toothId=""
+            toothId={armedTeeth[armedTeeth.length - 1] ?? ''}
+            queueIds={armedTeeth.slice(0, -1)}
             surfaceLetters=""
           />
         );
@@ -611,7 +618,7 @@ function CodeSearch({
   );
 }
 
-export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect, usesArmedSelection }: CarePanelProps) {
+export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect, usesArmedSelection, armedTeeth }: CarePanelProps) {
   const [tab, setTab] = useState<CarePanelTab>('new');
   /** Enter direction for ChipGridArea on tab change — null skips (initial mount). */
   const [gridSlide, setGridSlide] = useState<'fromLeft' | 'fromRight' | null>(null);
@@ -693,6 +700,19 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect, uses
       codeMorphTimeoutRef.current = null;
     }, CODE_MORPH_MS);
   };
+
+  // Shift+N starts the +Code interaction from anywhere that isn't a text field.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== 'KeyN' || !e.shiftKey || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+      if ((e.target as HTMLElement | null)?.closest('input, textarea, select, [contenteditable="true"]')) return;
+      if (codeSearchMode !== 'closed') return;
+      e.preventDefault();
+      openCodeSearch();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   useEffect(() => () => {
     if (codeMorphTimeoutRef.current) clearTimeout(codeMorphTimeoutRef.current);
@@ -937,14 +957,16 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect, uses
               >
                 <div className={styles.CodeMorphCollapsed} aria-hidden={codeSearchMorphOpen}>
                   <div className={styles.PaneClip}>
-                    <Button
-                      variant="secondary"
-                      leftIcon={<PlusIcon />}
-                      tabIndex={codeSearchMorphOpen ? -1 : 0}
-                      onClick={openCodeSearch}
-                    >
-                      Code
-                    </Button>
+                    <Tooltip content={<span className={styles.ShortcutTip}>Add code <KbdGroup><Kbd inverse>Shift</Kbd><Kbd inverse>N</Kbd></KbdGroup></span>} side="top">
+                      <Button
+                        variant="secondary"
+                        leftIcon={<PlusIcon />}
+                        tabIndex={codeSearchMorphOpen ? -1 : 0}
+                        onClick={openCodeSearch}
+                      >
+                        Code
+                      </Button>
+                    </Tooltip>
                   </div>
                 </div>
                 <div
@@ -959,6 +981,7 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect, uses
                         active={codeSearchMorphOpen}
                         onSelect={handleCodeSelect}
                         usesArmedSelection={usesArmedSelection}
+                        armedTeeth={armedTeeth}
                         onClose={closeCodeSearch}
                       />
                     ) : null}

@@ -1191,12 +1191,11 @@ export default function App() {
   };
 
   // Tooth/surface armed on the odontogram fills a +Code pick directly, so the
-  // required-fields popover is skipped — unless it can't (area code, or a
-  // surface code with a whole-tooth-only selection).
+  // required-fields popover is skipped (area codes still need it). Picking a whole
+  // tooth selects all of its surfaces, so a surface code is always satisfied.
   const codeUsesArmedSelection = (code: DentalCode) =>
     pendingSelection?.source === 'tooth'
-    && (code.requires === 'tooth'
-      || (code.requires === 'surface' && pendingSelection.selections.every(sel => sel.surface)));
+    && (code.requires === 'tooth' || code.requires === 'surface');
 
   // +Code combobox: selecting a code adds a row immediately. If the code
   // requires tooth/surface input the row is inserted in a pending state
@@ -1213,13 +1212,16 @@ export default function App() {
     // Required fields were collected in the +Code popover — add a finished row.
     if (input) {
       addCompletedCodeRow(chip, context, input);
+      setPendingSelection(null); // the odontogram pick was consumed by the popover
       return;
     }
     if (pendingSelection?.source === 'tooth' && code.requires !== 'none') {
       // Multi-select: one row per armed tooth/surface.
-      pendingSelection.selections.forEach(sel =>
-        applyEntry(chip, context, sel.meta, code.requires === 'surface' ? sel.surface : undefined)
-      );
+      pendingSelection.selections.forEach(sel => {
+        // A whole tooth carries all five surfaces.
+        if (code.requires === 'surface' && !sel.surface) applyEntry(chip, context, sel.meta, SURFACE_CODE_TO_NAME.B, 'BMODL');
+        else applyEntry(chip, context, sel.meta, code.requires === 'surface' ? sel.surface : undefined);
+      });
       setPendingSelection(null);
       return;
     }
@@ -1958,7 +1960,7 @@ export default function App() {
           aria-hidden={workspaceTab === 'planner'}
           inert={workspaceTab === 'planner'}
         >
-          <CarePanel codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} usesArmedSelection={codeUsesArmedSelection} />
+          <CarePanel codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} usesArmedSelection={codeUsesArmedSelection} armedTeeth={pendingSelection?.selections.map(sel => sel.meta.id)} />
         </div>
       </div>
 

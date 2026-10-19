@@ -355,13 +355,6 @@
   composes: text-lg weight-700 from global;
 }
 
-.KeyCombo {
-  display: inline-flex;
-  align-items: center;
-  gap: 1px;
-  vertical-align: middle;
-}
-
 .QuickLabel + .Hint {
   margin-top: calc(-1 * var(--spacing-6)); /* sit closer to the label than to the frame */
 }
@@ -389,6 +382,131 @@
   border-radius: var(--radius-8);
   background: var(--white);
   overflow: hidden;
+}
+
+/* 2px taller than the default segmented button: items stretch to fill, so they grow with it. */
+.QuickSwitch {
+  height: 2.6rem;
+}
+
+.QuickTabs {
+  padding: var(--spacing-8);
+}
+
+.ToothCellQueued {
+  background-color: var(--interactive-20) !important;
+}
+
+.ToothCellStaged {
+  background-color: var(--orange-20) !important;
+}
+
+.CircleRegion {
+  fill: var(--white);
+  stroke: var(--grey-20);
+  cursor: pointer;
+
+  &:hover {
+    fill: var(--hover-default);
+  }
+}
+
+.CircleRegionSelected {
+  fill: var(--interactive-20);
+}
+
+.IcdRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  color: var(--grey-60);
+}
+
+.IcdChip {
+  padding: 0 var(--spacing-6);
+  border: 1px solid var(--grey-20);
+  border-radius: var(--radius-4);
+  background: var(--grey-5);
+  color: var(--grey-100);
+}
+
+.QuickFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-8);
+  padding: var(--spacing-8) var(--spacing-12);
+  border-top: 1px solid var(--grey-20);
+}
+
+/* Regular / Supernumerary panes share one cell, so the popover keeps its height
+   and the swap is a quick slide + fade instead of a jump. */
+.GridStack {
+  display: grid;
+}
+
+.GridPane {
+  grid-area: 1 / 1;
+  align-self: start;
+  transition: opacity 180ms ease-out, transform 180ms ease-out, visibility 180ms;
+}
+
+.PaneLeft,
+.PaneRight {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.PaneLeft { transform: translateX(-12px); }
+.PaneRight { transform: translateX(12px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .GridPane {
+    transition: none;
+  }
+}
+
+.ToothCell:disabled {
+  cursor: default;
+  background-color: var(--grey-10);
+
+  &:hover {
+    background-color: var(--grey-10);
+  }
+}
+
+/* ── Hints, echo, summary, ICD, footer ── */
+.Hint {
+  margin-top: calc(-1 * var(--spacing-6)); /* sit closer to the label than to the frame */
+}
+
+.Req {
+  color: var(--red-80);
+}
+
+/* Focus ring follows keyboard focus anywhere inside the frame. */
+.QuickFrame {
+  border-radius: var(--radius-8);
+  outline: none;
+
+  &:focus-within {
+    box-shadow: 0 0 0 2px var(--blue-80), 0 0 0 6px rgb(from var(--blue-80) r g b / 20%);
+  }
+
+  &[aria-invalid='true'] {
+    box-shadow: 0 0 0 2px var(--red-80), 0 0 0 6px var(--red-10);
+  }
+}
+
+.QuickPanel {
+  border: 1px solid var(--grey-20);
+  border-radius: var(--radius-8);
+  background: var(--white);
+  overflow: hidden;
+}
+
+/* 2px taller than the default segmented button: items stretch to fill, so they grow with it. */
+.QuickSwitch {
+  height: 2.6rem;
 }
 
 .QuickTabs {
@@ -483,21 +601,25 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  min-width: 1.4rem;
-  height: 1.4rem;
-  padding: 1px var(--spacing-2) 0;
-  border-bottom: 1px solid rgb(0 0 0 / 16%);
-  border-radius: 3px;
-  background: var(--grey-10);
+  min-width: 1.6rem;
+  min-height: 1.6rem;
+  padding: 0;
+  border: 1px solid rgb(0 0 0 / 16%);
+  border-radius: 4px;
+  background: rgb(0 0 0 / 8%);
   color: var(--grey-80);
   font-family: inherit;
   line-height: 1;
 }
 
+.Kbd[data-wide] {
+  padding: 0 var(--spacing-4);
+}
+
 /* Keycap inside the active segment of the Regular / Supernumerary switch. */
 :global([data-pressed]) > .Kbd {
   background: rgb(2 102 120 / 80%);
-  border-bottom-color: rgb(0 0 0 / 20%);
+  border-color: rgb(0 0 0 / 20%);
   color: var(--white);
 }
 
