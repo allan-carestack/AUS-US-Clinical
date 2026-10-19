@@ -60,7 +60,8 @@ export default function Tooth({ meta, state, armedWhole, armedSurfaces = [], num
       {EDGES.map(({ edge, points }) => {
         const surface = surfaceName(edge, meta);
         const mark = state?.surfaces[surface];
-        const isArmedSurface = armedSurfaces.includes(surface);
+        // A whole tooth carries all of its surfaces.
+        const isArmedSurface = armedWhole || armedSurfaces.includes(surface);
         return (
           <polygon
             key={edge}

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import Button from '../Button';
+import { Kbd, KbdGroup } from '../Kbd';
 import { PopoverHeader, PopoverClose, PopoverTitle } from '../Popover';
 import { CloseIcon } from '../Icon';
 import { SegmentedButton, SegmentedButtonItem } from '../SegmentedButton';
@@ -38,6 +39,8 @@ interface Props {
   requiresSurface: boolean;
   validTeeth: Set<string>;
   toothId: string;
+  /** Further pre-selected teeth (e.g. armed on the odontogram) besides `toothId`. */
+  queueIds?: string[];
   surfaceLetters: string;
   /** Omit to hide the ICD field (codes that don't use one). */
   icd?: IcdConfig;
@@ -47,14 +50,18 @@ interface Props {
   allowMore?: boolean;
 }
 
-const Kbd = ({ children }: { children: React.ReactNode }) => <kbd className={styles.Kbd}>{children}</kbd>;
 const EnterIcon = () => (
   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-label="Enter" role="img">
     <path d="M4.04459 9.04471C3.88187 9.20743 3.61805 9.20743 3.45533 9.04471L0.955331 6.54471C0.792613 6.38199 0.792613 6.11817 0.955331 5.95545L3.45533 3.45545C3.61805 3.29274 3.88187 3.29274 4.04459 3.45545C4.20731 3.61817 4.20731 3.88199 4.04459 4.04471L2.25588 5.83342L6.24996 5.83342C7.40055 5.83341 8.33329 4.90067 8.33329 3.75008L8.33329 1.25008C8.33329 1.01996 8.51984 0.833415 8.74996 0.833415C8.98008 0.833415 9.16663 1.01996 9.16663 1.25008L9.16663 3.75008C9.16663 5.36091 7.86079 6.66675 6.24996 6.66675L2.25588 6.66675L4.04459 8.45545C4.20731 8.61817 4.20731 8.88199 4.04459 9.04471Z" fill="currentColor" />
   </svg>
 );
+const ArrowRightIcon = () => (
+  <svg width="10" height="8" viewBox="0 0 10 8" fill="none" aria-label="to" role="img" style={{ color: 'var(--grey-100)' }}>
+    <path d="M5.12371 0.170755C5.30555 -0.0370638 5.62143 -0.0581225 5.82925 0.123719L9.82925 3.62372C9.93776 3.71866 10 3.85583 10 4.00001C10 4.14419 9.93776 4.28135 9.82925 4.3763L5.82925 7.8763C5.62143 8.05814 5.30555 8.03708 5.12371 7.82926C4.94187 7.62144 4.96293 7.30556 5.17075 7.12372L8.16928 4.50001H0.5C0.223858 4.50001 0 4.27615 0 4.00001C0 3.72386 0.223858 3.50001 0.5 3.50001H8.16928L5.17075 0.876295C4.96293 0.694454 4.94187 0.378573 5.12371 0.170755Z" fill="currentColor" />
+  </svg>
+);
 const KbdEnter = () => <Kbd><EnterIcon /></Kbd>;
-const KbdShiftEnter = () => <span className={styles.KeyCombo}><Kbd>Shift</Kbd><KbdEnter /></span>;
+const KbdShiftEnter = () => <KbdGroup><Kbd>Shift</Kbd><KbdEnter /></KbdGroup>;
 
 /**
  * Keyboard-first entry. Tooth frame: type digits (S = supernumerary, R = regular).
@@ -65,12 +72,14 @@ const KbdShiftEnter = () => <span className={styles.KeyCombo}><Kbd>Shift</Kbd><K
  * tooth only, promotes the next one and stays. If the code needs an ICD code and has
  * none, Enter moves focus there instead. Nothing reaches the caller until an apply.
  */
-export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, surfaceLetters, icd, onCommit, allowMore }: Props) {
+export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, queueIds, surfaceLetters, icd, onCommit, allowMore }: Props) {
   const [sup, setSup] = useState(false);
+  /** Set by Shift+Enter: the user has started a multi-tooth entry, even with one tooth so far. */
+  const [multiMode, setMultiMode] = useState(!!queueIds?.length);
   const [step, setStep] = useState<'tooth' | 'surface' | 'icd'>('tooth');
   const [buffer, setBuffer] = useState('');
   const [current, setCurrent] = useState(toothId);
-  const [queue, setQueue] = useState<string[]>([]);
+  const [queue, setQueue] = useState<string[]>(queueIds ?? []);
   const [surface, setSurface] = useState(surfaceLetters);
   const [invalid, setInvalid] = useState<'tooth' | 'surface' | 'icd' | null>(null);
   const [icdChips, setIcdChips] = useState<string[]>(icd?.defaults ?? []);
@@ -82,7 +91,9 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, s
   const icdId = useId() + '-icd';
   const icdFocus = () => document.getElementById(icdId)?.focus();
 
-  useEffect(() => { toothRef.current?.focus(); }, []);
+  // A tooth that's already chosen means the next thing to ask for is the surface.
+  const startOnSurface = !!toothId && requiresSurface && !surfaceLetters;
+  useEffect(() => { (startOnSurface ? surfaceRef : toothRef).current?.focus(); }, []);
 
   const typedId = buffer ? (sup ? `S${buffer}` : buffer) : '';
   // Supernumerary teeth reuse the regular numbering with an S prefix (S13, S55, …).
@@ -95,13 +106,13 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, s
   /** Everything an apply would cover: selection + current + the typed tooth, if valid. */
   const teeth = uniq([...queue, current, typedValid ? typedId : '']);
   const multi = !!allowMore && teeth.length > 1;
-  /** The summary row only matters once a second tooth has been confirmed (click / Shift+Enter), not while typing. */
+  /** The summary row appears once the user goes multi-tooth (Shift+Enter, or a second confirmed tooth), not while typing. */
   /** Apply vs Apply-for-all only differ when each tooth needs its own surface / ICD. */
   const split = multi && (requiresSurface || !!icd);
   // Keeps the "(N)" readable while the suffix collapses away.
   const lastCount = useRef(2);
   if (split) lastCount.current = teeth.length;
-  const showSummary = requiresSurface && uniq([...queue, current]).length > 1;
+  const showSummary = requiresSurface && ((multiMode && teeth.length > 0) || uniq([...queue, current]).length > 1);
   const missing = !teeth.length ? 'Select a tooth'
     : requiresSurface && !surface ? 'Select a surface'
     : icd?.required && !icdChips.length ? 'Add an ICD code to continue'
@@ -145,7 +156,7 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, s
   const commit = (list: string[], letters: string, more: boolean) => {
     list.forEach(t => onCommit(t, letters, more, icdChips));
     if (!more) return;
-    setCurrent(''); setQueue([]); setSurface(''); setBuffer(''); setInvalid(null);
+    setCurrent(''); setQueue([]); setSurface(''); setBuffer(''); setInvalid(null); setMultiMode(false);
     toothRef.current?.focus();
   };
 
@@ -162,7 +173,7 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, s
     const next = rest[rest.length - 1];
     setSurface(''); setBuffer(''); setInvalid(null);
     if (next) { setCurrent(next); setQueue(rest.filter(t => t !== next)); (requiresSurface ? surfaceRef : toothRef).current?.focus(); }
-    else { setCurrent(''); setQueue([]); toothRef.current?.focus(); }
+    else { setCurrent(''); setQueue([]); setMultiMode(false); toothRef.current?.focus(); }
   };
 
   /**
@@ -170,21 +181,21 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, s
    * current tooth and stays on the tooth frame; otherwise it becomes current and we
    * move on. Only one tooth is current, so a previous current joins the selection.
    */
-  const advance = (id: string, more: boolean) => {
+  const advance = (id: string, more: boolean, byMouse = false) => {
     const others = uniq([...queue, current]).filter(t => t !== id);
     setBuffer(''); setInvalid(null);
-    if (more) { setQueue(others); setCurrent(id); return; }
+    if (more) { setQueue(others); setCurrent(id); setMultiMode(true); return; }
     const next = id || others[others.length - 1];
     const rest = others.filter(t => t !== next);
     setCurrent(next); setQueue(rest);
-    if (!requiresSurface) trySubmit(uniq([...rest, next]), '', false);
-    else surfaceRef.current?.focus();
+    if (!requiresSurface && !byMouse) trySubmit(uniq([...rest, next]), '', false);
+    else (requiresSurface ? surfaceRef : toothRef).current?.focus();
   };
 
   const clickTooth = (id: string, e: React.MouseEvent) => {
     const multiClick = allowMore && (e.shiftKey || e.metaKey || e.ctrlKey);
     if ((blues.includes(id) || highlighted === id) && !multiClick) { removeTooth(id); return; }
-    advance(id, !!allowMore && (e.shiftKey || e.metaKey || e.ctrlKey));
+    advance(id, !!allowMore && (e.shiftKey || e.metaKey || e.ctrlKey), true);
   };
 
   const toothKey = (e: React.KeyboardEvent) => {
@@ -273,7 +284,7 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, s
             <div className={styles.Hint}>Click a tooth or type its number</div>
             <div
               ref={toothRef}
-              data-first-focus
+              data-first-focus={!startOnSurface || undefined}
               tabIndex={0}
               className={styles.QuickFrame}
               aria-label="Select tooth: type a number, S for supernumerary, Enter to continue"
@@ -284,12 +295,12 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, s
             >
               <div className={styles.QuickPanel}>
                 <div className={styles.QuickTabs}>
-                  <SegmentedButton value={sup ? 'sup' : 'reg'} onValueChange={v => switchTab(v === 'sup')}>
+                  <SegmentedButton className={styles.QuickSwitch} value={sup ? 'sup' : 'reg'} onValueChange={v => switchTab(v === 'sup')}>
                     <SegmentedButtonItem value="reg">Regular <Kbd>R</Kbd></SegmentedButtonItem>
                     <SegmentedButtonItem value="sup">Supernumerary <Kbd>S</Kbd></SegmentedButtonItem>
                   </SegmentedButton>
                   <span className={toothError ? styles.TypedErr : styles.TypedEcho} role={toothError ? 'alert' : undefined}>
-                    {toothError || (buffer && <>Typing <span className={styles.KeyCombo}>{[...typedId].map((ch, i) => <Kbd key={i}>{ch}</Kbd>)}</span></>)}
+                    {toothError || (buffer && <>Typing <KbdGroup>{[...typedId].map((ch, i) => <Kbd key={i}>{ch}</Kbd>)}</KbdGroup></>)}
                   </span>
                 </div>
                 <div className={styles.GridStack}>
@@ -314,9 +325,10 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, s
           {requiresSurface && (
             <div className={styles.QuickColSurface}>
               <div className={styles.QuickLabel}>Select surface <span className={styles.Req}>*</span></div>
-              <div className={styles.Hint}>Click, or type <span className={styles.KeyCombo}><Kbd>M</Kbd><Kbd>O</Kbd><Kbd>D</Kbd><Kbd>B</Kbd><Kbd>L</Kbd></span></div>
+              <div className={styles.Hint}>Click, or type <KbdGroup><Kbd>M</Kbd><Kbd>O</Kbd><Kbd>D</Kbd><Kbd>B</Kbd><Kbd>L</Kbd></KbdGroup></div>
               <div
                 ref={surfaceRef}
+                data-first-focus={startOnSurface || undefined}
                 tabIndex={0}
                 className={styles.QuickFrame}
                 aria-label="Select surface: type M, O, D, B, L, I or P, Enter to apply"
@@ -353,7 +365,7 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, s
                 <div className={styles.QuickPicks}>
                   <SurfaceQuicklinks
                     surfaceLetters={surface}
-                    onSelect={letters => { setSurface(letters); if (teeth.length) trySubmit(teeth, letters, false); }}
+                    onSelect={letters => { setSurface(letters); setInvalid(null); surfaceRef.current?.focus(); }}
                   />
                 </div>
               </div>
@@ -400,7 +412,7 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, s
         <div className={styles.SummaryWrap} data-open={showSummary || undefined} inert={!showSummary}>
           <div>
             <div className={styles.Summary} aria-live="polite">
-              <span className={styles.SummaryLabel}>{teeth.length > 1 ? 'Adding to' : 'Adding'}</span>
+              <span className={styles.SummaryLabel}>{multiMode || teeth.length > 1 ? 'Adding to' : 'Adding'}</span>
               {teeth.map(t => (
                 <span key={t} className={[styles.IcdChip, t === highlighted ? styles.ChipCurrent : ''].join(' ')}>
                   #{t}
@@ -408,7 +420,7 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, s
               ))}
               {requiresSurface && (
                 <>
-                  <span className={styles.SummaryLabel}>→</span>
+                  <ArrowRightIcon />
                   <span className={styles.IcdChip}>
                     {surface || '—'}
                   </span>

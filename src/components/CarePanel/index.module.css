@@ -919,3 +919,9 @@
   composes: text-sm weight-400 from global;
   color: var(--grey-60);
 }
+
+.ShortcutTip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-6);
+}
