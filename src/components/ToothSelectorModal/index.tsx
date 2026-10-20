@@ -52,7 +52,7 @@ export function ToothSelectorPopover({
         sideOffset={side === 'overlay' ? -anchor.getBoundingClientRect().height : 8}
         initialFocus={() => document.querySelector<HTMLElement>('[data-tooth-selector-popup] [data-first-focus]')}
         finalFocus={finalFocus}
-        className={[styles.Popup, side === 'overlay' ? styles.PopupMorph : ''].filter(Boolean).join(' ')}
+        className={[styles.Popup, requiresSurface ? '' : styles.PopupNarrow, side === 'overlay' ? styles.PopupMorph : ''].filter(Boolean).join(' ')}
         style={side === 'overlay' ? ({ '--morph-w': `${anchor.getBoundingClientRect().width}px`, '--morph-h': `${anchor.getBoundingClientRect().height}px` } as React.CSSProperties) : undefined}
         data-tooth-selector-popup
       >

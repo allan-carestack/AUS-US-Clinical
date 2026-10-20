@@ -9,4 +9,17 @@
   border-radius: var(--radius-8);
   background: var(--white);
   box-shadow: var(--shadow);
+  opacity: 0.35; /* stays out of the way of the prototype; full strength on hover or keyboard focus */
+  transition: opacity 150ms ease-out;
+}
+
+.Root:hover,
+.Root:focus-within {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .Root {
+    transition: none;
+  }
 }

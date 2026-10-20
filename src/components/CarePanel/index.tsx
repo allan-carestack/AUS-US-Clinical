@@ -65,6 +65,8 @@ export interface CarePanelProps {
   usesArmedSelection?: (code: DentalCode) => boolean;
   /** Teeth armed on the odontogram; +Code's popover opens with them already chosen. */
   armedTeeth?: string[];
+  /** Turn the Shift+N shortcut off (e.g. while another workspace owns it). Defaults to on. */
+  codeShortcut?: boolean;
 }
 
 export type { DentalCode } from './dentalCodes';
@@ -398,7 +400,7 @@ function HighlightMatch({ text, query }: { text: string; query: string }) {
 
 const CODE_MORPH_MS = 220;
 
-function CodeSearch({
+export function CodeSearch({
   codes = DENTAL_CODES,
   active,
   onSelect,
@@ -618,7 +620,7 @@ function CodeSearch({
   );
 }
 
-export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect, usesArmedSelection, armedTeeth }: CarePanelProps) {
+export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect, usesArmedSelection, armedTeeth, codeShortcut = true }: CarePanelProps) {
   const [tab, setTab] = useState<CarePanelTab>('new');
   /** Enter direction for ChipGridArea on tab change — null skips (initial mount). */
   const [gridSlide, setGridSlide] = useState<'fromLeft' | 'fromRight' | null>(null);
@@ -703,6 +705,7 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect, uses
 
   // Shift+N starts the +Code interaction from anywhere that isn't a text field.
   useEffect(() => {
+    if (!codeShortcut) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== 'KeyN' || !e.shiftKey || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
       if ((e.target as HTMLElement | null)?.closest('input, textarea, select, [contenteditable="true"]')) return;
@@ -957,7 +960,7 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect, uses
               >
                 <div className={styles.CodeMorphCollapsed} aria-hidden={codeSearchMorphOpen}>
                   <div className={styles.PaneClip}>
-                    <Tooltip content={<span className={styles.ShortcutTip}>Add code <KbdGroup><Kbd inverse>Shift</Kbd><Kbd inverse>N</Kbd></KbdGroup></span>} side="top">
+                    <Tooltip content={<span className={styles.ShortcutTip}>Add code <KbdGroup><Kbd inverse>shift</Kbd><Kbd inverse>N</Kbd></KbdGroup></span>} side="top">
                       <Button
                         variant="secondary"
                         leftIcon={<PlusIcon />}
