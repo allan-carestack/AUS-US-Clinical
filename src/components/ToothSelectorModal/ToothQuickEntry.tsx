@@ -61,7 +61,7 @@ const ArrowRightIcon = () => (
   </svg>
 );
 const KbdEnter = () => <Kbd><EnterIcon /></Kbd>;
-const KbdShiftEnter = () => <KbdGroup><Kbd>Shift</Kbd><KbdEnter /></KbdGroup>;
+const KbdShiftEnter = () => <KbdGroup><Kbd>shift</Kbd><KbdEnter /></KbdGroup>;
 
 /**
  * Keyboard-first entry. Tooth frame: type digits (S = supernumerary, R = regular).
@@ -300,7 +300,7 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
                     <SegmentedButtonItem value="sup">Supernumerary <Kbd>S</Kbd></SegmentedButtonItem>
                   </SegmentedButton>
                   <span className={toothError ? styles.TypedErr : styles.TypedEcho} role={toothError ? 'alert' : undefined}>
-                    {toothError || (buffer && <>Typing <KbdGroup>{[...typedId].map((ch, i) => <Kbd key={i}>{ch}</Kbd>)}</KbdGroup></>)}
+                    {toothError || (buffer && <KbdGroup>{[...typedId].map((ch, i) => <Kbd key={i}>{ch}</Kbd>)}</KbdGroup>)}
                   </span>
                 </div>
                 <div className={styles.GridStack}>
@@ -436,11 +436,11 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
           {teeth.length > 0 && (
             <>
               <span key="enter" className={styles.LegendItem}>
-                <KbdEnter /> {step === 'tooth' && requiresSurface ? 'Next: surface' : split ? 'Apply for all' : 'Apply'}
+                <KbdEnter /> {step === 'tooth' && requiresSurface ? 'to select surface next' : split ? 'Apply for all' : 'Apply'}
               </span>
               {allowMore && (
                 <span key="shift" className={styles.LegendItem} style={{ animationDelay: '80ms' }}>
-                  <KbdShiftEnter /> {step === 'tooth' ? 'Select another tooth' : multi ? `Apply ${highlighted || 'tooth'} and go on` : 'Apply and next tooth'}
+                  <KbdShiftEnter /> {step === 'tooth' ? 'to select another tooth' : multi ? `Apply ${highlighted || 'tooth'} and go on` : 'Apply and next tooth'}
                 </span>
               )}
             </>

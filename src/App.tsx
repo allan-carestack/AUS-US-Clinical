@@ -1921,6 +1921,8 @@ export default function App() {
       onMoveProcedure={(procedureIds, phaseId, index) => moveProcedures(activePlan.id, procedureIds, phaseId, index)}
       onMovePhase={(phaseId, index) => movePhase(activePlan.id, phaseId, index)}
       onAddPhase={(afterPhaseId, phase) => addPhase(activePlan.id, afterPhaseId, phase)}
+      codes={compact ? dentalCodes : undefined}
+      onAddCode={compact ? (code, input) => handleCodeSearchSelect(code, { tab: 'new', txType: 'proposed' }, input) : undefined}
       onSelectTargetPhase={(phaseId) => {
         setTargetPhaseByPlan((prev) => ({ ...prev, [activePlan.id]: phaseId }));
       }}
@@ -2018,7 +2020,7 @@ export default function App() {
           aria-hidden={workspaceTab === 'planner'}
           inert={workspaceTab === 'planner'}
         >
-          <CarePanel codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} usesArmedSelection={codeUsesArmedSelection} armedTeeth={pendingSelection?.selections.map(sel => sel.meta.id)} />
+          <CarePanel codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} usesArmedSelection={codeUsesArmedSelection} armedTeeth={pendingSelection?.selections.map(sel => sel.meta.id)} codeShortcut={workspaceTab === 'chart'} />
         </div>
       </div>
 

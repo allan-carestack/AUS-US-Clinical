@@ -216,24 +216,32 @@
 }
 
 .PhaseCard {
-  /* Every card reserves the same 2px edge (transparent unless selected), so selecting a phase
-     changes colours only and nothing moves. The top edge is drawn by the header. */
-  border: 2px solid transparent;
-  border-top: 0;
   background: var(--white);
+  border-bottom: 1px solid rgb(0 0 0 / 24%); /* on every phase in every state, so nothing shifts */
 }
 
-.PhaseCardActive {
-  border-color: var(--blue-80);
-  border-top: 0; /* drawn by the header instead, so it travels with the sticky header */
-  background: var(--white);
-  overflow: clip; /* not hidden: that would make the card a scroll container and break the sticky header */
+/* The selection outline is an overlay, not a border, so selecting a phase can't move anything
+   and no edge strip is left on unselected phases. */
+.PhaseCardActive::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 -1px; /* also covers the card's 1px bottom border */
+  border: 2px solid var(--blue-80);
+  pointer-events: none;
+  z-index: 1;
 }
 
-/* The selected phase's top border lives on its header: the card's own top edge scrolls away,
-   while the pinned header keeps its blue edge. */
-.PhaseCardActive .PhaseHeader {
-  border-top-color: var(--blue-80);
+/* The card's own top edge scrolls away while its header stays pinned, so the header carries
+   a copy of the top line. */
+.PhaseCardActive .PhaseHeader::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--blue-80);
+  pointer-events: none;
 }
 
 /* Pins under the column headers while its phase is on screen; the next phase's header takes over. */
@@ -248,7 +256,6 @@
   height: 3.6rem;
   padding: 0 var(--spacing-8) 0 var(--spacing-4);
   background: var(--white);
-  border-top: 2px solid transparent;
   border-bottom: 1px solid var(--grey-20);
 
   @media (hover: hover) {
@@ -749,4 +756,9 @@
     border-radius: var(--radius-4);
     background: var(--blue-10);
   }
+}
+
+/* The scrollbar track starts under the sticky column header, so it never draws over it. */
+.BelowHeaderScrollbar {
+  margin-top: calc(3.2rem + 1px);
 }

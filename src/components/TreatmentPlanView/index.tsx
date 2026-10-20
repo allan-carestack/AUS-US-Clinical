@@ -30,6 +30,8 @@ import { PhaseDuration, type DurationValue } from './PhaseDuration';
 import { EditableName } from './EditableName';
 import { EditPlanDetailsDialog } from './EditPlanDetailsDialog';
 import { AREA_PRESETS } from '../CarePanel/data';
+import { PlanCodeAdd } from '../CarePanel/PlanCodeAdd';
+import type { CodeInput, DentalCode } from '../CarePanel';
 import { Select, SelectTrigger, SelectContent, SelectItem } from '../Select';
 import appStyles from '../../styles/app.module.css';
 import styles from './index.module.css';
@@ -68,6 +70,9 @@ export interface TreatmentPlanViewProps {
   onMovePhase: (phaseId: string, index: number) => void;
   /** Insert a new, empty phase right after `afterPhaseId` (append when null). */
   onAddPhase: (afterPhaseId: string | null, phase: PlanPhase) => void;
+  /** When given, the header shows a +Code control that adds codes to the selected phase. */
+  codes?: DentalCode[];
+  onAddCode?: (code: DentalCode, input?: CodeInput) => void;
 }
 
 /** Drag-and-drop state and handlers for reordering whole phases. */
@@ -190,7 +195,11 @@ function PlanHeader({
   phasesTotal,
   showInsBreakdown,
   onShowInsBreakdownChange,
+  codes,
+  onAddCode,
 }: {
+  codes?: DentalCode[];
+  onAddCode?: (code: DentalCode, input?: CodeInput) => void;
   planLabel: string;
   onPlanLabelChange: (label: string) => void;
   status: string;
@@ -240,6 +249,7 @@ function PlanHeader({
       </div>
 
       <div className={styles.HeaderRight}>
+        {codes && onAddCode && <PlanCodeAdd codes={codes} onAddCode={onAddCode} />}
         <Button variant="secondary" leftIcon={<RetryIcon />}>Recalculate</Button>
         <Checkbox
           checked={showInsBreakdown}
@@ -867,6 +877,8 @@ export function TreatmentPlanView({
   onMoveProcedure,
   onMovePhase,
   onAddPhase,
+  codes,
+  onAddCode,
 }: TreatmentPlanViewProps) {
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(() => {
     const first = plan.phases[0]?.id;
@@ -1204,6 +1216,8 @@ export function TreatmentPlanView({
         phasesTotal={plan.phasesTotal}
         showInsBreakdown={showInsBreakdown}
         onShowInsBreakdownChange={setShowInsBreakdown}
+        codes={codes}
+        onAddCode={onAddCode}
       />
 
       <div className={styles.Body}>
@@ -1291,7 +1305,7 @@ export function TreatmentPlanView({
                 </div>
               </ScrollAreaContent>
             </ScrollAreaViewport>
-            <ScrollAreaScrollbar orientation="vertical">
+            <ScrollAreaScrollbar orientation="vertical" className={styles.BelowHeaderScrollbar}>
               <ScrollAreaThumb />
             </ScrollAreaScrollbar>
           </ScrollArea>

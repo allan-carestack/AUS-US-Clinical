@@ -1,0 +1,71 @@
+/* Button ⇄ search morph, same timing as the Chart tab's +Code. */
+.Root {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.Collapsed {
+  display: grid;
+  grid-template-columns: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-columns 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.Open .Collapsed {
+  grid-template-columns: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.Collapsed > .Clip {
+  min-width: min-content;
+}
+
+.Open .Collapsed > .Clip {
+  min-width: 0;
+}
+
+.Expanded {
+  display: grid;
+  grid-template-columns: 0fr;
+  width: 0;
+  opacity: 0;
+  min-width: 0;
+  pointer-events: none;
+  transition:
+    grid-template-columns 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    width 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 160ms cubic-bezier(0.23, 1, 0.32, 1) 40ms;
+}
+
+.Open .Expanded {
+  grid-template-columns: 1fr;
+  width: 32rem;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.Expanded > .Clip {
+  min-width: 0;
+}
+
+.Open .Expanded > .Clip {
+  width: 100%;
+  overflow: visible; /* let the focus ring paint */
+}
+
+.Tip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .Collapsed,
+  .Expanded {
+    transition: none;
+  }
+}

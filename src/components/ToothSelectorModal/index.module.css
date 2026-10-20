@@ -7,6 +7,12 @@
   box-shadow: 0 8px 8px 0 rgb(0 0 0 / 20%), 0 20px 20px -12px rgb(0 0 0 / 20%) !important;
 }
 
+/* No surface column: the tooth grid keeps the width it has in the wide layout (about 45rem). */
+.PopupNarrow {
+  width: 48rem !important;
+  max-width: 48rem !important;
+}
+
 /* Overlay mode: the popup grows out of the +Code list item it replaces (size comes in as
    --morph-w / --morph-h; the popup is aligned to the item's top-right corner), then the
    tooth, surface and ICD sections fade up one after the other. The popover mounts already
@@ -639,6 +645,23 @@
   gap: var(--spacing-8);
 }
 
+/* Each typed key pops in as it appears (existing keys keep their place), staggered by position. */
+@keyframes keyPop {
+  from { opacity: 0; transform: translateY(3px) scale(0.85); }
+  to { opacity: 1; transform: none; }
+}
+
+.TypedEcho kbd {
+  animation: keyPop 160ms ease-out both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.TypedEcho kbd:nth-child(2) { animation-delay: 40ms; }
+.TypedEcho kbd:nth-child(3) { animation-delay: 80ms; }
+
 .TypedEcho,
 .TypedErr {
   composes: text-base weight-400 from global;
@@ -800,4 +823,9 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-4);
+}
+
+/* A selected surface gets darker on hover instead of falling back to the grey hover tint. */
+.CircleRegion.CircleRegionSelected:hover {
+  fill: var(--interactive-40);
 }
