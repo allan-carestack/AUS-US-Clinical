@@ -586,6 +586,33 @@ function ProcedureRow({
   );
 }
 
+/** The selected phase's bottom outline. It is a cap (see CSS) while the phase's real bottom edge
+ *  is below the fold or within the table's rounded corner (the last 8px), so the line is never
+ *  cut by the table's clip; otherwise it is a straight line. */
+function PhaseBottomEdge() {
+  const sentinel = useRef<HTMLDivElement>(null);
+  const [pinned, setPinned] = useState(false);
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el) return;
+    let scroller = el.parentElement;
+    while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement;
+    // The scroller's bottom 8px count as out of view: that is where the table's corners clip.
+    const observer = new IntersectionObserver(([entry]) => setPinned(!entry.isIntersecting), {
+      root: scroller,
+      rootMargin: '0px 0px -8px 0px',
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <>
+      <div ref={sentinel} className={styles.PhaseBottomSentinel} aria-hidden />
+      <div className={styles.PhaseBottomEdge} data-pinned={pinned || undefined} aria-hidden />
+    </>
+  );
+}
+
 function PhaseSection({
   phase,
   phaseName,
@@ -829,7 +856,7 @@ function PhaseSection({
           )}
         </div>
       </div>
-      {isTarget && <div className={styles.PhaseBottomEdge} aria-hidden />}
+      {isTarget && <PhaseBottomEdge />}
     </section>
   );
 }
