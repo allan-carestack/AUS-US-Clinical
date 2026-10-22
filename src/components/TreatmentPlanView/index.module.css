@@ -163,11 +163,17 @@
   min-height: 0;
 }
 
+/* The shared scroller only contains its overscroll; on macOS it still rubber-bands, which lifts
+   the sticky column header out of the table past the end of the list. No bounce here. */
+.Scroll .NoBounce {
+  overscroll-behavior: none;
+}
+
 .Grid {
   /* Every column flexes between a minimum that still fits its content and a share of the
      free width (the code column takes most of it), so the table fits its container. */
   --col-drag: 2.4rem;
-  --col-check: 2.4rem;
+  --col-check: 3.2rem;
   --col-date: minmax(7.6rem, 1fr);
   --col-code: minmax(8rem, 5fr);
   --col-th: minmax(5.6rem, 1fr);
@@ -227,8 +233,48 @@
   position: absolute;
   inset: 0 0 -1px; /* also covers the card's 1px bottom border */
   border: 2px solid var(--blue-80);
+  border-bottom: 0; /* drawn by .PhaseBottomEdge, which stays in view */
   pointer-events: none;
   z-index: 1;
+}
+
+/* The bottom line of the selected phase. Zero height, so it never moves anything: at the end of
+   the card it draws where the card's bottom edge is; while that edge is below the fold it pins
+   to the bottom of the scroll area, so the outline stays closed for as long as any of the phase
+   is on screen. When the phase scrolls off, it goes with it. */
+.PhaseBottomEdge {
+  position: sticky;
+  bottom: 1px;
+  height: 0;
+  z-index: 1;
+  pointer-events: none;
+  container-type: scroll-state;
+}
+
+.PhaseBottomEdge::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--blue-80);
+}
+
+/* Pinned to the bottom of the table (the phase runs on below the fold): the line becomes a cap
+   with the table's own corner radius (its 8px less the 1px border), so it follows the rounded
+   clip instead of being cut by it. In the middle of the table it stays a straight line.
+   Browsers without scroll-state queries keep the straight line. */
+@container scroll-state(stuck: bottom) {
+  .PhaseBottomEdge::before {
+    top: -7px;
+    height: 8px;
+    box-sizing: border-box;
+    background: none;
+    border: 2px solid var(--blue-80);
+    border-top: 0;
+    border-radius: 0 0 calc(var(--radius-8) - 1px) calc(var(--radius-8) - 1px);
+  }
 }
 
 /* The card's own top edge scrolls away while its header stays pinned, so the header carries
@@ -297,6 +343,16 @@
   align-items: center;
   gap: var(--spacing-8);
   min-width: 0;
+}
+
+/* Follows the expand arrow, shifted to sit centred over the rows' checkbox column:
+   column centre (drag column + half the check column) minus half the 16px box, minus what
+   precedes it in the header (4px padding + 24px arrow + 8px gap). */
+.PhaseCheck {
+  flex-shrink: 0;
+  margin-left: calc(var(--col-drag) + var(--col-check) / 2 - 8px - 36px);
+  display: flex;
+  align-items: center;
 }
 
 .PhaseToggle {
