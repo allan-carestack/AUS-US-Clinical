@@ -730,18 +730,40 @@
 }
 
 /* 4px between phases (first-of-type, so the drag gap elements between cards don't matter). */
-.PhaseCard:not(:first-of-type) {
-  margin-top: 4px;
+.PhaseCard {
+  --card-mt: 0px;
 }
 
-/* The phase being carried folds away from where it was picked up (no ghost left behind). */
-.PhaseCardDragging {
-  height: 0;
-  margin: 0 !important;
+.PhaseCard:not(:first-of-type) {
+  --card-mt: 4px;
+  margin-top: var(--card-mt);
+}
+
+/* The phase being carried folds away from where it was picked up (no ghost left behind). It is
+   marked once its body has closed, so it is just a header by then and shrinks from that height. */
+.PhaseCard.PhaseCardDragging {
+  max-height: 0;
+  margin-top: 0;
   overflow: hidden;
-  border: 0;
+  border-bottom-width: 0;
   opacity: 0;
   pointer-events: none;
+  animation: phaseFold 180ms ease-in-out;
+}
+
+@keyframes phaseFold {
+  from {
+    max-height: calc(var(--phase-h) + 1px);
+    margin-top: var(--card-mt);
+    border-bottom-width: 1px;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .PhaseCard.PhaseCardDragging {
+    animation: none;
+  }
 }
 
 /* Gap elements between phases: only the one at the drop point opens up. */

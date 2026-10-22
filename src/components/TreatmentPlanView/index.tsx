@@ -936,6 +936,13 @@ export function TreatmentPlanView({
     expandedBeforePhaseDrag.current = null;
     if (prev) setExpandedPhases(prev);
   };
+  // The carried phase folds away only once its body has finished closing (see onDragStart).
+  const hidePhaseTimer = useRef<number | null>(null);
+  const clearHidePhaseTimer = () => {
+    if (hidePhaseTimer.current !== null) window.clearTimeout(hidePhaseTimer.current);
+    hidePhaseTimer.current = null;
+  };
+  useEffect(() => clearHidePhaseTimer, []);
   const [dragPhaseId, setDragPhaseId] = useState<string | null>(null);
   const [dragPhaseHidden, setDragPhaseHidden] = useState(false);
   const [dragPhaseHeight, setDragPhaseHeight] = useState(36);
@@ -952,10 +959,13 @@ export function TreatmentPlanView({
       expandedBeforePhaseDrag.current = new Set(expandedPhases);
       requestAnimationFrame(() => setExpandedPhases(new Set()));
       // Then fold the carried phase itself away, once the drag is under way (hiding the source
-      // inside dragstart can cancel the drag in some browsers).
-      window.setTimeout(() => setDragPhaseHidden(true), 0);
+      // inside dragstart can cancel the drag in some browsers). It waits for its body to finish
+      // closing (the 200ms PhaseBody transition) so the phase visibly minimises first.
+      clearHidePhaseTimer();
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      hidePhaseTimer.current = window.setTimeout(() => setDragPhaseHidden(true), reduceMotion ? 0 : 200);
     },
-    onDragEnd: () => { stopAutoScroll(); setDragPhaseId(null); setDragPhaseHidden(false); setDropPhaseIndex(null); restoreExpanded(); },
+    onDragEnd: () => { stopAutoScroll(); clearHidePhaseTimer(); setDragPhaseId(null); setDragPhaseHidden(false); setDropPhaseIndex(null); restoreExpanded(); },
     onDragOver: (e, index) => {
       if (!dragPhaseId) return;
       e.preventDefault();
@@ -970,18 +980,21 @@ export function TreatmentPlanView({
       if (dropHandled.current) return;
       dropHandled.current = true;
       stopAutoScroll();
+      clearHidePhaseTimer();
       if (dropPhaseIndex !== null) onMovePhase(dragPhaseId, dropPhaseIndex);
       const droppedId = dragPhaseId;
       setDragPhaseId(null);
       setDragPhaseHidden(false);
       setDropPhaseIndex(null);
       restoreExpanded();
+      selectTargetPhase(droppedId); // the moved phase becomes the selected one (after restoreExpanded, which would reset its expansion)
       revealPhase(droppedId); // keep the moved phase on screen, wherever it landed
     },
     onNudge: (id, index, dir) => {
       const to = dir < 0 ? index - 1 : index + 2;
       if (to < 0 || to > plan.phases.length) return;
       onMovePhase(id, to);
+      selectTargetPhase(id);
       requestAnimationFrame(() =>
         document.querySelector<HTMLElement>(`[data-phase-id="${id}"] [role="button"][aria-label^="Add codes to"]`)?.focus());
     },
