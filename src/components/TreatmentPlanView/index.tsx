@@ -269,12 +269,18 @@ function PlanHeader({
   );
 }
 
-function ColumnHeaders() {
+function ColumnHeaders({ total, selected, onToggleAll }: { total: number; selected: number; onToggleAll: (checked: boolean) => void }) {
   return (
     <div className={styles.HeaderRow} role="row">
       <div className={styles.ThCenter} role="columnheader" />
       <div className={styles.ThCenter} role="columnheader">
-        <Checkbox aria-label="Select all procedures" />
+        <Checkbox
+          checked={total > 0 && selected === total}
+          indeterminate={selected > 0 && selected < total}
+          disabled={total === 0}
+          onCheckedChange={(checked) => onToggleAll(checked === true)}
+          aria-label="Select all procedures"
+        />
       </div>
       <div className={styles.Th} role="columnheader">Date</div>
       <div className={styles.Th} role="columnheader">Code</div>
@@ -580,6 +586,33 @@ function ProcedureRow({
   );
 }
 
+/** The selected phase's bottom outline. It is a cap (see CSS) while the phase's real bottom edge
+ *  is below the fold or within the table's rounded corner (the last 8px), so the line is never
+ *  cut by the table's clip; otherwise it is a straight line. */
+function PhaseBottomEdge() {
+  const sentinel = useRef<HTMLDivElement>(null);
+  const [pinned, setPinned] = useState(false);
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el) return;
+    let scroller = el.parentElement;
+    while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement;
+    // The scroller's bottom 8px count as out of view: that is where the table's corners clip.
+    const observer = new IntersectionObserver(([entry]) => setPinned(!entry.isIntersecting), {
+      root: scroller,
+      rootMargin: '0px 0px -8px 0px',
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <>
+      <div ref={sentinel} className={styles.PhaseBottomSentinel} aria-hidden />
+      <div className={styles.PhaseBottomEdge} data-pinned={pinned || undefined} aria-hidden />
+    </>
+  );
+}
+
 function PhaseSection({
   phase,
   phaseName,
@@ -592,6 +625,7 @@ function PhaseSection({
   onSelectTarget,
   selectedIds,
   onToggleRow,
+  onTogglePhaseRows,
   duration,
   onDurationChange,
   pendingProcedureIds,
@@ -622,6 +656,8 @@ function PhaseSection({
   onSelectTarget: () => void;
   selectedIds: Set<string>;
   onToggleRow: (id: string, checked: boolean) => void;
+  /** Checks or unchecks every code in the phase. */
+  onTogglePhaseRows: (phase: PlanPhase, checked: boolean) => void;
   duration: DurationValue;
   onDurationChange: (value: DurationValue) => void;
   pendingProcedureIds: Set<string>;
@@ -635,6 +671,8 @@ function PhaseSection({
   isValidSurface: (value: string) => string | null;
   onSelectArea: (procedureId: string, areaId: string) => void;
 }) {
+  const total = phase.procedures.length;
+  const checkedCount = phase.procedures.filter((p) => selectedIds.has(p.id)).length;
   return (
     <section
       className={[
@@ -701,6 +739,19 @@ function PhaseSection({
               onToggleExpanded();
             }}
           />
+          <div
+            className={styles.PhaseCheck}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <Checkbox
+              checked={total > 0 && checkedCount === total}
+              indeterminate={checkedCount > 0 && checkedCount < total}
+              disabled={total === 0}
+              onCheckedChange={(checked) => onTogglePhaseRows(phase, checked === true)}
+              aria-label={`Select all codes in ${phaseName}`}
+            />
+          </div>
           <div
             className={styles.PhaseDetails}
             onClick={(e) => e.stopPropagation()}
@@ -805,6 +856,7 @@ function PhaseSection({
           )}
         </div>
       </div>
+      {isTarget && <PhaseBottomEdge />}
     </section>
   );
 }
@@ -936,6 +988,13 @@ export function TreatmentPlanView({
     expandedBeforePhaseDrag.current = null;
     if (prev) setExpandedPhases(prev);
   };
+  // The carried phase folds away only once its body has finished closing (see onDragStart).
+  const hidePhaseTimer = useRef<number | null>(null);
+  const clearHidePhaseTimer = () => {
+    if (hidePhaseTimer.current !== null) window.clearTimeout(hidePhaseTimer.current);
+    hidePhaseTimer.current = null;
+  };
+  useEffect(() => clearHidePhaseTimer, []);
   const [dragPhaseId, setDragPhaseId] = useState<string | null>(null);
   const [dragPhaseHidden, setDragPhaseHidden] = useState(false);
   const [dragPhaseHeight, setDragPhaseHeight] = useState(36);
@@ -952,10 +1011,13 @@ export function TreatmentPlanView({
       expandedBeforePhaseDrag.current = new Set(expandedPhases);
       requestAnimationFrame(() => setExpandedPhases(new Set()));
       // Then fold the carried phase itself away, once the drag is under way (hiding the source
-      // inside dragstart can cancel the drag in some browsers).
-      window.setTimeout(() => setDragPhaseHidden(true), 0);
+      // inside dragstart can cancel the drag in some browsers). It waits for its body to finish
+      // closing (the 200ms PhaseBody transition) so the phase visibly minimises first.
+      clearHidePhaseTimer();
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      hidePhaseTimer.current = window.setTimeout(() => setDragPhaseHidden(true), reduceMotion ? 0 : 200);
     },
-    onDragEnd: () => { stopAutoScroll(); setDragPhaseId(null); setDragPhaseHidden(false); setDropPhaseIndex(null); restoreExpanded(); },
+    onDragEnd: () => { stopAutoScroll(); clearHidePhaseTimer(); setDragPhaseId(null); setDragPhaseHidden(false); setDropPhaseIndex(null); restoreExpanded(); },
     onDragOver: (e, index) => {
       if (!dragPhaseId) return;
       e.preventDefault();
@@ -970,18 +1032,21 @@ export function TreatmentPlanView({
       if (dropHandled.current) return;
       dropHandled.current = true;
       stopAutoScroll();
+      clearHidePhaseTimer();
       if (dropPhaseIndex !== null) onMovePhase(dragPhaseId, dropPhaseIndex);
       const droppedId = dragPhaseId;
       setDragPhaseId(null);
       setDragPhaseHidden(false);
       setDropPhaseIndex(null);
       restoreExpanded();
+      selectTargetPhase(droppedId); // the moved phase becomes the selected one (after restoreExpanded, which would reset its expansion)
       revealPhase(droppedId); // keep the moved phase on screen, wherever it landed
     },
     onNudge: (id, index, dir) => {
       const to = dir < 0 ? index - 1 : index + 2;
       if (to < 0 || to > plan.phases.length) return;
       onMovePhase(id, to);
+      selectTargetPhase(id);
       requestAnimationFrame(() =>
         document.querySelector<HTMLElement>(`[data-phase-id="${id}"] [role="button"][aria-label^="Add codes to"]`)?.focus());
     },
@@ -1206,6 +1271,24 @@ export function TreatmentPlanView({
     });
   };
 
+  const allProcedureIds = plan.phases.flatMap((ph) => ph.procedures.map((p) => p.id));
+  const selectedProcedureCount = allProcedureIds.filter((id) => selectedIds.has(id)).length;
+  const toggleAllRows = (checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      allProcedureIds.forEach((id) => (checked ? next.add(id) : next.delete(id)));
+      return next;
+    });
+  };
+
+  const togglePhaseRows = (phase: PlanPhase, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      phase.procedures.forEach((p) => (checked ? next.add(p.id) : next.delete(p.id)));
+      return next;
+    });
+  };
+
   return (
     <div className={[styles.Root, compact ? styles.Compact : ''].filter(Boolean).join(' ')}>
       <PlanHeader
@@ -1244,7 +1327,7 @@ export function TreatmentPlanView({
           }}
         >
           <ScrollArea className={styles.Scroll}>
-            <ScrollAreaViewport>
+            <ScrollAreaViewport className={styles.NoBounce}>
               <ScrollAreaContent>
                 <div
                   className={styles.Grid}
@@ -1256,7 +1339,7 @@ export function TreatmentPlanView({
                     '--phase-h': `${dragPhaseHeight}px`,
                   } as React.CSSProperties}
                 >
-                  <ColumnHeaders />
+                  <ColumnHeaders total={allProcedureIds.length} selected={selectedProcedureCount} onToggleAll={toggleAllRows} />
                   {plan.phases.map((phase, phaseIndex) => {
                     const phaseName = phaseNames[phase.id] ?? phase.name;
                     return (
@@ -1278,6 +1361,7 @@ export function TreatmentPlanView({
                         onSelectTarget={() => selectTargetPhase(phase.id)}
                         selectedIds={selectedIds}
                         onToggleRow={toggleRow}
+                        onTogglePhaseRows={togglePhaseRows}
                         duration={durations[phase.id] ?? ZERO_DURATION}
                         onDurationChange={(value) => {
                           setDurations((prev) => ({ ...prev, [phase.id]: value }));
