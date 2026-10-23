@@ -829,3 +829,170 @@
 .CircleRegion.CircleRegionSelected:hover {
   fill: var(--interactive-40);
 }
+
+/* ── Help button and panel ── */
+.HeaderActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.HelpActive {
+  background: rgb(255 255 255 / 20%);
+}
+
+/* The body and footer sit in a box the help panel can cover exactly. */
+.QuickShell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.QuickInner {
+  display: flex;
+  flex-direction: column;
+}
+
+.HelpPanel {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--white);
+  outline: none;
+  /* Always mounted so it can fade out too: it crossfades over the tooth selector, rising a few
+     pixels as it comes in. visibility waits for the fade to finish before it hides the panel. */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(var(--spacing-4));
+  transition:
+    opacity 160ms ease-out,
+    transform 160ms ease-out,
+    visibility 0s linear 160ms;
+
+  &[data-open] {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition-delay: 0s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* The title text fades in when it swaps between the code name and the help heading. */
+@keyframes titleSwap {
+  from { opacity: 0; transform: translateY(var(--spacing-2)); }
+}
+
+.TitleSwap {
+  display: inline-block;
+  animation: titleSwap 160ms ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.HelpList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.HelpGroup {
+  padding: calc(var(--spacing-4) - 1px) var(--spacing-8);
+  margin: 0 calc(-1 * var(--spacing-8));
+  border-radius: var(--radius-4);
+}
+
+.HelpGroupTitle {
+  composes: text-base weight-700 from global;
+  margin: 0 0 var(--spacing-2);
+  color: var(--grey-100);
+}
+
+.HelpGroupBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  margin: 0;
+}
+
+.HelpRow {
+  display: grid;
+  grid-template-columns: 11rem 1fr; /* fallback; see the subgrid rule below */
+  align-items: center;
+  gap: var(--spacing-12);
+
+  & dt {
+    display: flex;
+    align-items: center;
+  }
+}
+
+/* One key column shared by every row of every group, only as wide as the widest key. */
+@supports (grid-template-columns: subgrid) {
+  .HelpList {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    column-gap: var(--spacing-12);
+    row-gap: var(--spacing-4);
+  }
+
+  .HelpGroup {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+  }
+
+  .HelpGroupTitle,
+  .HelpGroupBody {
+    grid-column: 1 / -1;
+  }
+
+  .HelpGroupBody {
+    display: grid;
+    grid-template-columns: subgrid;
+    column-gap: var(--spacing-12);
+  }
+
+  .HelpRow {
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    column-gap: var(--spacing-12);
+  }
+}
+
+.HelpDesc {
+  composes: text-base weight-400 from global;
+  margin: 0;
+  color: var(--grey-100);
+}
+
+.HelpLinks {
+  composes: text-base weight-500 from global;
+  color: var(--interactive-80);
+}
+
+/* The list scrolls in its own area, so its scrollbar ends where the footer begins. */
+.HelpScroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--spacing-8) var(--spacing-12);
+}
+
+.HelpFooter {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--spacing-8) var(--spacing-12);
+  background: var(--white);
+  border-top: 1px solid var(--grey-20);
+}
