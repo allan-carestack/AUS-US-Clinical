@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import Button from '../Button';
 import { Kbd, KbdGroup } from '../Kbd';
 import { PopoverHeader, PopoverClose, PopoverTitle } from '../Popover';
-import { CloseIcon } from '../Icon';
+import { CloseIcon, HelpIcon } from '../Icon';
 import { SegmentedButton, SegmentedButtonItem } from '../SegmentedButton';
 import { Combobox, ComboboxInput, ComboboxContent, ComboboxItemMulti, ComboboxEmpty } from '../Combobox';
 import { SurfaceQuicklinks } from './ToothGrid';
@@ -85,6 +85,8 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
   const [icdChips, setIcdChips] = useState<string[]>(icd?.defaults ?? []);
   const [icdMsg, setIcdMsg] = useState('');
   const [icdQuery, setIcdQuery] = useState('');
+  const [helpOpen, setHelpOpen] = useState(false);
+  const helpRef = useRef<HTMLDivElement>(null);
   const icdHighlight = useRef<unknown>(undefined);
   const toothRef = useRef<HTMLDivElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
@@ -247,6 +249,16 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
     onClick: () => ref.current?.focus(),
   });
 
+  /** Help panel: focus moves into it, and back to the frame being filled in when it closes. */
+  const toggleHelp = () => setHelpOpen(o => !o);
+  const helpMounted = useRef(false);
+  useEffect(() => {
+    if (!helpMounted.current) { helpMounted.current = true; return; }
+    // preventScroll: the panel starts 4px low, and a focus() scroll would nudge the popup (and its header) with it.
+    if (helpOpen) helpRef.current?.focus({ preventScroll: true });
+    else (step === 'surface' && requiresSurface ? surfaceRef : toothRef).current?.focus({ preventScroll: true });
+  }, [helpOpen]);
+
   const cell = (id: string, disabled = false) => (
     <button
       key={id}
@@ -270,194 +282,277 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
     <>
       <PopoverHeader className={styles.DarkHeader}>
         <div className={styles.HeaderLeft}>
-          <PopoverTitle>{title}</PopoverTitle>
+          <PopoverTitle><span key={helpOpen ? 'help' : 'title'} className={styles.TitleSwap}>{helpOpen ? 'How to use the tooth selector' : title}</span></PopoverTitle>
         </div>
-        <PopoverClose>
-          <Button variant="ghost" inverse iconOnly aria-label="Close" leftIcon={<CloseIcon />} />
-        </PopoverClose>
+        <div className={styles.HeaderActions}>
+          <Button
+            variant="ghost"
+            inverse
+            className={helpOpen ? styles.HelpActive : undefined}
+            aria-expanded={helpOpen}
+            leftIcon={<HelpIcon />}
+            onClick={toggleHelp}
+          >
+            Help
+          </Button>
+          <PopoverClose>
+            <Button variant="ghost" inverse iconOnly aria-label="Close" leftIcon={<CloseIcon />} />
+          </PopoverClose>
+        </div>
       </PopoverHeader>
 
-      <div className={styles.QuickBody} onKeyDown={cycleFocus}>
-        <div className={styles.QuickMain}>
-          <div className={styles.QuickCol}>
-            <div className={styles.QuickLabel}>Select tooth <span className={styles.Req}>*</span></div>
-            <div className={styles.Hint}>Click a tooth or type its number</div>
-            <div
-              ref={toothRef}
-              data-first-focus={!startOnSurface || undefined}
-              tabIndex={0}
-              className={styles.QuickFrame}
-              aria-label="Select tooth: type a number, S for supernumerary, Enter to continue"
-              aria-invalid={invalid === 'tooth' || undefined}
-              onKeyDown={toothKey}
-              onFocus={() => setStep('tooth')}
-              {...keepFocus(toothRef)}
-            >
-              <div className={styles.QuickPanel}>
-                <div className={styles.QuickTabs}>
-                  <SegmentedButton className={styles.QuickSwitch} value={sup ? 'sup' : 'reg'} onValueChange={v => switchTab(v === 'sup')}>
-                    <SegmentedButtonItem value="reg">Regular <Kbd>R</Kbd></SegmentedButtonItem>
-                    <SegmentedButtonItem value="sup">Supernumerary <Kbd>S</Kbd></SegmentedButtonItem>
-                  </SegmentedButton>
-                  <span className={toothError ? styles.TypedErr : styles.TypedEcho} role={toothError ? 'alert' : undefined}>
-                    {toothError || (buffer && <KbdGroup>{[...typedId].map((ch, i) => <Kbd key={i}>{ch}</Kbd>)}</KbdGroup>)}
-                  </span>
-                </div>
-                <div className={styles.GridStack}>
-                  {[false, true].map(isSup => (
-                    <div
-                      key={String(isSup)}
-                      className={[styles.Grid, styles.GridPane, sup === isSup ? '' : isSup ? styles.PaneRight : styles.PaneLeft].join(' ')}
-                      inert={sup !== isSup}
-                    >
-                      {buildRegularGridRows().map((row, i) => (
-                        <div key={i} className={[styles.GridRow, row.variant === 'primary' ? styles.GridRowPrimary : ''].join(' ')}>
-                          {row.teeth.map((t, j) => (t ? cell(isSup ? `S${t.id}` : t.id, row.variant === 'primary') : <div key={j} className={styles.ToothCellEmpty} />))}
+      <div className={styles.QuickShell}>
+        <div className={styles.QuickInner} inert={helpOpen}>
+          <div className={styles.QuickBody} onKeyDown={cycleFocus}>
+            <div className={styles.QuickMain}>
+              <div className={styles.QuickCol}>
+                <div className={styles.QuickLabel}>Select tooth <span className={styles.Req}>*</span></div>
+                <div className={styles.Hint}>Click a tooth or type its number</div>
+                <div
+                  ref={toothRef}
+                  data-first-focus={!startOnSurface || undefined}
+                  tabIndex={0}
+                  className={styles.QuickFrame}
+                  aria-label="Select tooth: type a number, S for supernumerary, Enter to continue"
+                  aria-invalid={invalid === 'tooth' || undefined}
+                  onKeyDown={toothKey}
+                  onFocus={() => setStep('tooth')}
+                  {...keepFocus(toothRef)}
+                >
+                  <div className={styles.QuickPanel}>
+                    <div className={styles.QuickTabs}>
+                      <SegmentedButton className={styles.QuickSwitch} value={sup ? 'sup' : 'reg'} onValueChange={v => switchTab(v === 'sup')}>
+                        <SegmentedButtonItem value="reg">Regular <Kbd>R</Kbd></SegmentedButtonItem>
+                        <SegmentedButtonItem value="sup">Supernumerary <Kbd>S</Kbd></SegmentedButtonItem>
+                      </SegmentedButton>
+                      <span className={toothError ? styles.TypedErr : styles.TypedEcho} role={toothError ? 'alert' : undefined}>
+                        {toothError || (buffer && <KbdGroup>{[...typedId].map((ch, i) => <Kbd key={i}>{ch}</Kbd>)}</KbdGroup>)}
+                      </span>
+                    </div>
+                    <div className={styles.GridStack}>
+                      {[false, true].map(isSup => (
+                        <div
+                          key={String(isSup)}
+                          className={[styles.Grid, styles.GridPane, sup === isSup ? '' : isSup ? styles.PaneRight : styles.PaneLeft].join(' ')}
+                          inert={sup !== isSup}
+                        >
+                          {buildRegularGridRows().map((row, i) => (
+                            <div key={i} className={[styles.GridRow, row.variant === 'primary' ? styles.GridRowPrimary : ''].join(' ')}>
+                              {row.teeth.map((t, j) => (t ? cell(isSup ? `S${t.id}` : t.id, row.variant === 'primary') : <div key={j} className={styles.ToothCellEmpty} />))}
+                            </div>
+                          ))}
                         </div>
                       ))}
                     </div>
-                  ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {requiresSurface && (
-            <div className={styles.QuickColSurface}>
-              <div className={styles.QuickLabel}>Select surface <span className={styles.Req}>*</span></div>
-              <div className={styles.Hint}>Click, or type <KbdGroup><Kbd>M</Kbd><Kbd>O</Kbd><Kbd>D</Kbd><Kbd>B</Kbd><Kbd>L</Kbd></KbdGroup></div>
-              <div
-                ref={surfaceRef}
-                data-first-focus={startOnSurface || undefined}
-                tabIndex={0}
-                className={styles.QuickFrame}
-                aria-label="Select surface: type M, O, D, B, L, I or P, Enter to apply"
-                aria-invalid={invalid === 'surface' || undefined}
-                onKeyDown={surfaceKey}
-                onFocus={() => setStep('surface')}
-                {...keepFocus(surfaceRef)}
-              >
-                <div className={styles.Diagram}>
-                  <svg viewBox="0 0 160 160" width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}>
-                    {REGIONS.map(g => (
-                      <path
-                        key={g.label}
-                        d={g.d}
-                        role="button"
-                        aria-pressed={surfaceOn(g.letters)}
-                        aria-label={`Surface ${g.label}`}
-                        className={[styles.CircleRegion, surfaceOn(g.letters) ? styles.CircleRegionSelected : ''].join(' ')}
-                        onClick={() => toggleLetter(g.toggle)}
-                      />
-                    ))}
-                    <circle
-                      cx={C} cy={C} r={r - GAP * 2}
-                      role="button"
-                      aria-label="Surface O/I"
-                      aria-pressed={/[OI]/.test(surface)}
-                      className={[styles.CircleRegion, /[OI]/.test(surface) ? styles.CircleRegionSelected : ''].join(' ')}
-                      onClick={() => toggleLetter('O')}
-                    />
-                  </svg>
-                  {REGIONS.map(g => <span key={g.label} className={[styles.DiagramLabel, styles[g.cls]].join(' ')}>{g.label}</span>)}
-                  <span className={[styles.DiagramLabel, styles.labelOcclusal].join(' ')}>O/I</span>
-                </div>
-                <div className={styles.QuickPicks}>
-                  <SurfaceQuicklinks
-                    surfaceLetters={surface}
-                    onSelect={letters => { setSurface(letters); setInvalid(null); surfaceRef.current?.focus(); }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {icd && (
-          <div className={styles.IcdBlock}>
-            <div className={styles.IcdRow}>
-              <label htmlFor={icdId}>ICD code {icd.required && <span className={styles.Req}>*</span>}</label>
-              <div data-icd-field className={[styles.IcdField, invalid === 'icd' ? styles.IcdFieldInvalid : ''].join(' ')} onFocus={() => setStep('icd')}>
-                <Combobox
-                  multiple
-                  items={ICD_OPTIONS.map(o => o.code)}
-                  filter={null}
-                  inputValue={icdQuery}
-                  onItemHighlighted={v => { icdHighlight.current = v; }}
-                  onInputValueChange={setIcdQuery}
-                  value={icdChips}
-                  onValueChange={v => { setIcdChips(v as string[]); setIcdMsg(''); setInvalid(null); }}
-                >
-                  <ComboboxInput id={icdId} className={styles.IcdGroup} placeholder={icdChips.length ? '' : 'Search ICD code'} onKeyDown={icdKey}>
-                    {icdChips.map(c => (
-                      <span key={c} className={styles.IcdChip}>
-                        {c}
-                        <button type="button" tabIndex={-1} className={styles.ChipX} aria-label={`Remove ${c}`} onClick={() => setIcdChips(l => l.filter(x => x !== c))}>×</button>
-                      </span>
-                    ))}
-                  </ComboboxInput>
-                  <ComboboxContent>
-                    {ICD_OPTIONS.filter(o => `${o.code} ${o.label}`.toLowerCase().includes(icdQuery.trim().toLowerCase())).map(o => (
-                      <ComboboxItemMulti key={o.code} value={o.code} subtext={o.label}>{o.code}</ComboboxItemMulti>
-                    ))}
-                    <ComboboxEmpty>No matching ICD codes</ComboboxEmpty>
-                  </ComboboxContent>
-                </Combobox>
-              </div>
-            </div>
-            {invalid === 'icd' && icdMsg && <div className={styles.TypedErr} role="alert">{icdMsg}</div>}
-          </div>
-        )}
-
-        <div className={styles.SummaryWrap} data-open={showSummary || undefined} inert={!showSummary}>
-          <div>
-            <div className={styles.Summary} aria-live="polite">
-              <span className={styles.SummaryLabel}>{multiMode || teeth.length > 1 ? 'Adding to' : 'Adding'}</span>
-              {teeth.map(t => (
-                <span key={t} className={[styles.IcdChip, t === highlighted ? styles.ChipCurrent : ''].join(' ')}>
-                  #{t}
-                </span>
-              ))}
               {requiresSurface && (
+                <div className={styles.QuickColSurface}>
+                  <div className={styles.QuickLabel}>Select surface <span className={styles.Req}>*</span></div>
+                  <div className={styles.Hint}>Click, or type <KbdGroup><Kbd>M</Kbd><Kbd>O</Kbd><Kbd>D</Kbd><Kbd>B</Kbd><Kbd>L</Kbd></KbdGroup></div>
+                  <div
+                    ref={surfaceRef}
+                    data-first-focus={startOnSurface || undefined}
+                    tabIndex={0}
+                    className={styles.QuickFrame}
+                    aria-label="Select surface: type M, O, D, B, L, I or P, Enter to apply"
+                    aria-invalid={invalid === 'surface' || undefined}
+                    onKeyDown={surfaceKey}
+                    onFocus={() => setStep('surface')}
+                    {...keepFocus(surfaceRef)}
+                  >
+                    <div className={styles.Diagram}>
+                      <svg viewBox="0 0 160 160" width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}>
+                        {REGIONS.map(g => (
+                          <path
+                            key={g.label}
+                            d={g.d}
+                            role="button"
+                            aria-pressed={surfaceOn(g.letters)}
+                            aria-label={`Surface ${g.label}`}
+                            className={[styles.CircleRegion, surfaceOn(g.letters) ? styles.CircleRegionSelected : ''].join(' ')}
+                            onClick={() => toggleLetter(g.toggle)}
+                          />
+                        ))}
+                        <circle
+                          cx={C} cy={C} r={r - GAP * 2}
+                          role="button"
+                          aria-label="Surface O/I"
+                          aria-pressed={/[OI]/.test(surface)}
+                          className={[styles.CircleRegion, /[OI]/.test(surface) ? styles.CircleRegionSelected : ''].join(' ')}
+                          onClick={() => toggleLetter('O')}
+                        />
+                      </svg>
+                      {REGIONS.map(g => <span key={g.label} className={[styles.DiagramLabel, styles[g.cls]].join(' ')}>{g.label}</span>)}
+                      <span className={[styles.DiagramLabel, styles.labelOcclusal].join(' ')}>O/I</span>
+                    </div>
+                    <div className={styles.QuickPicks}>
+                      <SurfaceQuicklinks
+                        surfaceLetters={surface}
+                        onSelect={letters => { setSurface(letters); setInvalid(null); surfaceRef.current?.focus(); }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {icd && (
+              <div className={styles.IcdBlock}>
+                <div className={styles.IcdRow}>
+                  <label htmlFor={icdId}>ICD code {icd.required && <span className={styles.Req}>*</span>}</label>
+                  <div data-icd-field className={[styles.IcdField, invalid === 'icd' ? styles.IcdFieldInvalid : ''].join(' ')} onFocus={() => setStep('icd')}>
+                    <Combobox
+                      multiple
+                      items={ICD_OPTIONS.map(o => o.code)}
+                      filter={null}
+                      inputValue={icdQuery}
+                      onItemHighlighted={v => { icdHighlight.current = v; }}
+                      onInputValueChange={setIcdQuery}
+                      value={icdChips}
+                      onValueChange={v => { setIcdChips(v as string[]); setIcdMsg(''); setInvalid(null); }}
+                    >
+                      <ComboboxInput id={icdId} className={styles.IcdGroup} placeholder={icdChips.length ? '' : 'Search ICD code'} onKeyDown={icdKey}>
+                        {icdChips.map(c => (
+                          <span key={c} className={styles.IcdChip}>
+                            {c}
+                            <button type="button" tabIndex={-1} className={styles.ChipX} aria-label={`Remove ${c}`} onClick={() => setIcdChips(l => l.filter(x => x !== c))}>×</button>
+                          </span>
+                        ))}
+                      </ComboboxInput>
+                      <ComboboxContent>
+                        {ICD_OPTIONS.filter(o => `${o.code} ${o.label}`.toLowerCase().includes(icdQuery.trim().toLowerCase())).map(o => (
+                          <ComboboxItemMulti key={o.code} value={o.code} subtext={o.label}>{o.code}</ComboboxItemMulti>
+                        ))}
+                        <ComboboxEmpty>No matching ICD codes</ComboboxEmpty>
+                      </ComboboxContent>
+                    </Combobox>
+                  </div>
+                </div>
+                {invalid === 'icd' && icdMsg && <div className={styles.TypedErr} role="alert">{icdMsg}</div>}
+              </div>
+            )}
+
+            <div className={styles.SummaryWrap} data-open={showSummary || undefined} inert={!showSummary}>
+              <div>
+                <div className={styles.Summary} aria-live="polite">
+                  <span className={styles.SummaryLabel}>{multiMode || teeth.length > 1 ? 'Adding to' : 'Adding'}</span>
+                  {teeth.map(t => (
+                    <span key={t} className={[styles.IcdChip, t === highlighted ? styles.ChipCurrent : ''].join(' ')}>
+                      #{t}
+                    </span>
+                  ))}
+                  {requiresSurface && (
+                    <>
+                      <ArrowRightIcon />
+                      <span className={styles.IcdChip}>
+                        {surface || '—'}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.QuickFooter}>
+            <span className={styles.FooterLegend}>
+              {teeth.length > 0 && (
                 <>
-                  <ArrowRightIcon />
-                  <span className={styles.IcdChip}>
-                    {surface || '—'}
+                  <span key="enter" className={styles.LegendItem}>
+                    <KbdEnter /> {step === 'tooth' && requiresSurface ? 'to select surface next' : split ? 'Apply for all' : 'Apply'}
                   </span>
+                  {allowMore && (
+                    <span key="shift" className={styles.LegendItem} style={{ animationDelay: '80ms' }}>
+                      <KbdShiftEnter /> {step === 'tooth' ? 'to select another tooth' : multi ? `Apply ${highlighted || 'tooth'} and go on` : 'Apply and next tooth'}
+                    </span>
+                  )}
                 </>
               )}
-            </div>
+            </span>
+            <span className={styles.CollapseX} data-open={split || undefined} inert={!split}>
+              <span>
+                <Button variant="secondary" disabled={!!missing} title={`Apply to tooth ${highlighted} only`} onClick={applyCurrent}>Apply</Button>
+              </span>
+            </span>
+            <Button variant="primary" disabled={!!missing} onClick={() => trySubmit(teeth, surface, false)}>
+              Apply
+              <span className={styles.CollapseX} data-open={split || undefined}>
+                <span>&nbsp;for all ({lastCount.current})</span>
+              </span>
+            </Button>
           </div>
         </div>
-      </div>
 
-      <div className={styles.QuickFooter}>
-        <span className={styles.FooterLegend}>
-          {teeth.length > 0 && (
-            <>
-              <span key="enter" className={styles.LegendItem}>
-                <KbdEnter /> {step === 'tooth' && requiresSurface ? 'to select surface next' : split ? 'Apply for all' : 'Apply'}
-              </span>
-              {allowMore && (
-                <span key="shift" className={styles.LegendItem} style={{ animationDelay: '80ms' }}>
-                  <KbdShiftEnter /> {step === 'tooth' ? 'to select another tooth' : multi ? `Apply ${highlighted || 'tooth'} and go on` : 'Apply and next tooth'}
-                </span>
-              )}
-            </>
-          )}
-        </span>
-        <span className={styles.CollapseX} data-open={split || undefined} inert={!split}>
-          <span>
-            <Button variant="secondary" disabled={!!missing} title={`Apply to tooth ${highlighted} only`} onClick={applyCurrent}>Apply</Button>
-          </span>
-        </span>
-        <Button variant="primary" disabled={!!missing} onClick={() => trySubmit(teeth, surface, false)}>
-          Apply
-          <span className={styles.CollapseX} data-open={split || undefined}>
-            <span>&nbsp;for all ({lastCount.current})</span>
-          </span>
-        </Button>
+        <div
+          ref={helpRef}
+          data-open={helpOpen || undefined}
+          inert={!helpOpen}
+          tabIndex={-1}
+          role="region"
+          aria-label="Shortcuts and tips"
+          className={styles.HelpPanel}
+          onKeyDown={e => {
+            if (e.key !== 'Escape') return;
+            e.stopPropagation(); // closes the help, not the whole popover
+            toggleHelp();
+          }}
+        >
+            <div className={styles.HelpScroll}>
+              <div className={styles.HelpList}>
+                <HelpGroup title="Pick teeth">
+                  <HelpRow keys={<KbdGroup><Kbd>1</Kbd><Kbd>4</Kbd></KbdGroup>}>Type a tooth number, or click a tooth. Click a selected tooth to deselect it.</HelpRow>
+                  <HelpRow keys={<KbdGroup><Kbd>S</Kbd><Kbd>R</Kbd></KbdGroup>}>Switch between supernumerary (<Kbd>S</Kbd>) and regular (<Kbd>R</Kbd>) teeth.</HelpRow>
+                  <HelpRow keys={<Kbd>⌫</Kbd>}>Delete the last digit; with nothing typed, deselect the last tooth.</HelpRow>
+                  {allowMore && (
+                    <HelpRow keys={<KbdShiftEnter />}>Keep this tooth and pick another. Shift-, Cmd- or Ctrl-click does the same. The "Adding to" row lists them all.</HelpRow>
+                  )}
+                  {requiresSurface && <HelpRow keys={<KbdEnter />}>Move on to the surface.</HelpRow>}
+                </HelpGroup>
+                {requiresSurface && (
+                  <HelpGroup title="Pick surfaces">
+                    <HelpRow keys={<KbdGroup><Kbd>M</Kbd><Kbd>O</Kbd><Kbd>D</Kbd><Kbd>B</Kbd><Kbd>L</Kbd></KbdGroup>}>Type letters, or click the circle, to switch surfaces on and off. <Kbd>I</Kbd> is incisal and <Kbd>P</Kbd> is palatal.</HelpRow>
+                    <HelpRow keys={<span className={styles.HelpLinks}>Quick links</span>}>The links under the circle select a whole combination in one click.</HelpRow>
+                  </HelpGroup>
+                )}
+                <HelpGroup title="Apply">
+                  {icd && <HelpRow keys={<span className={styles.HelpLinks}>ICD code</span>}>Search and add one or more.{icd.required ? ' This code needs one.' : ''} Backspace removes the last.</HelpRow>}
+                  <HelpRow keys={<KbdEnter />}>Apply to every selected tooth.</HelpRow>
+                  {allowMore && requiresSurface && (
+                    <HelpRow keys={<KbdShiftEnter />}>Apply to the current tooth only and move on to the next one.</HelpRow>
+                  )}
+                </HelpGroup>
+                <HelpGroup title="Anywhere">
+                  <HelpRow keys={<Kbd>Tab</Kbd>}>Move between the tooth{requiresSurface ? ', surface' : ''}{icd ? ' and ICD' : ''} sections.</HelpRow>
+                  <HelpRow keys={<Kbd>Esc</Kbd>}>Close without adding anything.</HelpRow>
+                </HelpGroup>
+              </div>
+            </div>
+            <div className={styles.HelpFooter}>
+              <Button variant="secondary" onClick={toggleHelp}>Back</Button>
+            </div>
+        </div>
       </div>
     </>
+  );
+}
+
+function HelpGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className={styles.HelpGroup}>
+      <h3 className={styles.HelpGroupTitle}>{title}</h3>
+      <dl className={styles.HelpGroupBody}>{children}</dl>
+    </section>
+  );
+}
+
+function HelpRow({ keys, children }: { keys: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className={styles.HelpRow}>
+      <dt>{keys}</dt>
+      <dd className={styles.HelpDesc}>{children}</dd>
+    </div>
   );
 }
