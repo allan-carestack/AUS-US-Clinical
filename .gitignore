@@ -1,0 +1,2 @@
+# Local editor worktrees; committed once by accident as a submodule, which broke Cloudflare builds.
+.cursor/worktrees/
