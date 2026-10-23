@@ -644,15 +644,10 @@
   background: var(--interactive-10);
 }
 
-/* The rows being carried fold away from where they were picked up (no ghost left behind).
-   They stay in the flow at zero height so the drop gap's margin still opens in the right place. */
-.RowDragging {
-  height: 0;
-  min-height: 0;
-  overflow: hidden;
-  border: 0;
-  opacity: 0;
-  pointer-events: none;
+/* The rows being carried stay where they were picked up as faded ghosts. Only the cells fade, so
+   the drop gap that can open on the same row keeps its full colour. */
+.RowDragging > * {
+  opacity: 0.4;
 }
 
 /* The drag image the browser shows under the pointer. */
@@ -793,40 +788,13 @@
 }
 
 /* 4px between phases (first-of-type, so the drag gap elements between cards don't matter). */
-.PhaseCard {
-  --card-mt: 0px;
-}
-
 .PhaseCard:not(:first-of-type) {
-  --card-mt: 4px;
-  margin-top: var(--card-mt);
+  margin-top: 4px;
 }
 
-/* The phase being carried folds away from where it was picked up (no ghost left behind). It is
-   marked once its body has closed, so it is just a header by then and shrinks from that height. */
-.PhaseCard.PhaseCardDragging {
-  max-height: 0;
-  margin-top: 0;
-  overflow: hidden;
-  border-bottom-width: 0;
-  opacity: 0;
-  pointer-events: none;
-  animation: phaseFold 180ms ease-in-out;
-}
-
-@keyframes phaseFold {
-  from {
-    max-height: calc(var(--phase-h) + 1px);
-    margin-top: var(--card-mt);
-    border-bottom-width: 1px;
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .PhaseCard.PhaseCardDragging {
-    animation: none;
-  }
+/* The phase being carried stays where it was picked up as a faded ghost. */
+.PhaseCardDragging {
+  opacity: 0.4;
 }
 
 /* Gap elements between phases: only the one at the drop point opens up. */

@@ -78,8 +78,8 @@ export interface TreatmentPlanViewProps {
 /** Drag-and-drop state and handlers for reordering whole phases. */
 interface PhaseDnd {
   dragPhaseId: string | null;
-  /** True once the carried phase has been folded away from its original spot. */
-  dragPhaseHidden: boolean;
+  /** True once the drag is under way: the carried phase then shows as a faded ghost in its original spot. */
+  dragPhaseStarted: boolean;
   dropIndex: number | null;
   onDragStart: (id: string, height: number) => void;
   onDragEnd: () => void;
@@ -94,8 +94,8 @@ interface PlanDnd {
   dragId: string | null;
   /** Everything being carried: the whole checked selection when the dragged row is checked, else just the row. */
   dragIds: string[];
-  /** True once the carried rows have been folded away from their original spot. */
-  dragHidden: boolean;
+  /** True once the drag is under way: the carried rows then show as faded ghosts in their original spot. */
+  dragStarted: boolean;
   /** Rows that were just dropped together, in order; they animate open. */
   spreadIds: string[];
   drop: { phaseId: string; index: number } | null;
@@ -474,7 +474,7 @@ function ProcedureRow({
         styles.Row,
         pending ? styles.PendingRow : '',
         selected ? styles.RowSelected : '',
-        dnd.dragHidden && dnd.dragIds.includes(procedure.id) ? styles.RowDragging : '',
+        dnd.dragStarted && dnd.dragIds.includes(procedure.id) ? styles.RowDragging : '',
         dnd.spreadIds.includes(procedure.id) ? styles.RowSpread : '',
         dnd.dragId && dnd.drop?.phaseId === phaseId && dnd.drop.index === index ? styles.GapBefore : '',
       ].filter(Boolean).join(' ')}
@@ -678,7 +678,7 @@ function PhaseSection({
       className={[
         styles.PhaseCard,
         isTarget ? styles.PhaseCardActive : '',
-        phaseDnd.dragPhaseHidden && phaseDnd.dragPhaseId === phase.id ? styles.PhaseCardDragging : '',
+        phaseDnd.dragPhaseStarted && phaseDnd.dragPhaseId === phase.id ? styles.PhaseCardDragging : '',
       ].filter(Boolean).join(' ')}
       data-phase-id={phase.id}
       onDragOver={(e) => phaseDnd.onDragOver(e, phaseIndex)}
@@ -946,7 +946,7 @@ export function TreatmentPlanView({
 
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragIds, setDragIds] = useState<string[]>([]);
-  const [dragHidden, setDragHidden] = useState(false);
+  const [dragStarted, setDragStarted] = useState(false);
   // Codes just dropped as a group: they open out from the single drop row, one after another.
   const [spreadIds, setSpreadIds] = useState<string[]>([]);
   const spreadTimer = useRef<number | null>(null);
@@ -988,20 +988,13 @@ export function TreatmentPlanView({
     expandedBeforePhaseDrag.current = null;
     if (prev) setExpandedPhases(prev);
   };
-  // The carried phase folds away only once its body has finished closing (see onDragStart).
-  const hidePhaseTimer = useRef<number | null>(null);
-  const clearHidePhaseTimer = () => {
-    if (hidePhaseTimer.current !== null) window.clearTimeout(hidePhaseTimer.current);
-    hidePhaseTimer.current = null;
-  };
-  useEffect(() => clearHidePhaseTimer, []);
   const [dragPhaseId, setDragPhaseId] = useState<string | null>(null);
-  const [dragPhaseHidden, setDragPhaseHidden] = useState(false);
+  const [dragPhaseStarted, setDragPhaseStarted] = useState(false);
   const [dragPhaseHeight, setDragPhaseHeight] = useState(36);
   const [dropPhaseIndex, setDropPhaseIndex] = useState<number | null>(null);
   const phaseDnd: PhaseDnd = {
     dragPhaseId,
-    dragPhaseHidden,
+    dragPhaseStarted,
     dropIndex: dropPhaseIndex,
     onDragStart: (id, height) => {
       dropHandled.current = false;
@@ -1010,14 +1003,11 @@ export function TreatmentPlanView({
       // Fold every phase down to its header so they're easy to reorder; restored afterwards.
       expandedBeforePhaseDrag.current = new Set(expandedPhases);
       requestAnimationFrame(() => setExpandedPhases(new Set()));
-      // Then fold the carried phase itself away, once the drag is under way (hiding the source
-      // inside dragstart can cancel the drag in some browsers). It waits for its body to finish
-      // closing (the 200ms PhaseBody transition) so the phase visibly minimises first.
-      clearHidePhaseTimer();
-      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      hidePhaseTimer.current = window.setTimeout(() => setDragPhaseHidden(true), reduceMotion ? 0 : 200);
+      // The carried phase stays where it was as a faded ghost. It is marked once the drag is under
+      // way (changing the source inside dragstart can cancel the drag in some browsers).
+      window.setTimeout(() => setDragPhaseStarted(true), 0);
     },
-    onDragEnd: () => { stopAutoScroll(); clearHidePhaseTimer(); setDragPhaseId(null); setDragPhaseHidden(false); setDropPhaseIndex(null); restoreExpanded(); },
+    onDragEnd: () => { stopAutoScroll(); setDragPhaseId(null); setDragPhaseStarted(false); setDropPhaseIndex(null); restoreExpanded(); },
     onDragOver: (e, index) => {
       if (!dragPhaseId) return;
       e.preventDefault();
@@ -1032,11 +1022,10 @@ export function TreatmentPlanView({
       if (dropHandled.current) return;
       dropHandled.current = true;
       stopAutoScroll();
-      clearHidePhaseTimer();
       if (dropPhaseIndex !== null) onMovePhase(dragPhaseId, dropPhaseIndex);
       const droppedId = dragPhaseId;
       setDragPhaseId(null);
-      setDragPhaseHidden(false);
+      setDragPhaseStarted(false);
       setDropPhaseIndex(null);
       restoreExpanded();
       selectTargetPhase(droppedId); // the moved phase becomes the selected one (after restoreExpanded, which would reset its expansion)
@@ -1063,7 +1052,7 @@ export function TreatmentPlanView({
   const dnd: PlanDnd = {
     dragId,
     dragIds,
-    dragHidden,
+    dragStarted,
     spreadIds,
     drop,
     onDragStart: (id, rowHeight) => {
@@ -1075,12 +1064,13 @@ export function TreatmentPlanView({
       setDragId(id);
       setDragIds(ids);
       setDragHeight(rowHeight);
-      // Fold the original rows away once the drag is under way (hiding the source inside the
-      // dragstart event itself can cancel the drag in some browsers).
-      window.setTimeout(() => setDragHidden(true), 0);
+      // The original rows stay where they were as faded ghosts. They are marked once the drag is
+      // under way (changing the source inside the dragstart event itself can cancel the drag in
+      // some browsers).
+      window.setTimeout(() => setDragStarted(true), 0);
       return ids;
     },
-    onDragEnd: () => { stopAutoScroll(); clearExpandTimer(); setDragId(null); setDragIds([]); setDragHidden(false); setDrop(null); },
+    onDragEnd: () => { stopAutoScroll(); clearExpandTimer(); setDragId(null); setDragIds([]); setDragStarted(false); setDrop(null); },
     onHeaderDragOver: (e, phaseId, count, expanded) => {
       if (!dragId) return;
       e.preventDefault();
@@ -1130,7 +1120,7 @@ export function TreatmentPlanView({
       }
       setDragId(null);
       setDragIds([]);
-      setDragHidden(false);
+      setDragStarted(false);
       setDrop(null);
     },
     onNudge: (id, phaseId, index, count, dir) => {
