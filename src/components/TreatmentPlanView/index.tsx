@@ -982,6 +982,21 @@ export function TreatmentPlanView({
     }
   };
   useEffect(() => stopAutoScroll, []);
+  // After a phase is moved to `index` (counted in the current list, like onMovePhase), phases that
+  // still carry a default "Phase N" name take their new position; renamed phases keep their name.
+  const renumberAfterMove = (phaseId: string, index: number) => {
+    const from = plan.phases.findIndex((ph) => ph.id === phaseId);
+    if (from < 0) return;
+    const order = [...plan.phases];
+    order.splice(from < index ? index - 1 : index, 0, ...order.splice(from, 1));
+    setPhaseNames((prev) => {
+      const next = { ...prev };
+      order.forEach((ph, i) => {
+        if (/^Phase \d+$/.test(prev[ph.id] ?? ph.name)) next[ph.id] = `Phase ${i + 1}`;
+      });
+      return next;
+    });
+  };
   const expandedBeforePhaseDrag = useRef<Set<string> | null>(null);
   const restoreExpanded = () => {
     const prev = expandedBeforePhaseDrag.current;
@@ -1022,7 +1037,10 @@ export function TreatmentPlanView({
       if (dropHandled.current) return;
       dropHandled.current = true;
       stopAutoScroll();
-      if (dropPhaseIndex !== null) onMovePhase(dragPhaseId, dropPhaseIndex);
+      if (dropPhaseIndex !== null) {
+        onMovePhase(dragPhaseId, dropPhaseIndex);
+        renumberAfterMove(dragPhaseId, dropPhaseIndex);
+      }
       const droppedId = dragPhaseId;
       setDragPhaseId(null);
       setDragPhaseStarted(false);
@@ -1035,6 +1053,7 @@ export function TreatmentPlanView({
       const to = dir < 0 ? index - 1 : index + 2;
       if (to < 0 || to > plan.phases.length) return;
       onMovePhase(id, to);
+      renumberAfterMove(id, to);
       selectTargetPhase(id);
       requestAnimationFrame(() =>
         document.querySelector<HTMLElement>(`[data-phase-id="${id}"] [role="button"][aria-label^="Add codes to"]`)?.focus());
