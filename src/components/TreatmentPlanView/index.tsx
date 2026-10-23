@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState, useLayoutEffect } from 'react';
 import Button from '../Button';
 import Checkbox from '../Checkbox';
 import { Tag } from '../Tag';
@@ -592,23 +592,36 @@ function ProcedureRow({
 function PhaseBottomEdge() {
   const sentinel = useRef<HTMLDivElement>(null);
   const [pinned, setPinned] = useState(false);
-  useEffect(() => {
+  // True once at least 10px of the phase is above the bottom of the scroller. Before that the
+  // pinned edge would sit at the top of the phase and its 8px cap would poke out above it.
+  const [room, setRoom] = useState(false);
+  useLayoutEffect(() => {
     const el = sentinel.current;
     if (!el) return;
     let scroller = el.parentElement;
     while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement;
+    // Measured before first paint, so selecting a phase never flashes without its bottom line.
+    if (el.parentElement && scroller) setRoom(el.parentElement.getBoundingClientRect().top < scroller.getBoundingClientRect().bottom - 10);
+    const roomObserver = new IntersectionObserver(([entry]) => setRoom(entry.isIntersecting), {
+      root: scroller,
+      rootMargin: '0px 0px -10px 0px',
+    });
+    if (el.parentElement) roomObserver.observe(el.parentElement);
     // The scroller's bottom 8px count as out of view: that is where the table's corners clip.
     const observer = new IntersectionObserver(([entry]) => setPinned(!entry.isIntersecting), {
       root: scroller,
       rootMargin: '0px 0px -8px 0px',
     });
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      roomObserver.disconnect();
+    };
   }, []);
   return (
     <>
       <div ref={sentinel} className={styles.PhaseBottomSentinel} aria-hidden />
-      <div className={styles.PhaseBottomEdge} data-pinned={pinned || undefined} aria-hidden />
+      {room && <div className={styles.PhaseBottomEdge} data-pinned={pinned || undefined} aria-hidden />}
     </>
   );
 }
@@ -622,6 +635,7 @@ function PhaseSection({
   expanded,
   onToggleExpanded,
   isTarget,
+  targetOffscreen,
   onSelectTarget,
   selectedIds,
   onToggleRow,
@@ -653,6 +667,8 @@ function PhaseSection({
   expanded: boolean;
   onToggleExpanded: () => void;
   isTarget: boolean;
+  /** The selected phase is scrolled (almost) out of view; the table's off-screen line stands in for its outline. */
+  targetOffscreen: boolean;
   onSelectTarget: () => void;
   selectedIds: Set<string>;
   onToggleRow: (id: string, checked: boolean) => void;
@@ -856,7 +872,7 @@ function PhaseSection({
           )}
         </div>
       </div>
-      {isTarget && <PhaseBottomEdge />}
+      {isTarget && !targetOffscreen && <PhaseBottomEdge />}
     </section>
   );
 }
@@ -982,6 +998,21 @@ export function TreatmentPlanView({
     }
   };
   useEffect(() => stopAutoScroll, []);
+  // After a phase is moved to `index` (counted in the current list, like onMovePhase), phases that
+  // still carry a default "Phase N" name take their new position; renamed phases keep their name.
+  const renumberAfterMove = (phaseId: string, index: number) => {
+    const from = plan.phases.findIndex((ph) => ph.id === phaseId);
+    if (from < 0) return;
+    const order = [...plan.phases];
+    order.splice(from < index ? index - 1 : index, 0, ...order.splice(from, 1));
+    setPhaseNames((prev) => {
+      const next = { ...prev };
+      order.forEach((ph, i) => {
+        if (/^Phase \d+$/.test(prev[ph.id] ?? ph.name)) next[ph.id] = `Phase ${i + 1}`;
+      });
+      return next;
+    });
+  };
   const expandedBeforePhaseDrag = useRef<Set<string> | null>(null);
   const restoreExpanded = () => {
     const prev = expandedBeforePhaseDrag.current;
@@ -1022,7 +1053,10 @@ export function TreatmentPlanView({
       if (dropHandled.current) return;
       dropHandled.current = true;
       stopAutoScroll();
-      if (dropPhaseIndex !== null) onMovePhase(dragPhaseId, dropPhaseIndex);
+      if (dropPhaseIndex !== null) {
+        onMovePhase(dragPhaseId, dropPhaseIndex);
+        renumberAfterMove(dragPhaseId, dropPhaseIndex);
+      }
       const droppedId = dragPhaseId;
       setDragPhaseId(null);
       setDragPhaseStarted(false);
@@ -1035,6 +1069,7 @@ export function TreatmentPlanView({
       const to = dir < 0 ? index - 1 : index + 2;
       if (to < 0 || to > plan.phases.length) return;
       onMovePhase(id, to);
+      renumberAfterMove(id, to);
       selectTargetPhase(id);
       requestAnimationFrame(() =>
         document.querySelector<HTMLElement>(`[data-phase-id="${id}"] [role="button"][aria-label^="Add codes to"]`)?.focus());
@@ -1154,17 +1189,24 @@ export function TreatmentPlanView({
   }, [targetPhaseId]);
 
   // If the user collapses the still-selected target then adds a code, reopen
-  // so the new row is visible (pending or completed insert).
-  const targetProcedureCount =
-    plan.phases.find((phase) => phase.id === targetPhaseId)?.procedures.length ?? 0;
+  // so the new row is visible (pending or completed insert), and scroll to it if it is off screen.
+  const targetIds = plan.phases.find((phase) => phase.id === targetPhaseId)?.procedures.map((p) => p.id) ?? [];
+  const targetProcedureCount = targetIds.length;
   const prevTargetCountRef = useRef(targetProcedureCount);
+  const prevTargetRef = useRef({ phaseId: targetPhaseId, ids: targetIds });
   useEffect(() => {
     prevTargetCountRef.current = targetProcedureCount;
+    prevTargetRef.current = { phaseId: targetPhaseId, ids: targetIds };
   }, [planId]);
   useEffect(() => {
     const prevCount = prevTargetCountRef.current;
     prevTargetCountRef.current = targetProcedureCount;
+    const prev = prevTargetRef.current;
+    prevTargetRef.current = { phaseId: targetPhaseId, ids: targetIds };
     if (!targetPhaseId || targetProcedureCount <= prevCount) return;
+    // Only rows added to the same phase count; switching the selected phase is not an add.
+    const added = prev.phaseId === targetPhaseId ? targetIds.find((id) => !prev.ids.includes(id)) : undefined;
+    if (added) revealRow(added);
     setExpandedPhases((prev) => {
       if (prev.has(targetPhaseId)) return prev;
       const next = new Set(prev);
@@ -1242,6 +1284,44 @@ export function TreatmentPlanView({
     revealPhase(id);
   }, [plan.phases]);
 
+  // While the selected phase is scrolled fully out of view (above or below), a blue line along the
+  // bottom of the table says so, and hovering it names the phase that will receive new codes.
+  const [targetOffscreen, setTargetOffscreen] = useState(false);
+  useEffect(() => {
+    const section = targetPhaseId ? document.querySelector<HTMLElement>(`[data-phase-id="${targetPhaseId}"]`) : null;
+    if (!section) return;
+    let scroller = section.parentElement;
+    while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement;
+    // The sticky column header covers the top 34px of the scroller, so that strip does not count.
+    // As soon as any of the phase shows, its own blue outline takes over from the line.
+    const observer = new IntersectionObserver(([entry]) => setTargetOffscreen(!entry.isIntersecting), {
+      root: scroller,
+      rootMargin: '-34px 0px 0px 0px',
+    });
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [targetPhaseId, planId]);
+  const targetPhaseName = phaseNames[targetPhaseId] ?? plan.phases.find((ph) => ph.id === targetPhaseId)?.name ?? '';
+
+  // Bring a newly added row into view (it can land below the fold, or in a collapsed phase that is
+  // still opening): smooth the first time, instant corrections as the layout settles.
+  const revealRow = (id: string) => {
+    const reveal = (smooth: boolean) => {
+      const row = document.querySelector<HTMLElement>(`[data-row-id="${id}"]`);
+      let vp: HTMLElement | null = row;
+      while (vp && !/(auto|scroll)/.test(getComputedStyle(vp).overflowY)) vp = vp.parentElement;
+      if (!row || !vp) return;
+      const v = vp.getBoundingClientRect();
+      const r = row.getBoundingClientRect();
+      const top = v.top + 33 + 36 + 4; // clear of the sticky column header and phase header
+      const bottom = v.bottom - 8;
+      const delta = r.top < top ? r.top - top : r.bottom > bottom ? r.bottom - bottom : 0;
+      if (delta !== 0) vp.scrollTo({ top: vp.scrollTop + delta, behavior: smooth ? 'smooth' : 'auto' });
+    };
+    requestAnimationFrame(() => reveal(true));
+    [120, 260, 450, 700].forEach((ms) => window.setTimeout(() => reveal(false), ms));
+  };
+
   const selectTargetPhase = (phaseId: string) => {
     onSelectTargetPhase(phaseId);
     setExpandedPhases((prev) => {
@@ -1294,95 +1374,117 @@ export function TreatmentPlanView({
       />
 
       <div className={styles.Body}>
-        <div
-          className={styles.TableShell}
-          // Anywhere on the table accepts a drop, so releasing over a gap, a header or the empty
-          // space below the last phase still lands the code or phase at its last highlighted spot.
-          onDragOver={(e) => {
-            if (!dragId && !dragPhaseId) return;
-            e.preventDefault();
-            updateAutoScroll(e);
-            if (dragPhaseId && !(e.target as HTMLElement).closest('section')) {
-              const sections = e.currentTarget.querySelectorAll('section');
-              const last = sections[sections.length - 1];
-              if (last && e.clientY > last.getBoundingClientRect().bottom) setDropPhaseIndex(plan.phases.length);
-            }
-          }}
-          onDragLeave={(e) => {
-            if (!e.currentTarget.contains(e.relatedTarget as Node | null)) stopAutoScroll();
-          }}
-          onDrop={(e) => {
-            if (dragPhaseId) phaseDnd.onDrop(e);
-            else if (dragId) dnd.onDrop(e);
-          }}
-        >
-          <ScrollArea className={styles.Scroll}>
-            <ScrollAreaViewport className={styles.NoBounce}>
-              <ScrollAreaContent>
-                <div
-                  className={styles.Grid}
-                  role="table"
-                  aria-label={`${planLabel} procedures`}
-                  style={{
-                    '--row-h': `${dragHeight}px`, // one row high however many codes are carried
-                    '--gap-label': dragIds.length > 1 ? `"${dragIds.length} codes"` : '""',
-                    '--phase-h': `${dragPhaseHeight}px`,
-                  } as React.CSSProperties}
-                >
-                  <ColumnHeaders total={allProcedureIds.length} selected={selectedProcedureCount} onToggleAll={toggleAllRows} />
-                  {plan.phases.map((phase, phaseIndex) => {
-                    const phaseName = phaseNames[phase.id] ?? phase.name;
-                    return (
-                      <Fragment key={phase.id}>
-                      {dragPhaseId && <div className={styles.PhaseGap} data-open={dropPhaseIndex === phaseIndex || undefined} />}
-                      <PhaseSection
-                        phase={phase}
-                        phaseName={phaseName}
-                        onPhaseNameChange={(name) => {
-                          setPhaseNames((prev) => ({ ...prev, [phase.id]: name }));
-                        }}
-                        renaming={renamingPhaseId === phase.id}
-                        onRenamingChange={(next) => {
-                          setRenamingPhaseId(next ? phase.id : null);
-                        }}
-                        expanded={expandedPhases.has(phase.id)}
-                        onToggleExpanded={() => togglePhase(phase.id)}
-                        isTarget={phase.id === targetPhaseId}
-                        onSelectTarget={() => selectTargetPhase(phase.id)}
-                        selectedIds={selectedIds}
-                        onToggleRow={toggleRow}
-                        onTogglePhaseRows={togglePhaseRows}
-                        duration={durations[phase.id] ?? ZERO_DURATION}
-                        onDurationChange={(value) => {
-                          setDurations((prev) => ({ ...prev, [phase.id]: value }));
-                        }}
-                        pendingProcedureIds={pendingProcedureIds}
-                        editingCell={editingCell}
-                        onStartEditCell={onStartEditCell}
-                        onCommitCell={onCommitCell}
-                        onCancelEditCell={onCancelEditCell}
-                        onDraftChange={onDraftChange}
-                        onDeletePendingProcedure={onDeletePendingProcedure}
-                        isValidTooth={isValidTooth}
-                        isValidSurface={isValidSurface}
-                        onSelectArea={onSelectArea}
-                        dnd={dnd}
-                        phaseDnd={phaseDnd}
-                        phaseIndex={phaseIndex}
-                      />
-                      </Fragment>
-                    );
-                  })}
-                  {dragPhaseId && (
-                    <div className={styles.PhaseGap} data-open={dropPhaseIndex === plan.phases.length || undefined} />
-                  )}
-                </div>
-              </ScrollAreaContent>
-            </ScrollAreaViewport>
-            <ScrollAreaScrollbar orientation="vertical" className={styles.BelowHeaderScrollbar}>
-              <ScrollAreaThumb />
-            </ScrollAreaScrollbar>
-          </ScrollArea>
+        <div className={styles.TableWrap}>
+          <div
+            className={styles.TableShell}
+            // Anywhere on the table accepts a drop, so releasing over a gap, a header or the empty
+            // space below the last phase still lands the code or phase at its last highlighted spot.
+            onDragOver={(e) => {
+              if (!dragId && !dragPhaseId) return;
+              e.preventDefault();
+              updateAutoScroll(e);
+              if (dragPhaseId && !(e.target as HTMLElement).closest('section')) {
+                const sections = e.currentTarget.querySelectorAll('section');
+                const last = sections[sections.length - 1];
+                if (last && e.clientY > last.getBoundingClientRect().bottom) setDropPhaseIndex(plan.phases.length);
+              }
+            }}
+            onDragLeave={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) stopAutoScroll();
+            }}
+            onDrop={(e) => {
+              if (dragPhaseId) phaseDnd.onDrop(e);
+              else if (dragId) dnd.onDrop(e);
+            }}
+          >
+            <ScrollArea className={styles.Scroll}>
+              <ScrollAreaViewport className={styles.NoBounce}>
+                <ScrollAreaContent>
+                  <div
+                    className={styles.Grid}
+                    role="table"
+                    aria-label={`${planLabel} procedures`}
+                    style={{
+                      '--row-h': `${dragHeight}px`, // one row high however many codes are carried
+                      '--gap-label': dragIds.length > 1 ? `"${dragIds.length} codes"` : '""',
+                      '--phase-h': `${dragPhaseHeight}px`,
+                    } as React.CSSProperties}
+                  >
+                    <ColumnHeaders total={allProcedureIds.length} selected={selectedProcedureCount} onToggleAll={toggleAllRows} />
+                    {plan.phases.map((phase, phaseIndex) => {
+                      const phaseName = phaseNames[phase.id] ?? phase.name;
+                      return (
+                        <Fragment key={phase.id}>
+                        {dragPhaseId && <div className={styles.PhaseGap} data-open={dropPhaseIndex === phaseIndex || undefined} />}
+                        <PhaseSection
+                          phase={phase}
+                          phaseName={phaseName}
+                          onPhaseNameChange={(name) => {
+                            setPhaseNames((prev) => ({ ...prev, [phase.id]: name }));
+                          }}
+                          renaming={renamingPhaseId === phase.id}
+                          onRenamingChange={(next) => {
+                            setRenamingPhaseId(next ? phase.id : null);
+                          }}
+                          expanded={expandedPhases.has(phase.id)}
+                          onToggleExpanded={() => togglePhase(phase.id)}
+                          isTarget={phase.id === targetPhaseId}
+                        targetOffscreen={targetOffscreen}
+                          onSelectTarget={() => selectTargetPhase(phase.id)}
+                          selectedIds={selectedIds}
+                          onToggleRow={toggleRow}
+                          onTogglePhaseRows={togglePhaseRows}
+                          duration={durations[phase.id] ?? ZERO_DURATION}
+                          onDurationChange={(value) => {
+                            setDurations((prev) => ({ ...prev, [phase.id]: value }));
+                          }}
+                          pendingProcedureIds={pendingProcedureIds}
+                          editingCell={editingCell}
+                          onStartEditCell={onStartEditCell}
+                          onCommitCell={onCommitCell}
+                          onCancelEditCell={onCancelEditCell}
+                          onDraftChange={onDraftChange}
+                          onDeletePendingProcedure={onDeletePendingProcedure}
+                          isValidTooth={isValidTooth}
+                          isValidSurface={isValidSurface}
+                          onSelectArea={onSelectArea}
+                          dnd={dnd}
+                          phaseDnd={phaseDnd}
+                          phaseIndex={phaseIndex}
+                        />
+                        </Fragment>
+                      );
+                    })}
+                    {dragPhaseId && (
+                      <div className={styles.PhaseGap} data-open={dropPhaseIndex === plan.phases.length || undefined} />
+                    )}
+                  </div>
+                </ScrollAreaContent>
+              </ScrollAreaViewport>
+              <ScrollAreaScrollbar orientation="vertical" className={styles.BelowHeaderScrollbar}>
+                <ScrollAreaThumb />
+              </ScrollAreaScrollbar>
+            </ScrollArea>
+          </div>
+          <div
+            className={styles.TargetEdge}
+            data-offscreen={targetOffscreen || undefined}
+            role="button"
+            tabIndex={targetOffscreen ? 0 : -1}
+            aria-hidden={!targetOffscreen}
+            aria-label={`Scroll to ${targetPhaseName}`}
+            onClick={() => revealPhase(targetPhaseId)}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter' && e.key !== ' ') return;
+              e.preventDefault();
+              revealPhase(targetPhaseId);
+            }}
+          >
+            <span className={[styles.InfoChip, styles.TargetEdgeBanner].join(' ')}>
+              <InfoSolidIcon />
+              New codes will be added in {targetPhaseName}
+            </span>
+          </div>
         </div>
 
         <Button variant="ghost" leftIcon={<PlusIcon />} className={styles.NewPhase} onClick={addPhase}>

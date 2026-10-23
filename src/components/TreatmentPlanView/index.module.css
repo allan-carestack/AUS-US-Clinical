@@ -142,8 +142,19 @@
   display: flex;
   flex-direction: column;
   padding: var(--spacing-12);
-  gap: var(--spacing-12);
+  gap: var(--spacing-4); /* between the table and the New Phase button */
   overflow: hidden;
+}
+
+/* Holds the table and the off-screen target line, which sits on the table's bottom edge but must
+   not be clipped by the table's rounded overflow. */
+.TableWrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .TableShell {
@@ -809,6 +820,78 @@
     border-radius: var(--radius-4);
     background: var(--blue-10);
   }
+}
+
+/* While the selected phase is scrolled out of view, a short blue line sits at the bottom centre
+   of the table. It is always mounted so it can animate: the line starts full width, as the pinned
+   phase edge it takes over from, and draws in to 40px from each side (and back out, fading, when
+   the phase returns). The whole strip is the hover target for the banner. */
+.TargetEdge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1rem;
+  z-index: 11; /* above the scrollbar */
+  outline: none;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    left 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    right 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 120ms ease-out 80ms;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--blue-80);
+    pointer-events: none;
+  }
+
+  &[data-offscreen] {
+    left: 4rem;
+    right: 4rem;
+    opacity: 1;
+    pointer-events: auto;
+    cursor: pointer;
+    transition-delay: 0s, 0s, 0s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.TargetEdgeBanner {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + var(--spacing-4));
+  transform: translateX(-50%);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease-out;
+}
+
+/* Bridges the gap to the line, so moving the pointer down onto the banner does not lose the hover. */
+.TargetEdgeBanner::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(-1 * var(--spacing-4));
+  height: var(--spacing-4);
+}
+
+.TargetEdge[data-offscreen]:hover .TargetEdgeBanner,
+.TargetEdge[data-offscreen]:focus-visible .TargetEdgeBanner {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* The scrollbar track starts under the sticky column header, so it never draws over it. */
