@@ -334,7 +334,7 @@
 .QuickCol {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-8);
+  gap: var(--spacing-12);
   flex: 1;
   min-width: 0;
 }
@@ -995,4 +995,116 @@
   padding: var(--spacing-8) var(--spacing-12);
   background: var(--white);
   border-top: 1px solid var(--grey-20);
+}
+
+/* ── Tooth and surface fields (from the AU Chart Revamp design) ── */
+.FieldRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  min-height: 2.4rem;
+}
+
+.FieldLabel {
+  composes: text-lg weight-700 from global;
+  white-space: nowrap;
+  color: var(--grey-100);
+}
+
+/* Same look as the design system input; a plain element because the keys are handled by the entry. */
+.FieldInput {
+  composes: text-base weight-400 from global;
+  flex: 0 1 13.2rem;
+  width: 13.2rem;
+  min-width: 0;
+  height: 2.4rem;
+  box-sizing: border-box;
+  padding: 0 var(--spacing-8);
+  border: 1px solid var(--outline-darker);
+  border-radius: var(--radius-default);
+  background: var(--white);
+  color: var(--grey-100);
+  outline: none;
+  transition: border-color 120ms ease-out, background-color 120ms ease-out;
+
+  &::placeholder {
+    color: var(--grey-40);
+  }
+
+  @media (hover: hover) {
+    &:hover:not(:focus) {
+      border-color: var(--grey-40);
+      background-color: var(--hover-default);
+    }
+  }
+
+  &:focus {
+    border-color: var(--blue-80);
+    box-shadow: 0 0 0 1px var(--blue-80), 0 0 0 4px rgb(from var(--blue-80) r g b / 20%);
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--red-80);
+    box-shadow: 0 0 0 1px var(--red-80);
+  }
+}
+
+.QuickCol .RadioRow,
+.QuickColSurface .RadioRow {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-24);
+}
+
+.QuickColSurface .RadioRow {
+  justify-content: center;
+}
+
+/* Field → radios is the column's 12px gap; radios → grid / circle is 8px (12px less 4px). */
+.QuickCol .RadioRow + *,
+.QuickColSurface .RadioRow + * {
+  margin-top: calc(-1 * var(--spacing-4));
+}
+
+.RadioRow kbd {
+  margin-left: var(--spacing-4);
+}
+
+/* Diagram and quick links under the surface field (was the surface frame). */
+.SurfacePicker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-8);
+}
+
+.QuickColSurface .SurfacePicker .Diagram {
+  width: 14.4rem;
+  height: 14.4rem;
+}
+
+.QuickPicks[data-hidden] {
+  visibility: hidden;
+}
+
+/* The links' own bottom padding stacked on the body gap; drop it, and cancel the gap too, so "Adding to" sits right under the links. */
+.QuickPicks > * {
+  padding-bottom: 0;
+}
+
+/* Only when it directly follows the top section (with an ICD field between them the gap stays). */
+.QuickMain + .SummaryWrap[data-open] {
+  margin-top: calc(-1 * var(--spacing-12));
+}
+
+/* Class V: the regions that are switched off. */
+.CircleRegionOff,
+.CircleRegionOff:hover {
+  fill: var(--grey-20);
+  cursor: default;
+  pointer-events: none;
+}
+
+.DiagramLabelOff {
+  color: var(--grey-60);
 }
