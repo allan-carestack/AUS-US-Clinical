@@ -27,12 +27,16 @@ import { Combobox as BaseCombobox } from '@base-ui/react/combobox';
 import { ComboboxInput, ComboboxItem, ComboboxEmpty, Combobox } from './components/Combobox';
 import { DENTAL_CODES } from './components/CarePanel/dentalCodes';
 import { TreatmentPlanView } from './components/TreatmentPlanView';
+import { PlannerSidebar, type SidebarPhaseStatus } from './components/PlannerSidebar';
 import { IcdToggle } from './components/CarePanel/IcdToggle';
 import {
   cloneTreatmentPlanMock,
   firstPhaseId,
   getTreatmentPlanMock,
   seedPlansById,
+  UNGROUPED_DATES,
+  ungroupedPlanId,
+  isUngroupedPlanId,
   type PlanProcedure,
   type PlanPhase,
   type TreatmentPlanMock,
@@ -50,16 +54,38 @@ import {
 import txStyles from './styles/txHeader.module.css';
 import appStyles from './styles/app.module.css';
 
-type TxPlanTab = { id: string; label: string };
+type TxPlanTab = { id: string; label: string; createdAt: string };
+
+const todayLabel = () => new Date().toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+// Phases that still carry a default "Phase N" name take their position in the list.
+const renumberDefaultPhases = (phases: PlanPhase[]): PlanPhase[] =>
+  phases.map((ph, i) => (/^Phase \d+$/.test(ph.name) ? { ...ph, name: `Phase ${i + 1}` } : ph));
+
+const phaseStatus = (phase: PlanPhase): SidebarPhaseStatus => {
+  const s = phase.procedures.map((p) => p.status);
+  if (s.length && s.every((x) => x === 'Completed')) return 'Completed';
+  if (s.length && s.every((x) => x !== 'Proposed')) return 'Accepted';
+  return 'Proposed';
+};
 type WorkspaceTab = 'chart' | 'planner';
 
 const PENDING_ROW_ANIMATION_MS = 240;
 
 const INITIAL_TX_TABS: TxPlanTab[] = [
-  { id: 'ungrouped', label: 'Ungrouped Tx' },
-  { id: 'all-on-4', label: 'All on 4 Tx' },
-  { id: 'all-on-4-alt', label: 'All on 4 Tx - ALT' },
+  { id: 'ungrouped', label: 'Ungrouped Tx', createdAt: '16/03/2026' },
+  { id: 'all-on-4', label: 'All on 4 Tx', createdAt: '16/03/2026' },
+  { id: 'all-on-4-alt', label: 'All on 4 Tx - ALT', createdAt: '16/03/2026' },
 ];
+
+// Ungrouped dates are selectable in the planner sidebar only (not in the tab strip),
+// so they exist as plans for lookup but not in `txTabs`.
+const UNGROUPED_TABS: TxPlanTab[] = UNGROUPED_DATES.map((date) => ({
+  id: ungroupedPlanId(date),
+  label: `Ungrouped Treatments ${date}`,
+  createdAt: date,
+}));
+const SEED_PLAN_IDS = [...INITIAL_TX_TABS, ...UNGROUPED_TABS].map((t) => t.id);
 
 // ── Code-addition workflow ──
 // Two entry points into the same completion: click teeth/surfaces first
@@ -660,16 +686,18 @@ export default function App() {
   const [showPendingRecalls, setShowPendingRecalls] = useState(false);
   const [txTabs, setTxTabs] = useState<TxPlanTab[]>(INITIAL_TX_TABS);
   const planCounterRef = useRef(0);
+  // Planner sidebar: when set, the main pane lists only this phase of the active plan.
+  const [focusedPhaseId, setFocusedPhaseId] = useState<string | null>(null);
   const planTabIds = useMemo(() => new Set(txTabs.map(t => t.id)), [txTabs]);
   const activePlan = useMemo(
-    () => txTabs.find(t => t.id === activeTab) ?? null,
+    () => [...txTabs, ...UNGROUPED_TABS].find(t => t.id === activeTab) ?? null,
     [txTabs, activeTab],
   );
   const [plansById, setPlansById] = useState<Record<string, TreatmentPlanMock>>(() =>
-    seedPlansById(INITIAL_TX_TABS.map((t) => t.id)),
+    seedPlansById(SEED_PLAN_IDS),
   );
   const [targetPhaseByPlan, setTargetPhaseByPlan] = useState<Record<string, string>>(() =>
-    seedTargetPhases(seedPlansById(INITIAL_TX_TABS.map((t) => t.id))),
+    seedTargetPhases(seedPlansById(SEED_PLAN_IDS)),
   );
   const [pendingProcedureIds, setPendingProcedureIds] = useState<Set<string>>(new Set());
   const [planHistoryProcedureIds, setPlanHistoryProcedureIds] = useState<string[]>([]);
@@ -793,6 +821,19 @@ export default function App() {
     ? (targetPhaseByPlan[activePlan.id] ?? (activePlanData ? firstPhaseId(activePlanData) : 'phase-1'))
     : '';
 
+  // An ungrouped date with no codes left drops out of the sidebar list; if it was the one on
+  // screen, the next date (else the previous one, else the first plan) is selected.
+  const hasCodes = (date: string) => plansById[ungroupedPlanId(date)]?.phases.some((ph) => ph.procedures.length > 0);
+  const ungroupedDates = UNGROUPED_DATES.filter(hasCodes);
+  useEffect(() => {
+    if (!isUngroupedPlanId(activeTab)) return;
+    const i = UNGROUPED_DATES.findIndex((d) => ungroupedPlanId(d) === activeTab);
+    if (i < 0 || hasCodes(UNGROUPED_DATES[i])) return;
+    const next = UNGROUPED_DATES.slice(i + 1).find(hasCodes) ?? UNGROUPED_DATES.slice(0, i).reverse().find(hasCodes);
+    setFocusedPhaseId(null);
+    setActiveTab(next ? ungroupedPlanId(next) : 'all-on-4');
+  }, [activeTab, plansById]);
+
   // Ensure every plan tab has a target phase (defaults to phase 1).
   useEffect(() => {
     if (!activePlan) return;
@@ -897,7 +938,7 @@ export default function App() {
       const at = afterPhaseId ? plan.phases.findIndex((ph) => ph.id === afterPhaseId) : -1;
       const phases = [...plan.phases];
       phases.splice(at < 0 ? phases.length : at + 1, 0, phase);
-      return { ...prev, [planId]: { ...plan, phases, phasesTotal: phases.length } };
+      return { ...prev, [planId]: { ...plan, phases: renumberDefaultPhases(phases), phasesTotal: phases.length } };
     });
   };
 
@@ -912,8 +953,61 @@ export default function App() {
       const phases = [...plan.phases];
       const [moving] = phases.splice(fromIdx, 1);
       phases.splice(at, 0, moving);
-      return { ...prev, [planId]: { ...plan, phases } };
+      return { ...prev, [planId]: { ...plan, phases: renumberDefaultPhases(phases) } };
     });
+  };
+
+  // Sidebar drop: codes dragged from the table land at the end of any phase of any plan.
+  const moveProceduresToPhase = (fromPlanId: string, procedureIds: string[], toPlanId: string, toPhaseId: string) => {
+    if (fromPlanId === toPlanId) {
+      const target = plansById[toPlanId]?.phases.find((ph) => ph.id === toPhaseId);
+      if (target) moveProcedures(toPlanId, procedureIds, toPhaseId, target.procedures.length);
+      return;
+    }
+    setPlansById((prev) => {
+      const from = prev[fromPlanId];
+      const to = prev[toPlanId];
+      if (!from || !to || !to.phases.some((ph) => ph.id === toPhaseId)) return prev;
+      const ids = new Set(procedureIds);
+      const moving = from.phases.flatMap((ph) => ph.procedures).filter((p) => ids.has(p.id));
+      if (!moving.length) return prev;
+      return {
+        ...prev,
+        [fromPlanId]: { ...from, phases: from.phases.map((ph) => ({ ...ph, procedures: ph.procedures.filter((p) => !ids.has(p.id)) })) },
+        [toPlanId]: { ...to, phases: to.phases.map((ph) => (ph.id === toPhaseId ? { ...ph, procedures: [...ph.procedures, ...moving] } : ph)) },
+      };
+    });
+  };
+
+  const renamePhase = (planId: string, phaseId: string, name: string) => {
+    setPlansById((prev) => {
+      const plan = prev[planId];
+      if (!plan) return prev;
+      return { ...prev, [planId]: { ...plan, phases: plan.phases.map((ph) => (ph.id === phaseId ? { ...ph, name } : ph)) } };
+    });
+  };
+
+  // Sidebar drag: move a plan tab to just before `beforeId` (end when null).
+  const movePlanTab = (planId: string, beforeId: string | null) => {
+    setTxTabs((prev) => {
+      const moving = prev.find((t) => t.id === planId);
+      if (!moving) return prev;
+      const rest = prev.filter((t) => t.id !== planId);
+      const at = beforeId ? rest.findIndex((t) => t.id === beforeId) : -1;
+      rest.splice(at < 0 ? rest.length : at, 0, moving);
+      return rest;
+    });
+  };
+
+  const addTxPlan = () => {
+    const n = ++planCounterRef.current;
+    const id = `tx-plan-${n}`;
+    const plan = cloneTreatmentPlanMock(getTreatmentPlanMock(id));
+    setPlansById((prev) => ({ ...prev, [id]: plan }));
+    setTargetPhaseByPlan((prev) => ({ ...prev, [id]: firstPhaseId(plan) }));
+    setTxTabs(prev => [...prev, { id, label: `New Tx Plan ${n}`, createdAt: todayLabel() }]);
+    setFocusedPhaseId(null);
+    setActiveTab(id);
   };
 
   const updatePlanProcedure = (planId: string, procedureId: string, patch: Partial<PlanProcedure>) => {
@@ -1888,7 +1982,8 @@ export default function App() {
 
   const handleWorkspaceTabChange = (value: string) => {
     if (value !== 'chart' && value !== 'planner') return;
-    if (value === 'planner') setActiveTab('all-on-4');
+    if (value === 'planner') { setActiveTab('all-on-4'); setFocusedPhaseId(null); }
+    else if (isUngroupedPlanId(activeTab)) setActiveTab('chart-details');
     setWorkspaceTab(value);
   };
 
@@ -1918,6 +2013,9 @@ export default function App() {
         );
       }}
       targetPhaseId={targetPhaseId}
+      flat={compact && isUngroupedPlanId(activePlan.id)}
+      visiblePhaseId={compact && activePlanData.phases.some((ph) => ph.id === focusedPhaseId) ? focusedPhaseId : null}
+      onRenamePhase={(phaseId, name) => renamePhase(activePlan.id, phaseId, name)}
       onMoveProcedure={(procedureIds, phaseId, index) => moveProcedures(activePlan.id, procedureIds, phaseId, index)}
       onMovePhase={(phaseId, index) => movePhase(activePlan.id, phaseId, index)}
       onAddPhase={(afterPhaseId, phase) => addPhase(activePlan.id, afterPhaseId, phase)}
@@ -2055,15 +2153,7 @@ export default function App() {
           headerCollapsed={headerCollapsed}
           onToggleHeaderCollapsed={() => setHeaderCollapsed(c => !c)}
           txTabs={txTabs}
-          onAddTxPlan={() => {
-            const n = ++planCounterRef.current;
-            const id = `tx-plan-${n}`;
-            const plan = cloneTreatmentPlanMock(getTreatmentPlanMock(id));
-            setPlansById((prev) => ({ ...prev, [id]: plan }));
-            setTargetPhaseByPlan((prev) => ({ ...prev, [id]: firstPhaseId(plan) }));
-            setTxTabs(prev => [...prev, { id, label: `New Tx Plan ${n}` }]);
-            setActiveTab(id);
-          }}
+          onAddTxPlan={addTxPlan}
         />
       </div>
 
@@ -2119,7 +2209,33 @@ export default function App() {
       ) : (
         <div className={appStyles.PlannerWorkspace}>
           <aside className={appStyles.PlannerSidebar} aria-label="Treatment planner sidebar">
-            <span>placeholder &lt;div&gt;</span>
+            <PlannerSidebar
+              plans={txTabs.filter((t) => t.id !== 'ungrouped' && plansById[t.id]).map((t) => ({
+                id: t.id,
+                label: t.label,
+                createdAt: t.createdAt,
+                phases: plansById[t.id].phases.map((ph) => ({ id: ph.id, name: ph.name, status: phaseStatus(ph) })),
+              }))}
+              activePlanId={activeTab}
+              ungroupedDates={ungroupedDates}
+              onSelectUngrouped={(date) => { setFocusedPhaseId(null); setActiveTab(ungroupedPlanId(date)); }}
+              focusedPhaseId={focusedPhaseId}
+              onSelectPlan={(planId) => { setFocusedPhaseId(null); setActiveTab(planId); }}
+              onSelectPhase={(planId, phaseId) => {
+                setActiveTab(planId);
+                setFocusedPhaseId(phaseId);
+                setTargetPhaseByPlan((prev) => ({ ...prev, [planId]: phaseId }));
+              }}
+              onAddPlan={addTxPlan}
+              onAddPhase={(planId) => {
+                const plan = plansById[planId];
+                const nextNum = plan.phases.reduce((max, ph) => Math.max(max, Number(ph.id.replace(/\D/g, '')) || 0), 0) + 1;
+                addPhase(planId, plan.phases[plan.phases.length - 1]?.id ?? null, { id: `phase-${nextNum}`, name: `Phase ${plan.phases.length + 1}`, procedures: [] });
+              }}
+              onMovePhase={movePhase}
+              onMovePlan={movePlanTab}
+              onDropProcedures={(planId, phaseId, ids) => moveProceduresToPhase(activeTab, ids, planId, phaseId)}
+            />
           </aside>
           <section className={appStyles.PlannerPane} aria-label="All on 4 Tx treatment plan">
             {renderActiveTreatmentPlanView(true) ?? <EmptyState label="All on 4 Tx treatment plan not found." />}

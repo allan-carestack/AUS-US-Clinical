@@ -1,5 +1,8 @@
 import type { ToothRequirement } from '../CarePanel/data';
 
+/** dataTransfer type carrying `{ ids: string[] }` while codes are dragged from the plan table (read by the planner sidebar). */
+export const PROCEDURE_DRAG_TYPE = 'application/x-tx-procedures';
+
 export type PlanProcedure = {
   id: string;
   date: string;
@@ -228,18 +231,108 @@ const EMPTY_PLAN = (phases = 2): TreatmentPlanMock => ({
 
 const PLANS: Record<string, TreatmentPlanMock> = {
   'all-on-4': ALL_ON_4,
+  // A genuinely different plan (own phases, codes and ids), not a copy of All on 4.
   'all-on-4-alt': {
-    ...ALL_ON_4,
     status: 'Planned',
     linkedConditions: 1,
+    phasesCompleted: 0,
+    phasesTotal: 2,
+    phases: [
+      {
+        id: 'phase-1',
+        name: 'Phase 1',
+        showNewCodesHint: true,
+        procedures: [
+        {
+          id: 'a1',
+          date: '16/03/2026',
+          code: '011 - Comprehensive oral examination',
+          thArea: '--',
+          surface: '--',
+          provider: 'ACHU',
+          location: 'SYD',
+          fee: '$65.00',
+          discount: '$0.00',
+          patPayable: '$20.00',
+          status: 'Accepted',
+        },
+        {
+          id: 'a2',
+          date: '16/03/2026',
+          code: '661 - Implant body — first stage surgery',
+          thArea: '36',
+          surface: '--',
+          provider: 'ACHU',
+          location: 'SYD',
+          fee: '$2,200.00',
+          discount: '$0.00',
+          patPayable: '$1,100.00',
+          status: 'Accepted',
+        },
+        ],
+        estimate: { fee: '$2,265.00', discount: '$0.00', patPayable: '$1,120.00' },
+      },
+      {
+        id: 'phase-2',
+        name: 'Phase 2',
+        procedures: [
+        {
+          id: 'a3',
+          date: '16/03/2026',
+          code: '663 - Implant body — second stage surgery',
+          thArea: '36',
+          surface: '--',
+          provider: 'ACHU',
+          location: 'SYD',
+          fee: '$950.00',
+          discount: '$0.00',
+          patPayable: '$480.00',
+          status: 'Proposed',
+        },
+        {
+          id: 'a4',
+          date: '16/03/2026',
+          code: '572 - Crown — re-cementation',
+          thArea: '36',
+          surface: '--',
+          provider: 'ACHU',
+          location: 'SYD',
+          fee: '$320.00',
+          discount: '$0.00',
+          patPayable: '$160.00',
+          status: 'Proposed',
+        },
+        ],
+        estimate: { fee: '$1,270.00', discount: '$0.00', patPayable: '$640.00' },
+      },
+    ],
     totals: {
-      planEstimate: '$1,450.00',
+      planEstimate: '$3,535.00',
       discount: '$50.00',
-      patientPayable: '$1,400.00',
+      patientPayable: '$1,760.00',
     },
   },
   ungrouped: EMPTY_PLAN(1),
 };
+
+// ── Ungrouped treatments: one flat list of codes per date (a single hidden phase). ──
+// ponytail: mock rows; swap for real per-date data when it exists.
+export const UNGROUPED_DATES = ['12/02/2022', '03/05/2022', '19/08/2022', '27/09/2022', '14/11/2022', '02/01/2023'];
+export const ungroupedPlanId = (date: string) => `ungrouped:${date}`;
+export const isUngroupedPlanId = (planId: string) => planId.startsWith('ungrouped:');
+
+const UNGROUPED_SAMPLES: Omit<PlanProcedure, 'id' | 'date'>[] = [
+  { code: '011 - Comprehensive oral examination', thArea: '--', surface: '--', provider: 'ACHU', location: 'SYD', fee: '$65.00', discount: '$0.00', patPayable: '$20.00', status: 'Proposed' },
+  { code: '012 - Periodic oral evaluation', thArea: '--', surface: '--', provider: 'ACHU', location: 'SYD', fee: '$65.00', discount: '$0.00', patPayable: '$20.00', status: 'Proposed' },
+  { code: '572 - Crown — re-cementation', thArea: '14', surface: '--', provider: 'ACHU', location: 'SYD', fee: '$320.00', discount: '$0.00', patPayable: '$160.00', status: 'Proposed' },
+];
+
+function ungroupedPlan(date: string, dateIndex: number): TreatmentPlanMock {
+  const procedures = UNGROUPED_SAMPLES.slice(0, (dateIndex % 3) + 1)
+    .map((p, i) => ({ ...p, id: `ug${dateIndex}-${i}`, date }));
+  return { ...EMPTY_PLAN(1), phases: [{ id: 'phase-1', name: 'Phase 1', procedures }] };
+}
+UNGROUPED_DATES.forEach((date, i) => { PLANS[ungroupedPlanId(date)] = ungroupedPlan(date, i); });
 
 export function getTreatmentPlanMock(planId: string): TreatmentPlanMock {
   return PLANS[planId] ?? EMPTY_PLAN(2);

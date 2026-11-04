@@ -90,13 +90,12 @@
 .PlannerSidebar {
   composes: text-base weight-400 from global;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  min-height: 0;
   width: 25.8rem;
   flex: 0 0 25.8rem;
   border-right: 1px solid var(--grey-20);
   background: var(--white);
-  color: var(--grey-40);
 }
 
 .PlannerPane {

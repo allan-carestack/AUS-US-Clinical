@@ -25,7 +25,7 @@ import {
   RetryIcon,
 } from '../Icon';
 import { Tooltip } from '../Tooltip';
-import type { PlanPhase, PlanProcedure, TreatmentPlanMock } from './mockData';
+import { PROCEDURE_DRAG_TYPE, type PlanPhase, type PlanProcedure, type TreatmentPlanMock } from './mockData';
 import { PhaseDuration, type DurationValue } from './PhaseDuration';
 import { EditableName } from './EditableName';
 import { EditPlanDetailsDialog } from './EditPlanDetailsDialog';
@@ -70,6 +70,12 @@ export interface TreatmentPlanViewProps {
   onMovePhase: (phaseId: string, index: number) => void;
   /** Insert a new, empty phase right after `afterPhaseId` (append when null). */
   onAddPhase: (afterPhaseId: string | null, phase: PlanPhase) => void;
+  /** Phase names live with the plan data (shared with the planner sidebar). */
+  onRenamePhase: (phaseId: string, name: string) => void;
+  /** When set, only this phase (and its codes) is listed. */
+  visiblePhaseId?: string | null;
+  /** Ungrouped treatments: a plain list of codes (the plan's one phase, no phase chrome). */
+  flat?: boolean;
   /** When given, the header shows a +Code control that adds codes to the selected phase. */
   codes?: DentalCode[];
   onAddCode?: (code: DentalCode, input?: CodeInput) => void;
@@ -188,6 +194,7 @@ function PlanInlineEditCell({
 }
 
 function PlanHeader({
+  flat,
   planLabel,
   onPlanLabelChange,
   status,
@@ -198,6 +205,7 @@ function PlanHeader({
   codes,
   onAddCode,
 }: {
+  flat?: boolean;
   codes?: DentalCode[];
   onAddCode?: (code: DentalCode, input?: CodeInput) => void;
   planLabel: string;
@@ -214,6 +222,9 @@ function PlanHeader({
   return (
     <header className={styles.Header}>
       <div className={styles.HeaderLeft}>
+        {flat ? (
+          <h2 className={styles.PlanTitle}>{planLabel}</h2>
+        ) : (<>
         <div className={styles.TitleGroup}>
           <div className={styles.TitleCluster}>
             <EditableName
@@ -246,6 +257,7 @@ function PlanHeader({
             <strong>{phasesCompleted}/{phasesTotal} phases</strong> completed
           </p>
         </div>
+        </>)}
       </div>
 
       <div className={styles.HeaderRight}>
@@ -496,6 +508,7 @@ function ProcedureRow({
             e.dataTransfer.setData('text/plain', procedure.id);
             const row = e.currentTarget.closest<HTMLElement>('[role="row"]');
             const ids = dnd.onDragStart(procedure.id, row?.offsetHeight ?? 33);
+            e.dataTransfer.setData(PROCEDURE_DRAG_TYPE, JSON.stringify({ ids }));
             if (row) {
               const ghost = document.createElement('div');
               if (ids.length > 1) {
@@ -655,7 +668,9 @@ function PhaseSection({
   dnd,
   phaseDnd,
   phaseIndex,
+  flat,
 }: {
+  flat?: boolean;
   dnd: PlanDnd;
   phaseDnd: PhaseDnd;
   phaseIndex: number;
@@ -687,6 +702,7 @@ function PhaseSection({
   isValidSurface: (value: string) => string | null;
   onSelectArea: (procedureId: string, areaId: string) => void;
 }) {
+  if (flat) expanded = true;
   const total = phase.procedures.length;
   const checkedCount = phase.procedures.filter((p) => selectedIds.has(p.id)).length;
   return (
@@ -716,6 +732,7 @@ function PhaseSection({
           phaseDnd.onDragStart(phase.id, header.offsetHeight);
         }}
         onDragEnd={phaseDnd.onDragEnd}
+        style={flat ? { display: 'none' } : undefined}
         className={[styles.PhaseHeader, dnd.dragId && dnd.drop?.phaseId === phase.id && !expanded ? styles.PhaseHeaderDrop : ''].filter(Boolean).join(' ')}
         onDragOver={(e) => dnd.onHeaderDragOver(e, phase.id, phase.procedures.length, expanded)}
         onDrop={dnd.onDrop}
@@ -945,6 +962,9 @@ export function TreatmentPlanView({
   onMoveProcedure,
   onMovePhase,
   onAddPhase,
+  onRenamePhase,
+  visiblePhaseId = null,
+  flat = false,
   codes,
   onAddCode,
 }: TreatmentPlanViewProps) {
@@ -955,9 +975,6 @@ export function TreatmentPlanView({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showInsBreakdown, setShowInsBreakdown] = useState(true);
   const [durations, setDurations] = useState<Record<string, DurationValue>>({});
-  const [phaseNames, setPhaseNames] = useState<Record<string, string>>(() =>
-    Object.fromEntries(plan.phases.map((phase) => [phase.id, phase.name])),
-  );
   const [renamingPhaseId, setRenamingPhaseId] = useState<string | null>(null);
 
   const [dragId, setDragId] = useState<string | null>(null);
@@ -998,21 +1015,6 @@ export function TreatmentPlanView({
     }
   };
   useEffect(() => stopAutoScroll, []);
-  // After a phase is moved to `index` (counted in the current list, like onMovePhase), phases that
-  // still carry a default "Phase N" name take their new position; renamed phases keep their name.
-  const renumberAfterMove = (phaseId: string, index: number) => {
-    const from = plan.phases.findIndex((ph) => ph.id === phaseId);
-    if (from < 0) return;
-    const order = [...plan.phases];
-    order.splice(from < index ? index - 1 : index, 0, ...order.splice(from, 1));
-    setPhaseNames((prev) => {
-      const next = { ...prev };
-      order.forEach((ph, i) => {
-        if (/^Phase \d+$/.test(prev[ph.id] ?? ph.name)) next[ph.id] = `Phase ${i + 1}`;
-      });
-      return next;
-    });
-  };
   const expandedBeforePhaseDrag = useRef<Set<string> | null>(null);
   const restoreExpanded = () => {
     const prev = expandedBeforePhaseDrag.current;
@@ -1055,7 +1057,6 @@ export function TreatmentPlanView({
       stopAutoScroll();
       if (dropPhaseIndex !== null) {
         onMovePhase(dragPhaseId, dropPhaseIndex);
-        renumberAfterMove(dragPhaseId, dropPhaseIndex);
       }
       const droppedId = dragPhaseId;
       setDragPhaseId(null);
@@ -1069,7 +1070,6 @@ export function TreatmentPlanView({
       const to = dir < 0 ? index - 1 : index + 2;
       if (to < 0 || to > plan.phases.length) return;
       onMovePhase(id, to);
-      renumberAfterMove(id, to);
       selectTargetPhase(id);
       requestAnimationFrame(() =>
         document.querySelector<HTMLElement>(`[data-phase-id="${id}"] [role="button"][aria-label^="Add codes to"]`)?.focus());
@@ -1168,14 +1168,27 @@ export function TreatmentPlanView({
     },
   };
 
+  // A drop outside the table (e.g. on the planner sidebar) can unmount the dragged row before its
+  // own dragend fires, so end the drag from the window too. Bubbling: table drops are handled first.
+  useEffect(() => {
+    if (!dragId) return;
+    const end = () => dnd.onDragEnd();
+    window.addEventListener('drop', end);
+    return () => window.removeEventListener('drop', end);
+  }, [dragId]);
+
   useEffect(() => {
     const first = plan.phases[0]?.id;
     setExpandedPhases(new Set(first ? [first] : []));
     setSelectedIds(new Set());
     setDurations({});
-    setPhaseNames(Object.fromEntries(plan.phases.map((phase) => [phase.id, phase.name])));
     setRenamingPhaseId(null);
   }, [planId]);
+
+  // Picking a phase in the sidebar opens it.
+  useEffect(() => {
+    if (visiblePhaseId) setExpandedPhases((prev) => new Set(prev).add(visiblePhaseId));
+  }, [visiblePhaseId]);
 
   // Keep the drop-target phase expanded so the banner and new rows are visible.
   useEffect(() => {
@@ -1231,14 +1244,6 @@ export function TreatmentPlanView({
     const insertAt = at < 0 ? plan.phases.length : at + 1;
     const nextNum = plan.phases.reduce((max, ph) => Math.max(max, Number(ph.id.replace(/\D/g, '')) || 0), 0) + 1;
     const id = `phase-${nextNum}`;
-    const after = plan.phases.slice(insertAt);
-    setPhaseNames((prev) => {
-      const next = { ...prev, [id]: `Phase ${insertAt + 1}` };
-      after.forEach((ph, i) => {
-        if (/^Phase \d+$/.test(next[ph.id] ?? ph.name)) next[ph.id] = `Phase ${insertAt + i + 2}`;
-      });
-      return next;
-    });
     onAddPhase(at < 0 ? null : targetPhaseId, { id, name: `Phase ${insertAt + 1}`, procedures: [] });
     selectTargetPhase(id);
     scrollToPhaseRef.current = id;
@@ -1301,7 +1306,7 @@ export function TreatmentPlanView({
     observer.observe(section);
     return () => observer.disconnect();
   }, [targetPhaseId, planId]);
-  const targetPhaseName = phaseNames[targetPhaseId] ?? plan.phases.find((ph) => ph.id === targetPhaseId)?.name ?? '';
+  const targetPhaseName = plan.phases.find((ph) => ph.id === targetPhaseId)?.name ?? '';
 
   // Bring a newly added row into view (it can land below the fold, or in a collapsed phase that is
   // still opening): smooth the first time, instant corrections as the layout settles.
@@ -1360,8 +1365,9 @@ export function TreatmentPlanView({
   };
 
   return (
-    <div className={[styles.Root, compact ? styles.Compact : ''].filter(Boolean).join(' ')}>
+    <div className={[styles.Root, compact ? styles.Compact : ''].filter(Boolean).join(' ')} data-flat={flat || undefined}>
       <PlanHeader
+        flat={flat}
         planLabel={planLabel}
         onPlanLabelChange={onPlanLabelChange}
         status={plan.status}
@@ -1412,23 +1418,22 @@ export function TreatmentPlanView({
                   >
                     <ColumnHeaders total={allProcedureIds.length} selected={selectedProcedureCount} onToggleAll={toggleAllRows} />
                     {plan.phases.map((phase, phaseIndex) => {
-                      const phaseName = phaseNames[phase.id] ?? phase.name;
+                      const phaseName = phase.name;
+                      if (visiblePhaseId && phase.id !== visiblePhaseId) return null;
                       return (
                         <Fragment key={phase.id}>
                         {dragPhaseId && <div className={styles.PhaseGap} data-open={dropPhaseIndex === phaseIndex || undefined} />}
                         <PhaseSection
                           phase={phase}
                           phaseName={phaseName}
-                          onPhaseNameChange={(name) => {
-                            setPhaseNames((prev) => ({ ...prev, [phase.id]: name }));
-                          }}
+                          onPhaseNameChange={(name) => onRenamePhase(phase.id, name)}
                           renaming={renamingPhaseId === phase.id}
                           onRenamingChange={(next) => {
                             setRenamingPhaseId(next ? phase.id : null);
                           }}
                           expanded={expandedPhases.has(phase.id)}
                           onToggleExpanded={() => togglePhase(phase.id)}
-                          isTarget={phase.id === targetPhaseId}
+                          isTarget={!flat && phase.id === targetPhaseId}
                         targetOffscreen={targetOffscreen}
                           onSelectTarget={() => selectTargetPhase(phase.id)}
                           selectedIds={selectedIds}
@@ -1451,6 +1456,7 @@ export function TreatmentPlanView({
                           dnd={dnd}
                           phaseDnd={phaseDnd}
                           phaseIndex={phaseIndex}
+                          flat={flat}
                         />
                         </Fragment>
                       );
@@ -1466,7 +1472,7 @@ export function TreatmentPlanView({
               </ScrollAreaScrollbar>
             </ScrollArea>
           </div>
-          <div
+          {!flat && <div
             className={styles.TargetEdge}
             data-offscreen={targetOffscreen || undefined}
             role="button"
@@ -1484,12 +1490,14 @@ export function TreatmentPlanView({
               <InfoSolidIcon />
               New codes will be added in {targetPhaseName}
             </span>
-          </div>
+          </div>}
         </div>
 
-        <Button variant="ghost" leftIcon={<PlusIcon />} className={styles.NewPhase} onClick={addPhase}>
-          New Phase
-        </Button>
+        {!flat && (
+          <Button variant="ghost" leftIcon={<PlusIcon />} className={styles.NewPhase} onClick={addPhase}>
+            New Phase
+          </Button>
+        )}
       </div>
 
       <PlanFooter totals={plan.totals} />

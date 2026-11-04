@@ -146,6 +146,14 @@
   overflow: hidden;
 }
 
+/* Flat (ungrouped) list: the table is only as tall as its rows, scrolling once it fills the pane. */
+.Root[data-flat] .Body { flex: 0 1 auto; }
+.Root[data-flat] .TableWrap,
+.Root[data-flat] .TableShell,
+.Root[data-flat] .Scroll { flex: 0 1 auto; }
+/* The footer stays at the bottom of the pane. */
+.Root[data-flat] .Footer { margin-top: auto; }
+
 /* Holds the table and the off-screen target line, which sits on the table's bottom edge but must
    not be clipped by the table's rounded overflow. */
 .TableWrap {
