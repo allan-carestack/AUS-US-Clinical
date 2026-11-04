@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { getArchRows } from '../Odontogram/toothData';
 import { Popover, PopoverContent } from '../Popover';
 import { ToothQuickEntry, type IcdConfig } from './ToothQuickEntry';
+import { markToothSelectorOpen } from './useToothSelectorOpen';
 
 export type { IcdConfig };
 import styles from './index.module.css';
@@ -43,6 +45,9 @@ export function ToothSelectorPopover({
   open, onOpenChange, anchor, side = 'top', title, requiresSurface,
   toothId, queueIds, surfaceLetters, onCommit, allowMore, icd, finalFocus,
 }: ToothSelectorPopoverProps) {
+  // While this is open it has the user's attention, not the odontogram behind it (see useToothSelectorOpen).
+  useEffect(() => (open ? markToothSelectorOpen() : undefined), [open]);
+
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverContent

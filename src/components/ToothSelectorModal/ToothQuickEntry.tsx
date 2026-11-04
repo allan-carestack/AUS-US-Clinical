@@ -3,7 +3,7 @@ import Button from '../Button';
 import { Kbd, KbdGroup } from '../Kbd';
 import { PopoverHeader, PopoverClose, PopoverTitle } from '../Popover';
 import { CloseIcon, HelpIcon } from '../Icon';
-import { SegmentedButton, SegmentedButtonItem } from '../SegmentedButton';
+import { Radio, RadioGroup } from '../Radio';
 import { Combobox, ComboboxInput, ComboboxContent, ComboboxItemMulti, ComboboxEmpty } from '../Combobox';
 import { SurfaceQuicklinks } from './ToothGrid';
 import { buildRegularGridRows } from './toothGridRows';
@@ -86,12 +86,16 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
   const [icdMsg, setIcdMsg] = useState('');
   const [icdQuery, setIcdQuery] = useState('');
   const [helpOpen, setHelpOpen] = useState(false);
+  // Class V (cervical) fills only the buccal/facial and lingual surfaces: M, O, D and I are switched off.
+  const [classV, setClassV] = useState(false);
   const helpRef = useRef<HTMLDivElement>(null);
   const icdHighlight = useRef<unknown>(undefined);
-  const toothRef = useRef<HTMLDivElement>(null);
-  const surfaceRef = useRef<HTMLDivElement>(null);
+  const toothRef = useRef<HTMLInputElement>(null);
+  const surfaceRef = useRef<HTMLInputElement>(null);
   const icdId = useId() + '-icd';
   const icdFocus = () => document.getElementById(icdId)?.focus();
+  const toothInputId = useId() + '-tooth';
+  const surfaceInputId = useId() + '-surface';
 
   // A tooth that's already chosen means the next thing to ask for is the surface.
   const startOnSurface = !!toothId && requiresSurface && !surfaceLetters;
@@ -220,8 +224,19 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
     else if (k.toLowerCase() === 'r') { e.preventDefault(); switchTab(false); }
   };
 
-  const toggleLetter = (l: string) =>
+  const toggleLetter = (l: string) => {
+    if (classV && /[MODI]/.test(l)) return;
     setSurface(s => (s.includes(l) ? s.replace(l, '') : s + l));
+  };
+
+  /** Switching to Class V drops any M, O, D or I already picked; B and L stay. */
+  const selectClass = (v: string) => {
+    const toV = v === 'v';
+    setClassV(toV);
+    if (toV) setSurface(s => s.replace(/[MODI]/g, ''));
+    setInvalid(null);
+    surfaceRef.current?.focus();
+  };
 
   const applyKey = (e: React.KeyboardEvent) => {
     if (allowMore && e.shiftKey) applyCurrent(); else trySubmit(teeth, surface, false);
@@ -232,7 +247,7 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
     const k = e.key;
     if (k === 'Enter') { e.preventDefault(); applyKey(e); }
     else if (k === 'Backspace') { e.preventDefault(); setSurface(s => s.slice(0, -1)); }
-    else if (/^[modblip]$/i.test(k)) { e.preventDefault(); toggleLetter(k.toUpperCase()); setInvalid(null); }
+    else if (/^[modblip]$/i.test(k)) { e.preventDefault(); toggleLetter(k.toUpperCase()); setInvalid(null); }  // Class V: toggleLetter ignores M, O, D, I
   };
 
   // Enter with no option highlighted in the list applies, like on the other fields.
@@ -244,7 +259,7 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
   };
 
   // Clicks must not steal focus from the frame (Enter on a focused cell would double-fire).
-  const keepFocus = (ref: React.RefObject<HTMLDivElement | null>) => ({
+  const keepFocus = (ref: React.RefObject<HTMLInputElement | null>) => ({
     onMouseDown: (e: React.MouseEvent) => e.preventDefault(),
     onClick: () => ref.current?.focus(),
   });
@@ -306,89 +321,114 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
           <div className={styles.QuickBody} onKeyDown={cycleFocus}>
             <div className={styles.QuickMain}>
               <div className={styles.QuickCol}>
-                <div className={styles.QuickLabel}>Select tooth <span className={styles.Req}>*</span></div>
-                <div className={styles.Hint}>Click a tooth or type its number</div>
-                <div
-                  ref={toothRef}
-                  data-first-focus={!startOnSurface || undefined}
-                  tabIndex={0}
-                  className={styles.QuickFrame}
-                  aria-label="Select tooth: type a number, S for supernumerary, Enter to continue"
-                  aria-invalid={invalid === 'tooth' || undefined}
-                  onKeyDown={toothKey}
-                  onFocus={() => setStep('tooth')}
-                  {...keepFocus(toothRef)}
+                <div className={styles.FieldRow}>
+                  <label className={styles.FieldLabel} htmlFor={toothInputId}>Tooth <span className={styles.Req}>*</span> :</label>
+                  <input
+                    ref={toothRef}
+                    id={toothInputId}
+                    data-first-focus={!startOnSurface || undefined}
+                    className={styles.FieldInput}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="Enter a tooth #"
+                    value={buffer}
+                    aria-invalid={!!toothError || invalid === 'tooth' || undefined}
+                    onChange={e => { setBuffer(e.target.value.replace(/\D/g, '').slice(-2)); setInvalid(null); }}
+                    onKeyDown={toothKey}
+                    onFocus={() => setStep('tooth')}
+                  />
+                  {toothError && <span className={styles.TypedErr} role="alert">{toothError}</span>}
+                </div>
+                <RadioGroup
+                  className={styles.RadioRow}
+                  aria-label="Dentition"
+                  value={sup ? 'sup' : 'reg'}
+                  onValueChange={v => { switchTab(v === 'sup'); toothRef.current?.focus(); }}
                 >
-                  <div className={styles.QuickPanel}>
-                    <div className={styles.QuickTabs}>
-                      <SegmentedButton className={styles.QuickSwitch} value={sup ? 'sup' : 'reg'} onValueChange={v => switchTab(v === 'sup')}>
-                        <SegmentedButtonItem value="reg">Regular <Kbd>R</Kbd></SegmentedButtonItem>
-                        <SegmentedButtonItem value="sup">Supernumerary <Kbd>S</Kbd></SegmentedButtonItem>
-                      </SegmentedButton>
-                      <span className={toothError ? styles.TypedErr : styles.TypedEcho} role={toothError ? 'alert' : undefined}>
-                        {toothError || (buffer && <KbdGroup>{[...typedId].map((ch, i) => <Kbd key={i}>{ch}</Kbd>)}</KbdGroup>)}
-                      </span>
-                    </div>
-                    <div className={styles.GridStack}>
-                      {[false, true].map(isSup => (
-                        <div
-                          key={String(isSup)}
-                          className={[styles.Grid, styles.GridPane, sup === isSup ? '' : isSup ? styles.PaneRight : styles.PaneLeft].join(' ')}
-                          inert={sup !== isSup}
-                        >
-                          {buildRegularGridRows().map((row, i) => (
-                            <div key={i} className={[styles.GridRow, row.variant === 'primary' ? styles.GridRowPrimary : ''].join(' ')}>
-                              {row.teeth.map((t, j) => (t ? cell(isSup ? `S${t.id}` : t.id, row.variant === 'primary') : <div key={j} className={styles.ToothCellEmpty} />))}
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
+                  <Radio value="reg">Regular <Kbd>R</Kbd></Radio>
+                  <Radio value="sup">Supernumerary <Kbd>S</Kbd></Radio>
+                </RadioGroup>
+                <div className={styles.QuickPanel} {...keepFocus(toothRef)}>
+                  <div className={styles.GridStack}>
+                    {[false, true].map(isSup => (
+                      <div
+                        key={String(isSup)}
+                        className={[styles.Grid, styles.GridPane, sup === isSup ? '' : isSup ? styles.PaneRight : styles.PaneLeft].join(' ')}
+                        inert={sup !== isSup}
+                      >
+                        {buildRegularGridRows().map((row, i) => (
+                          <div key={i} className={[styles.GridRow, row.variant === 'primary' ? styles.GridRowPrimary : ''].join(' ')}>
+                            {row.teeth.map((t, j) => (t ? cell(isSup ? `S${t.id}` : t.id, row.variant === 'primary') : <div key={j} className={styles.ToothCellEmpty} />))}
+                          </div>
+                        ))}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
 
               {requiresSurface && (
                 <div className={styles.QuickColSurface}>
-                  <div className={styles.QuickLabel}>Select surface <span className={styles.Req}>*</span></div>
-                  <div className={styles.Hint}>Click, or type <KbdGroup><Kbd>M</Kbd><Kbd>O</Kbd><Kbd>D</Kbd><Kbd>B</Kbd><Kbd>L</Kbd></KbdGroup></div>
-                  <div
-                    ref={surfaceRef}
-                    data-first-focus={startOnSurface || undefined}
-                    tabIndex={0}
-                    className={styles.QuickFrame}
-                    aria-label="Select surface: type M, O, D, B, L, I or P, Enter to apply"
-                    aria-invalid={invalid === 'surface' || undefined}
-                    onKeyDown={surfaceKey}
-                    onFocus={() => setStep('surface')}
-                    {...keepFocus(surfaceRef)}
+                  <div className={styles.FieldRow}>
+                    <label className={styles.FieldLabel} htmlFor={surfaceInputId}>Surface <span className={styles.Req}>*</span> :</label>
+                    <input
+                      ref={surfaceRef}
+                      id={surfaceInputId}
+                      data-first-focus={startOnSurface || undefined}
+                      className={styles.FieldInput}
+                      readOnly
+                      autoComplete="off"
+                      placeholder={classV ? 'B or L' : 'M O D B L'}
+                      value={surface}
+                      aria-invalid={invalid === 'surface' || undefined}
+                      onKeyDown={surfaceKey}
+                      onFocus={() => setStep('surface')}
+                    />
+                  </div>
+                  <RadioGroup
+                    className={styles.RadioRow}
+                    aria-label="Class"
+                    value={classV ? 'v' : '1'}
+                    onValueChange={v => selectClass(v as string)}
                   >
+                    <Radio value="1">Class 1</Radio>
+                    <Radio value="v">Class V</Radio>
+                  </RadioGroup>
+                  <div className={styles.SurfacePicker} {...keepFocus(surfaceRef)}>
                     <div className={styles.Diagram}>
                       <svg viewBox="0 0 160 160" width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}>
-                        {REGIONS.map(g => (
-                          <path
-                            key={g.label}
-                            d={g.d}
-                            role="button"
-                            aria-pressed={surfaceOn(g.letters)}
-                            aria-label={`Surface ${g.label}`}
-                            className={[styles.CircleRegion, surfaceOn(g.letters) ? styles.CircleRegionSelected : ''].join(' ')}
-                            onClick={() => toggleLetter(g.toggle)}
-                          />
-                        ))}
+                        {REGIONS.map(g => {
+                          const off = classV && g.toggle !== 'B' && g.toggle !== 'L';
+                          return (
+                            <path
+                              key={g.label}
+                              d={g.d}
+                              role="button"
+                              aria-pressed={surfaceOn(g.letters)}
+                              aria-disabled={off || undefined}
+                              aria-label={`Surface ${g.label}`}
+                              className={[styles.CircleRegion, surfaceOn(g.letters) ? styles.CircleRegionSelected : '', off ? styles.CircleRegionOff : ''].filter(Boolean).join(' ')}
+                              onClick={() => toggleLetter(g.toggle)}
+                            />
+                          );
+                        })}
                         <circle
                           cx={C} cy={C} r={r - GAP * 2}
                           role="button"
                           aria-label="Surface O/I"
                           aria-pressed={/[OI]/.test(surface)}
-                          className={[styles.CircleRegion, /[OI]/.test(surface) ? styles.CircleRegionSelected : ''].join(' ')}
+                          aria-disabled={classV || undefined}
+                          className={[styles.CircleRegion, /[OI]/.test(surface) ? styles.CircleRegionSelected : '', classV ? styles.CircleRegionOff : ''].filter(Boolean).join(' ')}
                           onClick={() => toggleLetter('O')}
                         />
                       </svg>
-                      {REGIONS.map(g => <span key={g.label} className={[styles.DiagramLabel, styles[g.cls]].join(' ')}>{g.label}</span>)}
-                      <span className={[styles.DiagramLabel, styles.labelOcclusal].join(' ')}>O/I</span>
+                      {REGIONS.map(g => (
+                        <span key={g.label} className={[styles.DiagramLabel, styles[g.cls], classV && g.toggle !== 'B' && g.toggle !== 'L' ? styles.DiagramLabelOff : ''].filter(Boolean).join(' ')}>{g.label}</span>
+                      ))}
+                      <span className={[styles.DiagramLabel, styles.labelOcclusal, classV ? styles.DiagramLabelOff : ''].filter(Boolean).join(' ')}>O/I</span>
                     </div>
-                    <div className={styles.QuickPicks}>
+                    {/* Every quick link includes M, O or D, so none apply in Class V; hidden, but the space is kept so nothing jumps. */}
+                    <div className={styles.QuickPicks} data-hidden={classV || undefined} inert={classV}>
                       <SurfaceQuicklinks
                         surfaceLetters={surface}
                         onSelect={letters => { setSurface(letters); setInvalid(null); surfaceRef.current?.focus(); }}
