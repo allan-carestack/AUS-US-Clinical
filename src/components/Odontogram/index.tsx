@@ -2,6 +2,7 @@ import { useState, useRef, useLayoutEffect } from 'react';
 import styles from './index.module.css';
 import Tooth, { type ToothState } from './Tooth';
 import { ChartTools } from './ChartTools';
+import { useToothSelectorOpen } from '../ToothSelectorModal/useToothSelectorOpen';
 import { getArchRows, getMixedArchRows, SURFACE_LABEL, type Dentition, type ToothMeta, type SurfaceName } from './toothData';
 
 export type { ToothState, ToothMark } from './Tooth';
@@ -63,6 +64,7 @@ function ArchRow({ teeth, states, armedTeeth, numberPosition, onSurfaceClick, on
 // then a chip, or a chip then a tooth — this component only displays the
 // current chart state and reports clicks upward via callbacks.
 export function Odontogram({ toothStates = {}, armedTeeth = [], dentition: dentitionProp, onDentitionChange, onSurfaceClick, onWholeToothClick }: OdontogramProps) {
+  const selectorOpen = useToothSelectorOpen();
   const [internalDentition, setInternalDentition] = useState<Dentition>('permanent');
   const dentition = dentitionProp ?? internalDentition;
   const setDentition = (d: Dentition) => {
@@ -115,7 +117,7 @@ export function Odontogram({ toothStates = {}, armedTeeth = [], dentition: denti
   const handleWholeToothClick = (meta: ToothMeta) => onWholeToothClick?.(meta);
 
   return (
-    <div className={styles.Odontogram}>
+    <div className={styles.Odontogram} inert={selectorOpen}>
       <ChartTools dentition={dentition} onDentitionChange={setDentition} />
 
       <div className={styles.ChartViewport} ref={viewportRef}>
