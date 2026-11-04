@@ -1,0 +1,269 @@
+.Root {
+  composes: text-base weight-400 from global;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+  color: var(--grey-100);
+}
+
+.Header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  flex-shrink: 0;
+  padding: var(--spacing-8) var(--spacing-8) var(--spacing-8) var(--spacing-12);
+  background: var(--grey-5);
+  border-bottom: 1px solid var(--grey-20);
+}
+
+.NewPlan {
+  flex: 1 1 auto;
+  min-width: 6rem;
+}
+
+/* The two sections scroll together so nothing is cut off on short screens. */
+.Content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.SectionTitle {
+  composes: text-base weight-700 from global;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  margin: 0;
+  padding: 0 var(--spacing-12);
+  height: 2.4rem;
+  color: var(--grey-60);
+}
+
+.Ungrouped {
+  padding-top: var(--spacing-8);
+  border-bottom: 1px solid var(--grey-20);
+}
+
+.UngroupedList {
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--spacing-12);
+  height: 11.1rem;
+  overflow-y: auto;
+}
+
+.UngroupedItem {
+  composes: text-base weight-400 from global;
+  display: block;
+  width: 100%;
+  padding: var(--spacing-8);
+  border: 0;
+  border-radius: var(--radius-default);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .UngroupedItem:hover { background: var(--grey-5); }
+}
+
+.UngroupedItem[data-selected] {
+  background: var(--grey-10);
+}
+
+.Grouped {
+  padding: var(--spacing-8) 0 var(--spacing-12);
+}
+
+.Groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-12);
+  margin-top: var(--spacing-8);
+}
+
+.Group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+}
+
+.Date {
+  composes: text-base weight-500 from global;
+  padding: 0 var(--spacing-12);
+  color: var(--grey-60);
+}
+
+.GroupPlans {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-12);
+}
+
+/* ── Plan ── */
+.Plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: 0 var(--spacing-12);
+}
+
+.Plan[data-dragging] {
+  opacity: 0.4;
+}
+
+/* drop indicator line for plans and phases */
+.Plan[data-drop]::before,
+.PhaseRow[data-drop]::before {
+  content: '';
+  position: absolute;
+  left: var(--spacing-12);
+  right: var(--spacing-12);
+  height: 2px;
+  border-radius: 1px;
+  background: var(--interactive-80);
+  z-index: 2;
+}
+.Plan[data-drop='before']::before { top: -7px; }
+.Plan[data-drop='after']::before { bottom: -7px; }
+.PhaseRow[data-drop]::before { left: 3.2rem; right: 0; }
+.PhaseRow[data-drop='before']::before { top: -1px; }
+.PhaseRow[data-drop='after']::before { bottom: -1px; }
+
+.PlanRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.PlanTitle {
+  composes: text-base weight-400 from global;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 2.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+  padding: 0 var(--spacing-8);
+  border: 0;
+  border-left: 4px solid var(--purple-80);
+  border-radius: var(--radius-default);
+  background: var(--grey-10);
+  color: var(--grey-100);
+  text-align: left;
+  cursor: pointer;
+}
+
+/* selected: filled with the plan's status colour (purple = Planned) */
+.PlanTitle[data-selected] {
+  background: var(--purple-80);
+  color: var(--white);
+}
+
+.Ellipsis {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.Meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 3.2rem;
+  height: 2.4rem;
+  position: relative;
+}
+
+/* trunk continues from the +/- button through the meta row into the phases */
+.Plan:has(.Phases) .Meta::after {
+  content: '';
+  position: absolute;
+  left: 1.2rem;
+  top: -2px;
+  bottom: 0;
+  border-left: 1px solid var(--interactive-100);
+}
+
+.MetaIcons {
+  display: flex;
+  gap: var(--spacing-4);
+  color: var(--red-80);
+}
+
+.MetaActions {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+/* ── Phases + tree connector ── */
+.Phases {
+  display: flex;
+  flex-direction: column;
+}
+
+.PhaseRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 2.8rem;
+  padding-left: 3.2rem;
+  /* horizontal arm of the elbow */
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='12' fill='none' stroke='%230A5C71' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M0 6H19M14 1.5L19 6L14 10.5'/%3E%3C/svg%3E") 1.2rem 50% / 2rem 1.2rem no-repeat;
+}
+
+/* elbow: vertical trunk under the +/- button, horizontal arm to the phase */
+.PhaseRow::after {
+  content: '';
+  position: absolute;
+  left: 1.2rem;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--interactive-100);
+}
+.NewPhaseRow::after { bottom: 50%; }
+
+.PhaseBar {
+  composes: text-base weight-400 from global;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 2.4rem;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-8);
+  border: 0;
+  border-left: 4px solid var(--status);
+  border-radius: var(--radius-default);
+  background: var(--grey-10);
+  color: var(--grey-100);
+  text-align: left;
+  cursor: pointer;
+}
+
+.PhaseBar { --status: var(--grey-80); }
+.PhaseBar[data-status='Accepted'] { --status: var(--interactive-80); }
+.PhaseBar[data-status='Completed'] { --status: var(--green-80); }
+
+/* selected: filled with the phase's status colour */
+.PhaseBar[data-selected] {
+  background: var(--status);
+  color: var(--white);
+}
+
+.PhaseBar[data-code-drop] {
+  outline: 2px solid var(--interactive-80);
+  outline-offset: 1px;
+}
+
+.PhaseBar[data-dragging] {
+  opacity: 0.4;
+}
