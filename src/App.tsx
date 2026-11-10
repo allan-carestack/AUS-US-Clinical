@@ -4,8 +4,8 @@ import Table, { type Column } from './components/Table';
 import { Tag } from './components/Tag';
 import { PlusIcon, MemoIcon, PreviewIcon, AngleUpIcon, AngleLeftIcon, AngleRightIcon, WarningIcon, CloseIcon } from './components/Icon';
 import {
-  Odontogram, SURFACE_LABEL,
-  type ArmedTooth, type ToothState, type ToothMark, type ToothMeta, type SurfaceName, type Dentition,
+  Odontogram, SURFACE_LABEL, slotKeyFromId, uniformToothTypes,
+  type ArmedTooth, type ToothState, type ToothMark, type ToothMeta, type SurfaceName, type DentitionView, type ToothTypes,
 } from './components/Odontogram';
 import { CarePanel, type ChipDef, type CarePanelSelectionContext, type DentalCode, type CodeInput } from './components/CarePanel';
 import { ToothSelectorPopover } from './components/ToothSelectorModal';
@@ -811,9 +811,11 @@ export default function App() {
   );
   const [editingCell, setEditingCell] = useState<{ rowId: string; field: 'thArea' | 'surface' } | null>(null);
   const [successRowIds, setSuccessRowIds] = useState<Set<string>>(new Set());
-  // Active dentition, lifted from the Odontogram so tooth-input validation can
-  // match the visible tab (permanent vs primary).
-  const [dentition, setDentition] = useState<Dentition>('permanent');
+  // Odontogram view (current teeth, or current + a set of primary teeth), lifted so tooth-input
+  // validation matches what the chart shows.
+  const [dentitionView, setDentitionView] = useState<DentitionView>('current');
+  // Type of each tooth position (permanent / primary / unerupted); unerupted teeth can't be charted.
+  const [toothTypes, setToothTypes] = useState<ToothTypes>(() => uniformToothTypes('permanent'));
   const entryCounterRef = useRef(0);
 
   const activePlanData = activePlan ? plansById[activePlan.id] : null;
@@ -1607,13 +1609,20 @@ export default function App() {
     // FDI numbering — permanent: quadrants 1-4, positions 1-8; primary
     // (deciduous): quadrants 5-8, positions 1-5. Validate against the active
     // dentition tab so charting matches what the odontogram shows.
-    if (dentition === 'primary') {
-      const isPrimary = [5, 6, 7, 8].includes(q) && t >= 1 && t <= 5;
-      if (!isPrimary) return 'Primary tooth must be 51-55, 61-65, 71-75, or 81-85';
+    if (q >= 5 && q <= 8) {
+      if (t < 1 || t > 5) return 'Primary tooth must be 51-55, 61-65, 71-75, or 81-85';
     } else {
       const isPermanent = [1, 2, 3, 4].includes(q) && t >= 1 && t <= 8;
       if (!isPermanent) return 'Tooth must be 11-18, 21-28, 31-38, or 41-48';
     }
+    // Per-tooth: the position must currently hold this kind of tooth, and be erupted.
+    const slot = slotKeyFromId(v);
+    const state = slot ? toothTypes[slot] : undefined;
+    // The mixed view shows every primary tooth in its own row, so a primary number is on the chart
+    // there whatever the position currently holds (it is only unerupted when the position holds it).
+    const inPrimaryRow = dentitionView === 'mixed' && q >= 5;
+    if (state && !inPrimaryRow && state.kind !== (q >= 5 ? 'primary' : 'permanent')) return `Tooth ${v} isn't on the chart (that position is ${state.kind})`;
+    if (state?.unerupted && (!inPrimaryRow || state.kind === 'primary')) return `Tooth ${v} is unerupted`;
     return null;
   };
 
@@ -1978,7 +1987,7 @@ export default function App() {
         </div>
       );
     }},
-  ], [editingRowId, pendingRowIds, pendingProcedureIds, deletingRowIds, changingRowIds, editingCell, successRowIds, dentalCodes, dentition, showFeeEstimates]);
+  ], [editingRowId, pendingRowIds, pendingProcedureIds, deletingRowIds, changingRowIds, editingCell, successRowIds, dentalCodes, dentitionView, toothTypes, showFeeEstimates]);
 
   const handleWorkspaceTabChange = (value: string) => {
     if (value !== 'chart' && value !== 'planner') return;
@@ -2089,6 +2098,7 @@ export default function App() {
           appStyles.WorkspaceTopBand,
           workspaceTab === 'planner' ? appStyles.isPlanner : '',
           workspaceTab === 'chart' && headerCollapsed ? appStyles.isCollapsed : '',
+          workspaceTab === 'chart' && dentitionView === 'mixed' ? appStyles.isMixedView : '',
         ].filter(Boolean).join(' ')}
       >
         <div className={appStyles.WorkspacePrimaryColumn}>
@@ -2105,8 +2115,11 @@ export default function App() {
               <Odontogram
                 toothStates={toothStates}
                 armedTeeth={armedTeeth}
-                dentition={dentition}
-                onDentitionChange={setDentition}
+                view={dentitionView}
+                onViewChange={setDentitionView}
+                toothTypes={toothTypes}
+                onToothTypesChange={setToothTypes}
+                onClearSelection={() => setPendingSelection(null)}
                 onSurfaceClick={handleSurfaceClick}
                 onWholeToothClick={handleWholeToothClick}
               />

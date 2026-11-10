@@ -7,54 +7,96 @@ import {
   TeethIcon,
   ThreeDIcon,
 } from '../Icon';
-import { Menu, MenuContent, MenuRadioGroup, MenuRadioItem, MenuTrigger } from '../Menu';
+import { Menu, MenuContent, MenuItem, MenuRadioGroup, MenuRadioItem, MenuTrigger } from '../Menu';
 import { Tooltip } from '../Tooltip';
-import type { Dentition } from './toothData';
+import { TOOTH_TYPE_LABEL, type DentitionView, type ToothType } from './toothData';
 import styles from './ChartTools.module.css';
 
 export interface ChartToolsProps {
-  dentition: Dentition;
-  onDentitionChange: (dentition: Dentition) => void;
+  /** What every tooth currently is — 'mixed' when the mouth isn't one uniform type. */
+  mouthType: ToothType | 'mixed';
+  view: DentitionView;
+  onViewChange: (view: DentitionView) => void;
+  /** "Change all to …" from the teeth menu. */
+  onChangeAll: (type: ToothType) => void;
+  /** Teeth currently selected on the chart; when any, the teeth menu marks just those. */
+  selectionCount: number;
+  onMarkSelected: (type: ToothType) => void;
 }
 
-// Mouth-wide dentition (Permanent / Deciduous / Mixed) — controls the actual
-// chart layout via the shared `Dentition` state (see toothData.ts).
-const MOUTH_DENTITION_ABBREVIATION: Record<Dentition, string> = {
+// Dentition view: the current teeth (default), or the current teeth plus a set of primary teeth.
+// The button shows an abbreviation of what is on screen.
+const MOUTH_ABBREVIATION: Record<ToothType | 'mixed', string> = {
   permanent: 'Pe',
   primary: 'De',
+  unerupted: 'Un',
   mixed: 'Mi',
 };
 
-const MOUTH_DENTITION_LABEL: Record<Dentition, string> = {
-  permanent: 'Permanent',
-  primary: 'Deciduous',
-  mixed: 'Mixed',
+const VIEW_LABEL: Record<DentitionView, string> = {
+  current: 'View current dentition',
+  mixed: 'View mixed dentition',
 };
 
-function DentitionControl({
+function DentitionViewControl({
+  mouthType,
   value,
   onChange,
 }: {
-  value: Dentition;
-  onChange: (value: Dentition) => void;
+  mouthType: ToothType | 'mixed';
+  value: DentitionView;
+  onChange: (value: DentitionView) => void;
 }) {
   return (
     <Menu modal={false}>
-      <Tooltip content="Mouth dentition" side="right" delay={600}>
+      <Tooltip content="Dentition view" side="right" delay={600}>
         <MenuTrigger openOnHover>
-          <button type="button" className={styles.Tool} aria-label="Mouth dentition">
-            <span className={styles.DentitionLabel}>{MOUTH_DENTITION_ABBREVIATION[value]}</span>
+          <button type="button" className={styles.Tool} aria-label="Dentition view">
+            <span className={styles.DentitionLabel}>{value === 'mixed' ? 'Mi' : MOUTH_ABBREVIATION[mouthType]}</span>
           </button>
         </MenuTrigger>
       </Tooltip>
       <MenuContent side="right">
-        <MenuRadioGroup value={value} onValueChange={v => onChange(v as Dentition)}>
-          {(Object.keys(MOUTH_DENTITION_LABEL) as Dentition[]).map(option => (
+        <MenuRadioGroup value={value} onValueChange={v => onChange(v as DentitionView)}>
+          {(Object.keys(VIEW_LABEL) as DentitionView[]).map(option => (
             <MenuRadioItem key={option} value={option} closeOnClick>
-              {MOUTH_DENTITION_LABEL[option]} ({MOUTH_DENTITION_ABBREVIATION[option]})
+              {VIEW_LABEL[option]}
             </MenuRadioItem>
           ))}
         </MenuRadioGroup>
+      </MenuContent>
+    </Menu>
+  );
+}
+
+// "Change all to …": sets every tooth to one type in a single action.
+function TeethControl({ mouthType, view, selectionCount, onChangeAll, onMarkSelected }: {
+  mouthType: ToothType | 'mixed';
+  view: DentitionView;
+  selectionCount: number;
+  onChangeAll: (type: ToothType) => void;
+  onMarkSelected: (type: ToothType) => void;
+}) {
+  const selected = selectionCount > 0;
+  const label = selected
+    ? `Mark ${selectionCount === 1 ? 'selected tooth' : 'selected teeth'}`
+    : mouthType === 'mixed' ? 'Mixed' : TOOTH_TYPE_LABEL[mouthType];
+  return (
+    <Menu modal={false}>
+      <Tooltip content={label} side="right" delay={600}>
+        <MenuTrigger openOnHover>
+          <button type="button" className={styles.Tool} aria-label={label}>
+            <TeethIcon />
+          </button>
+        </MenuTrigger>
+      </Tooltip>
+      <MenuContent side="right">
+        {(Object.keys(TOOTH_TYPE_LABEL) as ToothType[]).map(type => (
+          // The mixed view shows both kinds of teeth side by side, so switching a tooth's kind makes no sense there.
+          <MenuItem key={type} disabled={view === 'mixed' && type !== 'unerupted'} onClick={() => (selected ? onMarkSelected(type) : onChangeAll(type))}>
+            {selected ? 'Mark selected as' : 'Change all to'} {TOOTH_TYPE_LABEL[type]}
+          </MenuItem>
+        ))}
       </MenuContent>
     </Menu>
   );
@@ -89,7 +131,7 @@ function ToolButton({
   );
 }
 
-export function ChartTools({ dentition, onDentitionChange }: ChartToolsProps) {
+export function ChartTools({ mouthType, view, selectionCount, onViewChange, onChangeAll, onMarkSelected }: ChartToolsProps) {
   return (
     <div className={styles.Rail} role="toolbar" aria-label="Chart tools">
       <ToolButton label="Select" active>
@@ -98,10 +140,8 @@ export function ChartTools({ dentition, onDentitionChange }: ChartToolsProps) {
       <ToolButton label="Info">
         <InfoOutlineIcon />
       </ToolButton>
-      <DentitionControl value={dentition} onChange={onDentitionChange} />
-      <ToolButton label={MOUTH_DENTITION_LABEL[dentition]}>
-        <TeethIcon />
-      </ToolButton>
+      <DentitionViewControl mouthType={mouthType} value={view} onChange={onViewChange} />
+      <TeethControl mouthType={mouthType} view={view} selectionCount={selectionCount} onChangeAll={onChangeAll} onMarkSelected={onMarkSelected} />
       <ToolButton label="3D view">
         <ThreeDIcon />
       </ToolButton>
