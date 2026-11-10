@@ -26,6 +26,8 @@ interface ToothProps {
       mixed-dentition primary rows, which sit outside the main arches and so
       want their numbers at the chart's outer edge instead of at the bite line. */
   numberPosition?: 'above' | 'below';
+  /** Unerupted: drawn dimmed with no marks; the owner decides what a click does (not charting). */
+  unerupted?: boolean;
   onSurfaceClick: (meta: ToothMeta, surface: SurfaceName) => void;
   onWholeToothClick: (meta: ToothMeta) => void;
 }
@@ -42,8 +44,12 @@ const EDGES: { edge: SurfaceEdge; points: string }[] = [
   { edge: 'center', points: '14,14 30,14 30,30 14,30' },
 ];
 
-export default function Tooth({ meta, state, armedWhole, armedSurfaces = [], numberPosition, onSurfaceClick, onWholeToothClick }: ToothProps) {
+export default function Tooth({ meta, state: stateProp, armedWhole, armedSurfaces = [], numberPosition, unerupted, onSurfaceClick, onWholeToothClick }: ToothProps) {
+  const state = unerupted ? undefined : stateProp;
   const wholeMark = state?.whole;
+  // Primary teeth (FDI 51–85) are round; the surfaces keep the same segments, just clipped to the circle.
+  const primary = Number(meta.id) >= 50;
+  const clipId = `tooth-clip-${meta.id}`;
 
   const toothSvg = (
     <svg
@@ -53,10 +59,20 @@ export default function Tooth({ meta, state, armedWhole, armedSurfaces = [], num
       height={TOOTH_SIZE}
       aria-label={`Tooth ${meta.id}`}
     >
-      <rect
-        x={0.5} y={0.5} width={43} height={43}
-        className={styles.ToothOutline}
-      />
+      {primary ? (
+        <>
+          <defs>
+            <clipPath id={clipId}><circle cx={22} cy={22} r={22} /></clipPath>
+          </defs>
+          <circle cx={22} cy={22} r={21.5} className={styles.ToothOutline} />
+        </>
+      ) : (
+        <rect
+          x={0.5} y={0.5} width={43} height={43}
+          className={styles.ToothOutline}
+        />
+      )}
+      <g clipPath={primary ? `url(#${clipId})` : undefined}>
       {EDGES.map(({ edge, points }) => {
         const surface = surfaceName(edge, meta);
         const mark = state?.surfaces[surface];
@@ -81,9 +97,14 @@ export default function Tooth({ meta, state, armedWhole, armedSurfaces = [], num
           />
         );
       })}
+      </g>
+      {/* The clip trims the outer half of the edge strokes, so the round outline is drawn again on top. */}
+      {primary && <circle cx={22} cy={22} r={21.5} className={styles.ToothOutline} style={{ fill: 'none' }} />}
       {wholeMark && (
         <>
-          <rect x={1} y={1} width={42} height={42} className={styles.ToothWholeRing} style={{ stroke: wholeMark.color }} />
+          {primary
+            ? <circle cx={22} cy={22} r={21} className={styles.ToothWholeRing} style={{ stroke: wholeMark.color }} />
+            : <rect x={1} y={1} width={42} height={42} className={styles.ToothWholeRing} style={{ stroke: wholeMark.color }} />}
           {wholeMark.badge && (
             <>
               <circle cx={36} cy={36} r={7} style={{ fill: wholeMark.color }} />
@@ -114,7 +135,7 @@ export default function Tooth({ meta, state, armedWhole, armedSurfaces = [], num
   const position = numberPosition ?? (meta.arch === 'upper' ? 'below' : 'above');
 
   return (
-    <div className={styles.ToothCell}>
+    <div className={[styles.ToothCell, unerupted ? styles.ToothCellUnerupted : ''].filter(Boolean).join(' ')}>
       {position === 'above' ? <>{numberLabel}{toothSvg}</> : <>{toothSvg}{numberLabel}</>}
     </div>
   );

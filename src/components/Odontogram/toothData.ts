@@ -1,7 +1,7 @@
-export type Dentition = 'permanent' | 'primary' | 'mixed';
-// Dentitions that map to a single, uniform arch layout — 'mixed' overlays
-// both and is handled separately by `getMixedArchRows`.
-type SingleDentition = Exclude<Dentition, 'mixed'>;
+/** Which tooth set an arch layout draws. */
+export type Dentition = 'permanent' | 'primary';
+/** What the chart shows: the current teeth, or the current teeth plus a set of primary teeth. */
+export type DentitionView = 'current' | 'mixed';
 export type Arch = 'upper' | 'lower';
 export type Side = 'right' | 'left'; // patient's own right/left, not viewer's
 
@@ -45,7 +45,7 @@ function buildQuadrant(quadrantDigit: number, arch: Arch, side: Side, count: num
 //   lower row:  48 47 ... 41 | 31 32 ... 38
 // Each row runs from the back of the mouth (highest position) inward to the
 // midline, then back out again on the other side.
-export function getArchRows(dentition: SingleDentition): { upper: ToothMeta[]; lower: ToothMeta[] } {
+export function getArchRows(dentition: Dentition): { upper: ToothMeta[]; lower: ToothMeta[] } {
   const count = dentition === 'permanent' ? PERMANENT_TEETH_PER_QUADRANT : PRIMARY_TEETH_PER_QUADRANT;
   const [q1, q2, q3, q4] = dentition === 'permanent' ? [1, 2, 3, 4] : [5, 6, 7, 8];
 
@@ -60,29 +60,71 @@ export function getArchRows(dentition: SingleDentition): { upper: ToothMeta[]; l
   return { upper, lower };
 }
 
-// Mixed dentition: every permanent tooth, plus a primary tooth aligned above
-// (upper) or below (lower) each permanent position that has a primary
-// predecessor (positions 1-5 — primary molars don't extend to positions 6-8).
-// `null` marks a gap so the primary row's columns still line up with the
-// permanent row beneath/above it.
-export function getMixedArchRows(): {
-  upper: ToothMeta[];
-  lower: ToothMeta[];
-  upperPrimary: (ToothMeta | null)[];
-  lowerPrimary: (ToothMeta | null)[];
-} {
-  const permanent = getArchRows('permanent');
-  const primary = getArchRows('primary');
-  const gap = PERMANENT_TEETH_PER_QUADRANT - PRIMARY_TEETH_PER_QUADRANT;
-  const pad = Array.from({ length: gap }, () => null);
+// ── Per-tooth type ──
+// Every tooth position (arch + side + position, so 11 and 51 share a slot) has its own kind
+// (which tooth sits there) and an unerupted flag. Unerupted teeth stay on the chart as dimmed
+// outlines of whatever kind they were, and come back as they were once marked erupted.
+export type ToothKind = 'permanent' | 'primary';
+/** What the teeth menu can set. */
+export type ToothType = ToothKind | 'unerupted';
+export interface ToothSlot { kind: ToothKind; unerupted: boolean }
+export type ToothTypes = Record<string, ToothSlot>;
 
-  return {
-    upper: permanent.upper,
-    lower: permanent.lower,
-    upperPrimary: [...pad, ...primary.upper, ...pad],
-    lowerPrimary: [...pad, ...primary.lower, ...pad],
-  };
+export const TOOTH_TYPE_LABEL: Record<ToothType, string> = {
+  permanent: 'Permanent',
+  primary: 'Primary',
+  unerupted: 'Unerupted',
+};
+
+export const slotKey = (m: Pick<ToothMeta, 'arch' | 'side' | 'position'>) => `${m.arch}-${m.side}-${m.position}`;
+const slotPosition = (key: string) => Number(key.split('-')[2]);
+
+/** Slot of an FDI number (permanent 11–48 or primary 51–85), or null when it isn't one. */
+export function slotKeyFromId(id: string): string | null {
+  const q = Math.floor(Number(id) / 10);
+  const position = Number(id) % 10;
+  if (!Number.isInteger(Number(id)) || position < 1 || position > PERMANENT_TEETH_PER_QUADRANT) return null;
+  if (q < 1 || q > 8) return null;
+  const quadrant = ((q - 1) % 4) + 1; // 5–8 fold onto 1–4
+  const arch: Arch = quadrant <= 2 ? 'upper' : 'lower';
+  const side: Side = quadrant === 1 || quadrant === 4 ? 'right' : 'left';
+  return slotKey({ arch, side, position });
 }
+
+/**
+ * Every tooth erupted and of one kind. There is no primary tooth at the molar positions (6–8),
+ * so an all-primary mouth keeps its permanent molars.
+ */
+export function uniformToothTypes(kind: ToothKind): ToothTypes {
+  const { upper, lower } = getArchRows('permanent');
+  return Object.fromEntries([...upper, ...lower].map(m => [
+    slotKey(m),
+    { kind: kind === 'primary' && m.position > PRIMARY_TEETH_PER_QUADRANT ? 'permanent' : kind, unerupted: false },
+  ]));
+}
+
+/** Set `type` on the given slots (every slot when omitted). Primary skips the molar positions (6–8). */
+export function applyToothType(types: ToothTypes, type: ToothType, slots: string[] = Object.keys(types)): ToothTypes {
+  const next = { ...types };
+  for (const key of slots) {
+    const slot = next[key];
+    if (!slot) continue;
+    if (type === 'unerupted') next[key] = { ...slot, unerupted: true };
+    else if (type === 'primary' && slotPosition(key) > PRIMARY_TEETH_PER_QUADRANT) continue;
+    else next[key] = { kind: type, unerupted: false };
+  }
+  return next;
+}
+
+/** The one kind every tooth that could be either has (positions 1–5), or null when they differ. */
+export function uniformKind(types: ToothTypes): ToothKind | null {
+  const kinds = Object.entries(types)
+    .filter(([key]) => slotPosition(key) <= PRIMARY_TEETH_PER_QUADRANT)
+    .map(([, t]) => t.kind);
+  return kinds.length > 0 && kinds.every(k => k === kinds[0]) ? kinds[0] : null;
+}
+
+export const allUnerupted = (types: ToothTypes) => Object.values(types).every(t => t.unerupted);
 
 // Mesial always faces the midline; which screen edge that is depends only on
 // which side of the mouth the tooth is on (rows above always place the

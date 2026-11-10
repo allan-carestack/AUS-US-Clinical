@@ -22,6 +22,14 @@
   height: 4rem;
 }
 
+/* Mixed dentition view adds two rows of primary teeth (and the gap that keeps them clear of the
+   permanent teeth), so the band grows to fit them at full tooth size instead of shrinking the chart.
+   ponytail: fixed height for that chart (~35.2rem tall + tab bar + padding); measure it if the rows change. */
+.WorkspaceTopBand.isMixedView {
+  flex-basis: 43rem;
+  height: 43rem;
+}
+
 .WorkspaceTopBand.isCollapsed {
   flex-basis: 0;
   height: 0;

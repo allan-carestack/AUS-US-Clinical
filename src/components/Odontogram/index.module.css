@@ -61,11 +61,21 @@
   width: max-content;
 }
 
+/* Mixed view: the primary rows sit 40px clear of the permanent teeth, so drawings that stick out of
+   the permanent tooth's square (a root canal's root, for one) have room. */
+.PrimaryRowAbove { margin-bottom: calc(4rem - var(--spacing-2)); }
+.PrimaryRowBelow { margin-top: calc(4rem - var(--spacing-2)); }
+
 .ToothCell {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-4);
+}
+
+/* Unerupted: still on the chart, but faded. Clicking one asks to mark it as erupted. */
+.ToothCellUnerupted {
+  opacity: 0.4;
 }
 
 /* Keeps a mixed-dentition primary row's columns aligned with the permanent
