@@ -1619,10 +1619,11 @@ export default function App() {
     const slot = slotKeyFromId(v);
     const state = slot ? toothTypes[slot] : undefined;
     // The mixed view shows every primary tooth in its own row, so a primary number is on the chart
-    // there whatever the position currently holds (it is only unerupted when the position holds it).
+    // there whatever the position currently holds (it has its own unerupted flag over a permanent position).
     const inPrimaryRow = dentitionView === 'mixed' && q >= 5;
     if (state && !inPrimaryRow && state.kind !== (q >= 5 ? 'primary' : 'permanent')) return `Tooth ${v} isn't on the chart (that position is ${state.kind})`;
-    if (state?.unerupted && (!inPrimaryRow || state.kind === 'primary')) return `Tooth ${v} is unerupted`;
+    const unerupted = inPrimaryRow && state?.kind === 'permanent' ? state.primaryUnerupted : state?.unerupted;
+    if (unerupted) return `Tooth ${v} is unerupted`;
     return null;
   };
 
