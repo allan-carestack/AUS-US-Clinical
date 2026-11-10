@@ -67,7 +67,13 @@ export function getArchRows(dentition: Dentition): { upper: ToothMeta[]; lower: 
 export type ToothKind = 'permanent' | 'primary';
 /** What the teeth menu can set. */
 export type ToothType = ToothKind | 'unerupted';
-export interface ToothSlot { kind: ToothKind; unerupted: boolean }
+export interface ToothSlot {
+  kind: ToothKind;
+  /** The tooth the position currently holds (its kind) is unerupted. */
+  unerupted: boolean;
+  /** The mixed view also shows the primary tooth over a permanent position; this is that tooth's own flag. */
+  primaryUnerupted: boolean;
+}
 export type ToothTypes = Record<string, ToothSlot>;
 
 export const TOOTH_TYPE_LABEL: Record<ToothType, string> = {
@@ -92,15 +98,15 @@ export function slotKeyFromId(id: string): string | null {
 }
 
 /**
- * Every tooth erupted and of one kind. There is no primary tooth at the molar positions (6–8),
- * so an all-primary mouth keeps its permanent molars.
+ * Every tooth of one kind. There is no primary tooth at the molar positions (6–8), so an
+ * all-primary mouth keeps its permanent molars there, not yet erupted.
  */
 export function uniformToothTypes(kind: ToothKind): ToothTypes {
   const { upper, lower } = getArchRows('permanent');
-  return Object.fromEntries([...upper, ...lower].map(m => [
-    slotKey(m),
-    { kind: kind === 'primary' && m.position > PRIMARY_TEETH_PER_QUADRANT ? 'permanent' : kind, unerupted: false },
-  ]));
+  return Object.fromEntries([...upper, ...lower].map(m => {
+    const molarOfPrimaryMouth = kind === 'primary' && m.position > PRIMARY_TEETH_PER_QUADRANT;
+    return [slotKey(m), { kind: molarOfPrimaryMouth ? 'permanent' : kind, unerupted: molarOfPrimaryMouth, primaryUnerupted: false }];
+  }));
 }
 
 /** Set `type` on the given slots (every slot when omitted). Primary skips the molar positions (6–8). */
@@ -109,11 +115,35 @@ export function applyToothType(types: ToothTypes, type: ToothType, slots: string
   for (const key of slots) {
     const slot = next[key];
     if (!slot) continue;
-    if (type === 'unerupted') next[key] = { ...slot, unerupted: true };
+    if (type === 'unerupted') next[key] = { ...slot, unerupted: true, primaryUnerupted: true };
     else if (type === 'primary' && slotPosition(key) > PRIMARY_TEETH_PER_QUADRANT) continue;
-    else next[key] = { kind: type, unerupted: false };
+    else next[key] = { kind: type, unerupted: false, primaryUnerupted: false };
   }
   return next;
+}
+
+/** Mark the given teeth (FDI numbers) unerupted. A primary tooth over a permanent position has its own flag. */
+export function markTeethUnerupted(types: ToothTypes, ids: string[]): ToothTypes {
+  const next = { ...types };
+  for (const id of ids) {
+    const key = slotKeyFromId(id);
+    const slot = key ? next[key] : undefined;
+    if (!key || !slot) continue;
+    next[key] = Number(id) >= 50 && slot.kind === 'permanent' ? { ...slot, primaryUnerupted: true } : { ...slot, unerupted: true };
+  }
+  return next;
+}
+
+/** Mark one drawn tooth (FDI number) erupted. */
+export function markToothErupted(types: ToothTypes, id: string): ToothTypes {
+  const key = slotKeyFromId(id);
+  const slot = key ? types[key] : undefined;
+  if (!key || !slot) return types;
+  const primary = Number(id) >= 50;
+  if (primary === (slot.kind === 'primary')) return { ...types, [key]: { ...slot, unerupted: false } }; // the tooth the position holds
+  if (primary) return { ...types, [key]: { ...slot, primaryUnerupted: false } }; // a primary tooth in the mixed view's primary row
+  // The permanent tooth under a primary position: it takes the position, and the primary tooth becomes the extra one.
+  return { ...types, [key]: { kind: 'permanent', unerupted: false, primaryUnerupted: slot.unerupted } };
 }
 
 /** The one kind every tooth that could be either has (positions 1–5), or null when they differ. */

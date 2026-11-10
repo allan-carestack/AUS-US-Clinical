@@ -6,7 +6,7 @@ import Button from '../Button';
 import { Dialog, DialogBody, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../Dialog';
 import { useToothSelectorOpen } from '../ToothSelectorModal/useToothSelectorOpen';
 import {
-  getArchRows, slotKey, slotKeyFromId, uniformToothTypes, uniformKind, applyToothType, allUnerupted, SURFACE_LABEL,
+  getArchRows, slotKey, slotKeyFromId, uniformToothTypes, uniformKind, applyToothType, markTeethUnerupted, markToothErupted, allUnerupted, SURFACE_LABEL,
   type DentitionView, type ToothMeta, type ToothType, type ToothTypes, type SurfaceName,
 } from './toothData';
 
@@ -108,14 +108,16 @@ export function Odontogram({ toothStates = {}, armedTeeth = [], view: viewProp, 
   // "Mark selected as X": the same, but only for the teeth selected on the chart.
   const markSelectedAs = (type: ToothType) => {
     const slots = [...new Set(armedTeeth.map(a => slotKeyFromId(a.toothId)).filter((k): k is string => !!k))];
-    setTypes(applyToothType(toothTypes, type, slots));
+    setTypes(type === 'unerupted'
+      ? markTeethUnerupted(toothTypes, [...new Set(armedTeeth.map(a => a.toothId))])
+      : applyToothType(toothTypes, type, slots));
     onClearSelection?.();
   };
 
   // Tooth waiting on the "mark as erupted?" confirmation. It becomes the kind it is drawn as.
   const [eruptTarget, setEruptTarget] = useState<ToothMeta | null>(null);
   const markErupted = (meta: ToothMeta) => {
-    setTypes(applyToothType(toothTypes, toothKind(meta), [slotKey(meta)]));
+    setTypes(markToothErupted(toothTypes, meta.id));
     setEruptTarget(null);
   };
 
@@ -141,7 +143,8 @@ export function Odontogram({ toothStates = {}, armedTeeth = [], view: viewProp, 
     const slot = toothTypes[slotKey(meta)];
     if (!slot) return false;
     if (!mixed) return slot.unerupted;
-    return toothKind(meta) === 'primary' ? slot.kind === 'primary' && slot.unerupted : slot.kind === 'primary' || slot.unerupted;
+    if (toothKind(meta) === 'primary') return slot.kind === 'primary' ? slot.unerupted : slot.primaryUnerupted;
+    return slot.kind === 'primary' || slot.unerupted;
   };
   const mouthType: ToothType | 'mixed' = allUnerupted(toothTypes) ? 'unerupted' : kind ?? 'mixed';
 
