@@ -10,7 +10,7 @@
 // default) — these interfaces assume camelCase. If the backend emits PascalCase,
 // flip `client.ts`'s response normalization rather than renaming every field.
 
-import type { ToothRequirement } from '../components/CarePanel/data';
+import type { AreaType, ToothRequirement } from '../components/CarePanel/data';
 
 // ── Procedure code catalog (FeeSchedule.ProcedureCodeEntity) ──
 export interface ProcedureCode {
@@ -30,6 +30,8 @@ export interface ProcedureCode {
   // flag directly; it's inferred from code type / smart-code logic. See
   // `inferRequirement` in procedureCodes.ts.
   requires?: ToothRequirement;
+  /** For `requires: 'area'` codes: arch or quadrant. */
+  area?: AreaType;
 }
 
 // ── Lifecycle status (TreatmentProcedureStatus enum) ──

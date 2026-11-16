@@ -13,6 +13,12 @@
   max-width: 48rem !important;
 }
 
+/* Area codes: no tooth grid, so just wide enough for the field and a 2×2 of quadrants. */
+.PopupArea {
+  width: 44rem !important;
+  max-width: 44rem !important;
+}
+
 /* Overlay mode: the popup grows out of the +Code list item it replaces (size comes in as
    --morph-w / --morph-h; the popup is aligned to the item's top-right corner), then the
    tooth, surface and ICD sections fade up one after the other. The popover mounts already
@@ -1107,4 +1113,25 @@
 
 .DiagramLabelOff {
   color: var(--grey-60);
+}
+
+/* ── Area picker (arch: two stacked options; quadrant: a 2×2 mirroring the mouth) ── */
+.AreaPanel {
+  display: grid;
+  gap: 1px;
+  background: var(--grey-20);
+}
+
+.AreaPanel[data-area='quadrant'] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.AreaCell {
+  composes: ToothCell;
+  padding: var(--spacing-8);
+  border: 0;
+}
+
+.AreaCellDim {
+  color: var(--grey-40);
 }

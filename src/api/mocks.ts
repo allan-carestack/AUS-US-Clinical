@@ -28,6 +28,7 @@ const mockCatalog: ProcedureCode[] = DENTAL_CODES.map((c, i) => ({
   terminationDate: null,
   accountId: demoContext.accountId,
   requires: c.requires,
+  area: c.area,
 }));
 
 const codeByProcedureId = new Map(mockCatalog.map(c => [c.procedureCodeId, c]));

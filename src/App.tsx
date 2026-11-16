@@ -13,7 +13,7 @@ import { ClinicalSidebar } from './components/ClinicalSidebar';
 import { GlobalHeader } from './components/GlobalHeader';
 import { PatientHeader } from './components/PatientHeader';
 import {
-  PROCEDURE_CHIPS, CONDITION_CHIPS, PLAN_AND_EXPLOSION_CHIPS, AREA_PRESETS, AREA_PRESET_TEETH,
+  PROCEDURE_CHIPS, CONDITION_CHIPS, PLAN_AND_EXPLOSION_CHIPS, AREA_PRESETS, AREA_PRESET_TEETH, areaIdsForTeeth,
   type ToothRequirement,
 } from './components/CarePanel/data';
 import { Select, SelectTrigger, SelectContent, SelectItem } from './components/Select';
@@ -1342,11 +1342,12 @@ export default function App() {
   };
 
   // Tooth/surface armed on the odontogram fills a +Code pick directly, so the
-  // required-fields popover is skipped (area codes still need it). Picking a whole
-  // tooth selects all of its surfaces, so a surface code is always satisfied.
+  // required-fields popover is skipped. Picking a whole tooth selects all of its
+  // surfaces, so a surface code is always satisfied; an area code takes the arch /
+  // quadrant the armed teeth sit in.
   const codeUsesArmedSelection = (code: DentalCode) =>
     pendingSelection?.source === 'tooth'
-    && (code.requires === 'tooth' || code.requires === 'surface');
+    && (code.requires === 'tooth' || code.requires === 'surface' || code.requires === 'area');
 
   // +Code combobox: selecting a code adds a row immediately. If the code
   // requires tooth/surface input the row is inserted in a pending state
@@ -1364,6 +1365,13 @@ export default function App() {
     if (input) {
       addCompletedCodeRow(chip, context, input);
       setPendingSelection(null); // the odontogram pick was consumed by the popover
+      return;
+    }
+    if (pendingSelection?.source === 'tooth' && code.requires === 'area') {
+      // One row per distinct arch / quadrant the armed teeth belong to.
+      areaIdsForTeeth(pendingSelection.selections.map(sel => sel.meta.id), code.area ?? 'quadrant')
+        .forEach(thArea => addCompletedCodeRow(chip, context, { thArea, surface: '' }));
+      setPendingSelection(null);
       return;
     }
     if (pendingSelection?.source === 'tooth' && code.requires !== 'none') {

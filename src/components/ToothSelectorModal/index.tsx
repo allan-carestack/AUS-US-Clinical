@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { getArchRows } from '../Odontogram/toothData';
 import { Popover, PopoverContent } from '../Popover';
+import type { AreaType } from '../CarePanel/data';
 import { ToothQuickEntry, type IcdConfig } from './ToothQuickEntry';
 import { markToothSelectorOpen } from './useToothSelectorOpen';
 
@@ -18,6 +19,8 @@ export interface ToothSelectorPopoverProps {
   title: string;
   /** Whether this treatment needs a surface in addition to a tooth. */
   requiresSurface: boolean;
+  /** Area codes: shows the arch / quadrant picker instead of the tooth and surface fields; the picked area's id comes back as `toothId`. */
+  area?: AreaType;
   /** Draft values the popover starts from. */
   toothId: string;
   /** Further pre-selected teeth besides `toothId`. */
@@ -42,7 +45,7 @@ const VALID_TEETH = new Set(
 );
 
 export function ToothSelectorPopover({
-  open, onOpenChange, anchor, side = 'top', title, requiresSurface,
+  open, onOpenChange, anchor, side = 'top', title, requiresSurface, area,
   toothId, queueIds, surfaceLetters, onCommit, allowMore, icd, finalFocus,
 }: ToothSelectorPopoverProps) {
   // While this is open it has the user's attention, not the odontogram behind it (see useToothSelectorOpen).
@@ -57,13 +60,14 @@ export function ToothSelectorPopover({
         sideOffset={side === 'overlay' ? -anchor.getBoundingClientRect().height : 8}
         initialFocus={() => document.querySelector<HTMLElement>('[data-tooth-selector-popup] [data-first-focus]')}
         finalFocus={finalFocus}
-        className={[styles.Popup, requiresSurface ? '' : styles.PopupNarrow, side === 'overlay' ? styles.PopupMorph : ''].filter(Boolean).join(' ')}
+        className={[styles.Popup, area ? styles.PopupArea : requiresSurface ? '' : styles.PopupNarrow, side === 'overlay' ? styles.PopupMorph : ''].filter(Boolean).join(' ')}
         style={side === 'overlay' ? ({ '--morph-w': `${anchor.getBoundingClientRect().width}px`, '--morph-h': `${anchor.getBoundingClientRect().height}px` } as React.CSSProperties) : undefined}
         data-tooth-selector-popup
       >
         <ToothQuickEntry
           title={title}
           requiresSurface={requiresSurface}
+          area={area}
           validTeeth={VALID_TEETH}
           toothId={toothId}
           queueIds={queueIds}
