@@ -1,9 +1,11 @@
-import type { ToothRequirement } from './data';
+import type { AreaType, ToothRequirement } from './data';
 
 export interface DentalCode {
   code: string;
   description: string;
   requires: ToothRequirement;
+  /** For `requires: 'area'` codes: whether the area is an arch or a quadrant. */
+  area?: AreaType;
   /** Backend flag: this code can't be added without an ICD code. */
   icdRequired?: boolean;
 }
@@ -110,32 +112,32 @@ export const DENTAL_CODES: DentalCode[] = [
   { code: '111', description: 'Removal of calculus — first visit', requires: 'none' },
   { code: '114', description: 'Removal of calculus — subsequent visit', requires: 'none' },
   { code: '115', description: 'Removal of stain', requires: 'none' },
-  { code: '118', description: 'Whitening — in-office, per arch', requires: 'none' },
-  { code: '119', description: 'Whitening — home kit, per arch', requires: 'none' },
+  { code: '118', description: 'Whitening — in-office, per arch', requires: 'area', area: 'arch' },
+  { code: '119', description: 'Whitening — home kit, per arch', requires: 'area', area: 'arch' },
   { code: '121', description: 'Topical application of remineralisation and/or cariostatic agents, one treatment', requires: 'surface' },
   { code: '123', description: 'Topical application of desensitising agent', requires: 'none' },
-  { code: '151', description: 'Splint — direct, per arch', requires: 'none' },
+  { code: '151', description: 'Splint — direct, per arch', requires: 'area', area: 'arch' },
   { code: '165', description: 'Desensitising agent application', requires: 'none' },
   { code: '221', description: 'Periodontal charting — full mouth', requires: 'none' },
-  { code: '250', description: 'Gum treatment — active periodontal, per quadrant', requires: 'area' },
-  { code: '251', description: 'Gum treatment — periodontal debridement, per quadrant', requires: 'area' },
+  { code: '250', description: 'Gum treatment — active periodontal, per quadrant', requires: 'area', area: 'quadrant' },
+  { code: '251', description: 'Gum treatment — periodontal debridement, per quadrant', requires: 'area', area: 'quadrant' },
   { code: '711', description: 'Complete upper denture', requires: 'none' },
   { code: '712', description: 'Complete lower denture', requires: 'none' },
   { code: '719', description: 'Denture — immediate', requires: 'none' },
   { code: '722', description: 'Partial denture — acrylic', requires: 'none' },
   { code: '727', description: 'Partial denture — cast metal framework', requires: 'none' },
   { code: '728', description: 'Partial denture — flexible', requires: 'none' },
-  { code: '811', description: 'Orthodontic appliance — removable, per arch', requires: 'none' },
-  { code: '812', description: 'Orthodontic appliance — fixed, per arch', requires: 'none' },
+  { code: '811', description: 'Orthodontic appliance — removable, per arch', requires: 'area', area: 'arch' },
+  { code: '812', description: 'Orthodontic appliance — fixed, per arch', requires: 'area', area: 'arch' },
   { code: '825', description: 'Orthodontic adjustment', requires: 'none' },
-  { code: '829', description: 'Orthodontic — retainer, per arch', requires: 'none' },
+  { code: '829', description: 'Orthodontic — retainer, per arch', requires: 'area', area: 'arch' },
   { code: '831', description: 'Orthodontic — bracket replacement', requires: 'none' },
   { code: '833', description: 'Orthodontic — wire replacement', requires: 'none' },
   { code: '843', description: 'Orthodontic — band cementation', requires: 'none' },
   { code: '844', description: 'Orthodontic — band removal', requires: 'none' },
   { code: '845', description: 'Orthodontic — elastic separator', requires: 'none' },
   { code: '846', description: 'Orthodontic — space maintainer', requires: 'none' },
-  { code: '862', description: 'Orthodontic — aligner, per arch', requires: 'none' },
+  { code: '862', description: 'Orthodontic — aligner, per arch', requires: 'area', area: 'arch' },
   { code: '871', description: 'Orthodontic — study models', requires: 'none' },
   { code: '872', description: 'Orthodontic — treatment plan', requires: 'none' },
   { code: '873', description: 'Orthodontic — progress records', requires: 'none' },
@@ -146,5 +148,5 @@ export const DENTAL_CODES: DentalCode[] = [
   { code: '878', description: 'Orthodontic — final records', requires: 'none' },
   { code: '881', description: 'Orthodontic — functional appliance', requires: 'none' },
   { code: '882', description: 'Orthodontic — headgear', requires: 'none' },
-  { code: '965', description: 'Occlusal splint — per arch', requires: 'none' },
+  { code: '965', description: 'Occlusal splint — per arch', requires: 'area', area: 'arch' },
 ];

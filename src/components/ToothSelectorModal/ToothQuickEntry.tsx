@@ -8,6 +8,7 @@ import { Combobox, ComboboxInput, ComboboxContent, ComboboxItemMulti, ComboboxEm
 import { SurfaceQuicklinks } from './ToothGrid';
 import { buildRegularGridRows } from './toothGridRows';
 import { ICD_OPTIONS } from './icdCodes';
+import { AREA_OPTIONS, type AreaType } from '../CarePanel/data';
 import styles from './index.module.css';
 
 /** Ring segments (+ centre) of the surface circle. Angles: 0° = top, clockwise. */
@@ -37,6 +38,8 @@ export interface IcdConfig {
 interface Props {
   title: string;
   requiresSurface: boolean;
+  /** Area codes: swaps the tooth and surface fields for an arch / quadrant picker. The area's id goes out as `toothId`. */
+  area?: AreaType;
   validTeeth: Set<string>;
   toothId: string;
   /** Further pre-selected teeth (e.g. armed on the odontogram) besides `toothId`. */
@@ -72,7 +75,7 @@ const KbdShiftEnter = () => <KbdGroup><Kbd>shift</Kbd><KbdEnter /></KbdGroup>;
  * tooth only, promotes the next one and stays. If the code needs an ICD code and has
  * none, Enter moves focus there instead. Nothing reaches the caller until an apply.
  */
-export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, queueIds, surfaceLetters, icd, onCommit, allowMore }: Props) {
+export function ToothQuickEntry({ title, requiresSurface, area, validTeeth, toothId, queueIds, surfaceLetters, icd, onCommit, allowMore }: Props) {
   const [sup, setSup] = useState(false);
   /** Set by Shift+Enter: the user has started a multi-tooth entry, even with one tooth so far. */
   const [multiMode, setMultiMode] = useState(!!queueIds?.length);
@@ -86,6 +89,8 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
   const [icdMsg, setIcdMsg] = useState('');
   const [icdQuery, setIcdQuery] = useState('');
   const [helpOpen, setHelpOpen] = useState(false);
+  const [areaId, setAreaId] = useState('');
+  const [areaQuery, setAreaQuery] = useState('');
   // Class V (cervical) fills only the buccal/facial and lingual surfaces: M, O, D and I are switched off.
   const [classV, setClassV] = useState(false);
   const helpRef = useRef<HTMLDivElement>(null);
@@ -119,10 +124,22 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
   const lastCount = useRef(2);
   if (split) lastCount.current = teeth.length;
   const showSummary = requiresSurface && ((multiMode && teeth.length > 0) || uniq([...queue, current]).length > 1);
-  const missing = !teeth.length ? 'Select a tooth'
+  // Area codes: typed words are matched as prefixes against the label and its short keys ("ur", "upper r", "mand").
+  const areaOpts = area ? AREA_OPTIONS[area] : [];
+  const words = areaQuery.toLowerCase().split(/\s+/).filter(Boolean);
+  const areaMatches = areaOpts.filter(o => {
+    const hay = `${o.label} ${o.keys ?? ''}`.toLowerCase().split(/\s+/);
+    return words.every(w => hay.some(h => h.startsWith(w)));
+  });
+  /** The one orange area: the clicked / arrowed one while it still matches what's typed, else the first match. */
+  const pickedArea = areaQuery ? (areaMatches.find(o => o.id === areaId) ?? areaMatches[0])?.id ?? '' : areaId;
+  const missing = area ? (!pickedArea ? 'Select an area' : icd?.required && !icdChips.length ? 'Add an ICD code to continue' : '')
+    : !teeth.length ? 'Select a tooth'
     : requiresSurface && !surface ? 'Select a surface'
     : icd?.required && !icdChips.length ? 'Add an ICD code to continue'
     : '';
+  const areaError = invalid === 'tooth' ? 'Type an area or click one'
+    : areaQuery && !areaMatches.length ? `No area matches "${areaQuery.trim()}"` : '';
   const toothError = invalid === 'tooth' ? 'Type a tooth number or click one'
     : buffer.length >= 2 && !typedValid ? `${typedId} can't be selected` : '';
 
@@ -238,7 +255,37 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
     surfaceRef.current?.focus();
   };
 
+  /** `more` (Shift+Enter) adds the row but keeps the popover open, with the field cleared for the next area. */
+  const submitArea = (more = false) => {
+    if (!pickedArea) { toothRef.current?.focus(); setInvalid('tooth'); return; }
+    if (icd?.required && !icdChips.length) { icdFocus(); setIcdMsg('Add an ICD code to continue'); setInvalid('icd'); return; }
+    onCommit(pickedArea, '', more, icdChips);
+    if (!more) return;
+    setAreaId(''); setAreaQuery(''); setInvalid(null);
+    toothRef.current?.focus();
+  };
+
+  const areaKey = (e: React.KeyboardEvent) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === 'Enter') { e.preventDefault(); submitArea(!!allowMore && e.shiftKey); }
+    // Quadrants sit in a 2×2, so the arrows move across the grid: ← / → within the row (index ^ 1), ↑ / ↓ within the column (index ^ 2).
+    // Only while nothing is typed: otherwise ← / → move the caret and ↑ / ↓ step through the matches.
+    else if (area === 'quadrant' && !areaQuery && e.key.startsWith('Arrow')) {
+      e.preventDefault();
+      const at = areaOpts.findIndex(o => o.id === pickedArea);
+      setAreaId(areaOpts[at < 0 ? 0 : at ^ (e.key === 'ArrowUp' || e.key === 'ArrowDown' ? 2 : 1)].id);
+    }
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const list = areaQuery ? areaMatches : areaOpts;
+      if (!list.length) return;
+      const at = list.findIndex(o => o.id === pickedArea);
+      setAreaId(list[(at + (e.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length].id);
+    }
+  };
+
   const applyKey = (e: React.KeyboardEvent) => {
+    if (area) { submitArea(!!allowMore && e.shiftKey); return; }
     if (allowMore && e.shiftKey) applyCurrent(); else trySubmit(teeth, surface, false);
   };
 
@@ -320,6 +367,49 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
         <div className={styles.QuickInner} inert={helpOpen}>
           <div className={styles.QuickBody} onKeyDown={cycleFocus}>
             <div className={styles.QuickMain}>
+              {area && (
+                <div className={styles.QuickCol}>
+                  <div className={styles.FieldRow}>
+                    <label className={styles.FieldLabel} htmlFor={toothInputId}>Area <span className={styles.Req}>*</span> :</label>
+                    {/* toothRef doubles as the area field's ref: the two fields are never on screen together. */}
+                    <input
+                      ref={toothRef}
+                      id={toothInputId}
+                      data-first-focus
+                      className={styles.FieldInput}
+                      role="combobox"
+                      aria-expanded
+                      aria-controls={toothInputId + '-list'}
+                      aria-activedescendant={pickedArea ? `${toothInputId}-${pickedArea}` : undefined}
+                      autoComplete="off"
+                      placeholder={area === 'arch' ? 'Maxillary, mandibular or whole' : 'UR, UL, LR or LL'}
+                      value={areaQuery}
+                      aria-invalid={!!areaError || undefined}
+                      onChange={e => { setAreaQuery(e.target.value); setInvalid(null); }}
+                      onKeyDown={areaKey}
+                      onFocus={() => setStep('tooth')}
+                    />
+                    {areaError && <span className={styles.TypedErr} role="alert">{areaError}</span>}
+                  </div>
+                  <div id={toothInputId + '-list'} role="listbox" aria-label="Area" className={[styles.QuickPanel, styles.AreaPanel].join(' ')} data-area={area} {...keepFocus(toothRef)}>
+                    {areaOpts.map(o => (
+                      <button
+                        key={o.id}
+                        id={`${toothInputId}-${o.id}`}
+                        type="button"
+                        role="option"
+                        tabIndex={-1}
+                        aria-selected={pickedArea === o.id}
+                        className={[styles.AreaCell, pickedArea === o.id ? styles.ToothCellStaged : '', areaQuery && !areaMatches.includes(o) ? styles.AreaCellDim : ''].filter(Boolean).join(' ')}
+                        onClick={() => { setAreaId(o.id); setAreaQuery(''); setInvalid(null); }}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {!area && (
               <div className={styles.QuickCol}>
                 <div className={styles.FieldRow}>
                   <label className={styles.FieldLabel} htmlFor={toothInputId}>Tooth <span className={styles.Req}>*</span> :</label>
@@ -366,6 +456,7 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
                   </div>
                 </div>
               </div>
+              )}
 
               {requiresSurface && (
                 <div className={styles.QuickColSurface}>
@@ -499,14 +590,14 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
 
           <div className={styles.QuickFooter}>
             <span className={styles.FooterLegend}>
-              {teeth.length > 0 && (
+              {(area ? !!pickedArea : teeth.length > 0) && (
                 <>
                   <span key="enter" className={styles.LegendItem}>
                     <KbdEnter /> {step === 'tooth' && requiresSurface ? 'to select surface next' : split ? 'Apply for all' : 'Apply'}
                   </span>
                   {allowMore && (
                     <span key="shift" className={styles.LegendItem} style={{ animationDelay: '80ms' }}>
-                      <KbdShiftEnter /> {step === 'tooth' ? 'to select another tooth' : multi ? `Apply ${highlighted || 'tooth'} and go on` : 'Apply and next tooth'}
+                      <KbdShiftEnter /> {area ? 'Apply and add another area' : step === 'tooth' ? 'to select another tooth' : multi ? `Apply ${highlighted || 'tooth'} and go on` : 'Apply and next tooth'}
                     </span>
                   )}
                 </>
@@ -517,7 +608,7 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
                 <Button variant="secondary" disabled={!!missing} title={`Apply to tooth ${highlighted} only`} onClick={applyCurrent}>Apply</Button>
               </span>
             </span>
-            <Button variant="primary" disabled={!!missing} onClick={() => trySubmit(teeth, surface, false)}>
+            <Button variant="primary" disabled={!!missing} onClick={() => (area ? submitArea() : trySubmit(teeth, surface, false))}>
               Apply
               <span className={styles.CollapseX} data-open={split || undefined}>
                 <span>&nbsp;for all ({lastCount.current})</span>
@@ -542,7 +633,16 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
         >
             <div className={styles.HelpScroll}>
               <div className={styles.HelpList}>
-                <HelpGroup title="Pick teeth">
+                {area && (
+                  <HelpGroup title="Pick an area">
+                    <HelpRow keys={<span className={styles.HelpLinks}>Type</span>}>
+                      {area === 'arch' ? 'Maxillary, mandibular, upper, lower or whole mouth' : 'UR, UL, LR, LL, or words like "upper right"'}. The first match is selected.
+                    </HelpRow>
+                    <HelpRow keys={<KbdGroup><Kbd>↑</Kbd><Kbd>↓</Kbd></KbdGroup>}>{area === 'quadrant' ? 'Move up and down between upper and lower. ' : 'Move between the matches. '}You can also click an area.</HelpRow>
+                    {area === 'quadrant' && <HelpRow keys={<KbdGroup><Kbd>←</Kbd><Kbd>→</Kbd></KbdGroup>}>Move between right and left. The arrows follow the grid while nothing is typed.</HelpRow>}
+                  </HelpGroup>
+                )}
+                {!area && <HelpGroup title="Pick teeth">
                   <HelpRow keys={<KbdGroup><Kbd>1</Kbd><Kbd>4</Kbd></KbdGroup>}>Type a tooth number, or click a tooth. Click a selected tooth to deselect it.</HelpRow>
                   <HelpRow keys={<KbdGroup><Kbd>S</Kbd><Kbd>R</Kbd></KbdGroup>}>Switch between supernumerary (<Kbd>S</Kbd>) and regular (<Kbd>R</Kbd>) teeth.</HelpRow>
                   <HelpRow keys={<Kbd>⌫</Kbd>}>Delete the last digit; with nothing typed, deselect the last tooth.</HelpRow>
@@ -550,7 +650,7 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
                     <HelpRow keys={<KbdShiftEnter />}>Keep this tooth and pick another. Shift-, Cmd- or Ctrl-click does the same. The "Adding to" row lists them all.</HelpRow>
                   )}
                   {requiresSurface && <HelpRow keys={<KbdEnter />}>Move on to the surface.</HelpRow>}
-                </HelpGroup>
+                </HelpGroup>}
                 {requiresSurface && (
                   <HelpGroup title="Pick surfaces">
                     <HelpRow keys={<KbdGroup><Kbd>M</Kbd><Kbd>O</Kbd><Kbd>D</Kbd><Kbd>B</Kbd><Kbd>L</Kbd></KbdGroup>}>Type letters, or click the circle, to switch surfaces on and off. <Kbd>I</Kbd> is incisal and <Kbd>P</Kbd> is palatal.</HelpRow>
@@ -559,13 +659,14 @@ export function ToothQuickEntry({ title, requiresSurface, validTeeth, toothId, q
                 )}
                 <HelpGroup title="Apply">
                   {icd && <HelpRow keys={<span className={styles.HelpLinks}>ICD code</span>}>Search and add one or more.{icd.required ? ' This code needs one.' : ''} Backspace removes the last.</HelpRow>}
-                  <HelpRow keys={<KbdEnter />}>Apply to every selected tooth.</HelpRow>
+                  <HelpRow keys={<KbdEnter />}>{area ? 'Apply to the selected area.' : 'Apply to every selected tooth.'}</HelpRow>
                   {allowMore && requiresSurface && (
                     <HelpRow keys={<KbdShiftEnter />}>Apply to the current tooth only and move on to the next one.</HelpRow>
                   )}
+                  {allowMore && area && <HelpRow keys={<KbdShiftEnter />}>Apply this area and stay open to add the code to another one.</HelpRow>}
                 </HelpGroup>
                 <HelpGroup title="Anywhere">
-                  <HelpRow keys={<Kbd>Tab</Kbd>}>Move between the tooth{requiresSurface ? ', surface' : ''}{icd ? ' and ICD' : ''} sections.</HelpRow>
+                  <HelpRow keys={<Kbd>Tab</Kbd>}>Move between the {area ? 'area' : 'tooth'}{requiresSurface ? ', surface' : ''}{icd ? ' and ICD' : ''} sections.</HelpRow>
                   <HelpRow keys={<Kbd>Esc</Kbd>}>Close without adding anything.</HelpRow>
                 </HelpGroup>
               </div>

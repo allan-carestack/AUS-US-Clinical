@@ -9,7 +9,7 @@ import { Combobox, ComboboxInput, ComboboxItem, ComboboxEmpty } from '../Combobo
 import { Combobox as BaseCombobox } from '@base-ui/react/combobox';
 import { ScrollArea, ScrollAreaViewport, ScrollAreaContent, ScrollAreaScrollbar, ScrollAreaThumb } from '../ScrollArea';
 import scrollAreaStyles from '../ScrollArea/index.module.css';
-import { Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverTitle, PopoverClose, PopoverBody } from '../Popover';
+import { Popover, PopoverTrigger, PopoverContent } from '../Popover';
 import { ToothSelectorPopover } from '../ToothSelectorModal';
 import { icdConfigFor } from './icd';
 import { Tag } from '../Tag';
@@ -18,7 +18,7 @@ import { Kbd, KbdGroup } from '../Kbd';
 import { PlusIcon, InfoOutlineIcon, InfoSolidIcon, EditIcon } from '../Icon';
 import { DatePicker } from '../DatePicker';
 import { Select as BaseSelect } from '@base-ui/react/select';
-import { PROCEDURE_CHIPS, PLAN_AND_EXPLOSION_CHIPS, CONDITION_CHIPS, CARE_PANELS, CHIP_LEGEND, AREA_PRESETS, type ChipDef } from './data';
+import { PROCEDURE_CHIPS, PLAN_AND_EXPLOSION_CHIPS, CONDITION_CHIPS, CARE_PANELS, CHIP_LEGEND, type ChipDef } from './data';
 import { DENTAL_CODES, type DentalCode } from './dentalCodes';
 import aiScribeIcon from '../../assets/ai-scribe-icon.svg';
 
@@ -552,51 +552,6 @@ export function CodeSearch({
         };
         const focusSearch = () => document.querySelector<HTMLElement>('input[aria-label="Search dental codes"]');
         const dismiss = (open: boolean) => { if (!open) setPending(null); };
-        if (code.requires === 'area') {
-          return (
-            <Popover open onOpenChange={dismiss}>
-              <PopoverContent
-                anchor={anchor}
-                side="left"
-                align="center"
-                sideOffset={8}
-                data-code-input-popup
-                initialFocus={() => document.querySelector<HTMLElement>('[data-code-input-popup] [data-first-focus]')}
-                finalFocus={focusSearch}
-              >
-                <PopoverHeader>
-                  <PopoverTitle>{label}</PopoverTitle>
-                  <PopoverClose />
-                </PopoverHeader>
-                <PopoverBody>
-                  <div
-                    role="listbox"
-                    aria-label="Area"
-                    onKeyDown={e => {
-                      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-                      e.preventDefault();
-                      const btns = Array.from(e.currentTarget.querySelectorAll('button'));
-                      const i = btns.indexOf(document.activeElement as HTMLButtonElement);
-                      btns[(i + (e.key === 'ArrowDown' ? 1 : -1) + btns.length) % btns.length]?.focus();
-                    }}
-                  >
-                    {AREA_PRESETS.map((a, i) => (
-                      <Button
-                        key={a.id}
-                        variant="ghost"
-                        role="option"
-                        data-first-focus={i === 0 || undefined}
-                        onClick={() => submit({ thArea: a.id, surface: '' })}
-                      >
-                        {a.label}
-                      </Button>
-                    ))}
-                  </div>
-                </PopoverBody>
-              </PopoverContent>
-            </Popover>
-          );
-        }
         const needsSurface = code.requires === 'surface';
         return (
           <ToothSelectorPopover
@@ -610,6 +565,7 @@ export function CodeSearch({
             onCommit={(t, sf, more, icd) => submit({ thArea: t, surface: sf, icd }, more)}
             title={label}
             requiresSurface={needsSurface}
+            area={code.requires === 'area' ? (code.area ?? 'quadrant') : undefined}
             toothId={armedTeeth[armedTeeth.length - 1] ?? ''}
             queueIds={armedTeeth.slice(0, -1)}
             surfaceLetters=""

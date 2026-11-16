@@ -18,17 +18,22 @@ export interface ChipDef {
 export interface AreaPreset {
   id: string;
   label: string;
+  /** Extra words the tooth selector's area field matches typing against (e.g. "ur", "upper"). */
+  keys?: string;
 }
+
+/** Which areas an `area` code accepts: the two arches, or the four quadrants. */
+export type AreaType = 'arch' | 'quadrant';
 
 // Fixed, non-searchable preset list for `requires: 'area'` codes.
 export const AREA_PRESETS: AreaPreset[] = [
-  { id: 'whole-mouth', label: 'Whole mouth' },
-  { id: 'upper-arch',  label: 'Upper arch' },
-  { id: 'lower-arch',  label: 'Lower arch' },
-  { id: 'urq',         label: 'Upper right quadrant' },
-  { id: 'ulq',         label: 'Upper left quadrant' },
-  { id: 'lrq',         label: 'Lower right quadrant' },
-  { id: 'llq',         label: 'Lower left quadrant' },
+  { id: 'whole-mouth', label: 'Whole mouth',   keys: 'full all' },
+  { id: 'upper-arch',  label: 'Maxillary area',   keys: 'upper' },
+  { id: 'lower-arch',  label: 'Mandibular area',  keys: 'lower' },
+  { id: 'urq',         label: 'Upper right area', keys: 'ur' },
+  { id: 'ulq',         label: 'Upper left area',  keys: 'ul' },
+  { id: 'lrq',         label: 'Lower right area', keys: 'lr' },
+  { id: 'llq',         label: 'Lower left area',  keys: 'll' },
   { id: 'sextant-1',   label: 'Sextant 1 — upper right posterior' },
   { id: 'sextant-2',   label: 'Sextant 2 — upper anterior' },
   { id: 'sextant-3',   label: 'Sextant 3 — upper left posterior' },
@@ -36,6 +41,13 @@ export const AREA_PRESETS: AreaPreset[] = [
   { id: 'sextant-5',   label: 'Sextant 5 — lower anterior' },
   { id: 'sextant-6',   label: 'Sextant 6 — lower right posterior' },
 ];
+
+// The options the tooth selector offers per area type (arch codes also take the whole mouth). Quadrants are in chart order
+// (patient's right on the viewer's left), so the 2×2 grid mirrors the mouth.
+export const AREA_OPTIONS: Record<AreaType, AreaPreset[]> = {
+  arch: ['upper-arch', 'lower-arch', 'whole-mouth'].map(id => AREA_PRESETS.find(a => a.id === id)!),
+  quadrant: ['urq', 'ulq', 'lrq', 'llq'].map(id => AREA_PRESETS.find(a => a.id === id)!),
+};
 
 // FDI tooth ids (permanent dentition) each area preset expands to — used to
 // batch-highlight the odontogram when an area preset is picked.
@@ -59,6 +71,14 @@ export const AREA_PRESET_TEETH: Record<string, string[]> = {
   'sextant-5': ['33', '32', '31', '41', '42', '43'],
   'sextant-6': ['44', '45', '46', '47', '48'],
 };
+
+const QUADRANT_BY_DIGIT: Record<string, string> = { 1: 'urq', 5: 'urq', 2: 'ulq', 6: 'ulq', 3: 'llq', 7: 'llq', 4: 'lrq', 8: 'lrq' };
+
+/** The distinct areas of `type` the given teeth sit in (FDI ids, supernumerary "S" prefix ignored); never the whole mouth. */
+export function areaIdsForTeeth(toothIds: string[], type: AreaType): string[] {
+  const quads = toothIds.map(t => QUADRANT_BY_DIGIT[t.replace(/^S/, '').charAt(0)]).filter(Boolean);
+  return [...new Set(quads.map(q => (type === 'quadrant' ? q : q === 'urq' || q === 'ulq' ? 'upper-arch' : 'lower-arch')))];
+}
 
 // Placeholder "General Dentistry" care panel contents. In the real product
 // this grid is clinician-customizable (see the gear button) and can differ
