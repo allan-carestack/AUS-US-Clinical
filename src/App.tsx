@@ -29,6 +29,7 @@ import { DENTAL_CODES } from './components/CarePanel/dentalCodes';
 import { TreatmentPlanView } from './components/TreatmentPlanView';
 import { PlannerSidebar, type SidebarPhaseStatus } from './components/PlannerSidebar';
 import { IcdToggle } from './components/CarePanel/IcdToggle';
+import { AddTreatmentSlideout, type TreatmentRow } from './components/AddTreatmentSlideout';
 import {
   cloneTreatmentPlanMock,
   firstPhaseId,
@@ -1349,6 +1350,14 @@ export default function App() {
     pendingSelection?.source === 'tooth'
     && (code.requires === 'tooth' || code.requires === 'surface' || code.requires === 'area');
 
+  // Add Treatment slideout: opened from the +Code split button; "Add to Treatment" lands every completed table row on the chart grid.
+  const [addTreatmentOpen, setAddTreatmentOpen] = useState(false);
+  const addTreatmentRows = (rows: TreatmentRow[], context: CarePanelSelectionContext) => {
+    rows.forEach(({ chip, thArea, surface }) =>
+      chip.requires === 'none' ? applyEntry(chip, context) : addCompletedCodeRow(chip, context, { thArea, surface }));
+    setAddTreatmentOpen(false);
+  };
+
   // +Code combobox: selecting a code adds a row immediately. If the code
   // requires tooth/surface input the row is inserted in a pending state
   // (highlighted) — the combobox stays open so the user can keep adding.
@@ -2140,11 +2149,13 @@ export default function App() {
           aria-hidden={workspaceTab === 'planner'}
           inert={workspaceTab === 'planner'}
         >
-          <CarePanel codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} usesArmedSelection={codeUsesArmedSelection} armedTeeth={pendingSelection?.selections.map(sel => sel.meta.id)} codeShortcut={workspaceTab === 'chart'} />
+          <CarePanel codes={dentalCodes} onChipSelect={handleChipSelect} onCodeSelect={handleCodeSearchSelect} usesArmedSelection={codeUsesArmedSelection} armedTeeth={pendingSelection?.selections.map(sel => sel.meta.id)} codeShortcut={workspaceTab === 'chart'} onOpenSlideout={() => setAddTreatmentOpen(true)} />
         </div>
       </div>
 
       <IcdToggle />
+
+      <AddTreatmentSlideout open={workspaceTab === 'chart' && addTreatmentOpen} codes={dentalCodes} onAdd={addTreatmentRows} onClose={() => setAddTreatmentOpen(false)} />
 
       {toothSelectorRequest && (() => {
         const draftRow = findChartEntry(toothSelectorRequest.rowId);

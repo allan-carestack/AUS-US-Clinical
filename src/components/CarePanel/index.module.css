@@ -514,6 +514,22 @@
   overflow: visible;
 }
 
+/* +Code and the slideout toggle read as one button: shared edge, outer corners only. */
+.SplitButton {
+  display: inline-flex;
+}
+
+.SplitButton > button:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.SplitButton > button:last-child {
+  margin-left: -1px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
 .CodeSearchRoot {
   width: 100%;
   min-width: 0;

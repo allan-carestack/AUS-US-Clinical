@@ -141,6 +141,19 @@ export const CONDITION_CHIPS: ChipDef[] = [
   { id: 'defect-resto',  label: 'Defect Resto',     kind: 'condition', requires: 'surface' },
 ];
 
+// Explosion codes: one pick adds a whole group of codes (by dental code) and conditions (by chip id) to the Add Treatment table.
+export interface ExplosionDef {
+  id: string;
+  label: string;
+  items: { code?: string; chipId?: string }[];
+}
+
+export const EXPLOSION_CODES: ExplosionDef[] = [
+  { id: '6mo-hygiene', label: '6 Month Hygiene', items: [{ code: '011' }, { code: '022' }, { code: '072' }] },
+  { id: 'all-on-4',    label: 'All on 4',        items: [{ code: '661' }, { code: '661' }, { code: '661' }, { code: '661' }, { code: '665' }, { code: '666' }] },
+  { id: 'crown-fix',   label: 'Crown Fix',       items: [{ chipId: 'broken-tooth' }, { code: '611' }, { code: '618' }] },
+];
+
 export const CARE_PANELS = [
   { id: 'general', label: 'General Dentistry' },
 ];

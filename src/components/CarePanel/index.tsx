@@ -15,7 +15,7 @@ import { icdConfigFor } from './icd';
 import { Tag } from '../Tag';
 import { Tooltip } from '../Tooltip';
 import { Kbd, KbdGroup } from '../Kbd';
-import { PlusIcon, InfoOutlineIcon, InfoSolidIcon, EditIcon } from '../Icon';
+import { PlusIcon, InfoOutlineIcon, InfoSolidIcon, EditIcon, OpenPanelIcon } from '../Icon';
 import { DatePicker } from '../DatePicker';
 import { Select as BaseSelect } from '@base-ui/react/select';
 import { PROCEDURE_CHIPS, PLAN_AND_EXPLOSION_CHIPS, CONDITION_CHIPS, CARE_PANELS, CHIP_LEGEND, type ChipDef } from './data';
@@ -67,6 +67,8 @@ export interface CarePanelProps {
   armedTeeth?: string[];
   /** Turn the Shift+N shortcut off (e.g. while another workspace owns it). Defaults to on. */
   codeShortcut?: boolean;
+  /** The split button's slideout half: open the Add Treatment slideout. */
+  onOpenSlideout?: () => void;
 }
 
 export type { DentalCode } from './dentalCodes';
@@ -576,7 +578,7 @@ export function CodeSearch({
   );
 }
 
-export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect, usesArmedSelection, armedTeeth, codeShortcut = true }: CarePanelProps) {
+export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect, usesArmedSelection, armedTeeth, codeShortcut = true, onOpenSlideout }: CarePanelProps) {
   const [tab, setTab] = useState<CarePanelTab>('new');
   /** Enter direction for ChipGridArea on tab change — null skips (initial mount). */
   const [gridSlide, setGridSlide] = useState<'fromLeft' | 'fromRight' | null>(null);
@@ -916,16 +918,28 @@ export function CarePanel({ armedChipId, codes, onChipSelect, onCodeSelect, uses
               >
                 <div className={styles.CodeMorphCollapsed} aria-hidden={codeSearchMorphOpen}>
                   <div className={styles.PaneClip}>
-                    <Tooltip content={<span className={styles.ShortcutTip}>Add code <KbdGroup><Kbd inverse>shift</Kbd><Kbd inverse>N</Kbd></KbdGroup></span>} side="top">
-                      <Button
-                        variant="secondary"
-                        leftIcon={<PlusIcon />}
-                        tabIndex={codeSearchMorphOpen ? -1 : 0}
-                        onClick={openCodeSearch}
-                      >
-                        Code
-                      </Button>
-                    </Tooltip>
+                    <div className={styles.SplitButton}>
+                      <Tooltip content={<span className={styles.ShortcutTip}>Quick add <KbdGroup><Kbd inverse>shift</Kbd><Kbd inverse>N</Kbd></KbdGroup></span>} side="top">
+                        <Button
+                          variant="secondary"
+                          leftIcon={<PlusIcon />}
+                          tabIndex={codeSearchMorphOpen ? -1 : 0}
+                          onClick={openCodeSearch}
+                        >
+                          Code
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content="Open slideout" side="top">
+                        <Button
+                          variant="secondary"
+                          iconOnly
+                          aria-label="Open slideout"
+                          leftIcon={<OpenPanelIcon />}
+                          tabIndex={codeSearchMorphOpen ? -1 : 0}
+                          onClick={onOpenSlideout}
+                        />
+                      </Tooltip>
+                    </div>
                   </div>
                 </div>
                 <div
